@@ -84,20 +84,22 @@ def compute_custom_fd(
     return fd
 
 
-def compute_stats(fd_raw, dvars_raw, fd_thresh):
-    """Return summary statistics dict; all stats exclude NaN (frame 0)."""
+def _fd_stats(fd_raw, fd_thresh, suffix):
+    """
+    Compute FD summary stats with explicit column-name suffix.
+
+    suffix should be '_fmriprep' or '_custom' — this prevents any
+    ambiguity between the two FD sources in returned dicts and TSV columns.
+    """
     n_frames = len(fd_raw)
     n_censored = int(np.sum(fd_raw > fd_thresh, where=~np.isnan(fd_raw)))
     return {
-        "n_frames": n_frames,
-        "mean_fd": float(np.nanmean(fd_raw)),
-        "median_fd": float(np.nanmedian(fd_raw)),
-        "max_fd": float(np.nanmax(fd_raw)),
-        "n_censored": n_censored,
-        "pct_censored": 100.0 * n_censored / n_frames,
-        "mean_std_dvars": float(np.nanmean(dvars_raw)),
-        "max_std_dvars": float(np.nanmax(dvars_raw)),
-        "n_frames_remaining": n_frames - n_censored,
+        f"mean_fd{suffix}":             float(np.nanmean(fd_raw)),
+        f"median_fd{suffix}":           float(np.nanmedian(fd_raw)),
+        f"max_fd{suffix}":              float(np.nanmax(fd_raw)),
+        f"n_censored{suffix}":          n_censored,
+        f"pct_censored{suffix}":        100.0 * n_censored / n_frames,
+        f"n_frames_remaining{suffix}":  n_frames - n_censored,
     }
 
 
@@ -120,8 +122,8 @@ def make_qc_figure(fd_raw, dvars_raw, censor_mask, subject_label, fd_thresh,
     fig.suptitle(f"Motion QC — {subject_label}", fontsize=13, y=1.01)
 
     # Panel 1: FD
-    fd_label = "Custom FD (filtered, 2-TR backward diff)"
-    axes[0].plot(frames, fd_raw, color="steelblue", linewidth=1.2, label=fd_label)
+    axes[0].plot(frames, fd_raw, color="steelblue", linewidth=1.2,
+                 label="Custom FD (filtered, 2-TR backward diff)")
     if compare_fd and fd_fmriprep is not None:
         axes[0].plot(frames, fd_fmriprep, color="gray", linewidth=0.9,
                      linestyle="--", alpha=0.7, label="fMRIPrep FD")
@@ -140,7 +142,7 @@ def make_qc_figure(fd_raw, dvars_raw, censor_mask, subject_label, fd_thresh,
     axes[1].set_title("Standardized DVARS (std_dvars)")
     axes[1].legend(fontsize=8, loc="upper right")
 
-    # Panel 3: censored frames strip
+    # Panel 3: censored frames strip (based on active FD passed in)
     axes[2].imshow(censor_mask.astype(float).reshape(1, -1),
                    aspect="auto", cmap=cmap, vmin=0, vmax=1,
                    interpolation="nearest")
@@ -167,40 +169,44 @@ def run_motion_qc(confounds_path, subject_id, session_id, output_dirs,
     output_dirs    : dict  keys 'figures' and 'results' (Path objects)
     fd_thresh      : float  FD censoring threshold in mm
     dvars_thresh   : float  stored in summary, not used for censoring
-    use_custom_fd  : bool   use Goldberg/Lynch filtered FD (default True)
+    use_custom_fd  : bool   use Goldberg/Lynch filtered FD for censoring (default True)
     compare_fd     : bool   overlay fMRIPrep FD on the figure for comparison
 
     Returns
     -------
-    dict of summary statistics including mean_fd_fmriprep and mean_fd_custom
+    dict with fully-suffixed keys: *_fmriprep and *_custom for all FD stats.
+    No ambiguous 'mean_fd' / 'n_censored' / 'pct_censored' keys exist.
     """
     label = f"{subject_id}_{session_id}"
     print(f"Loading confounds: {confounds_path}")
 
     df = load_confounds(confounds_path)
+    n_frames = df.shape[0]
     fd_fmriprep = df["framewise_displacement"].to_numpy(dtype=float)
     dvars_raw = df["std_dvars"].to_numpy(dtype=float)
 
     fd_custom = compute_custom_fd(df)
 
+    # Stats for both FDs independently — no shared/ambiguous keys
+    stats_fmriprep = _fd_stats(fd_fmriprep, fd_thresh, "_fmriprep")
+    stats_custom   = _fd_stats(fd_custom,   fd_thresh, "_custom")
+
+    # Censoring mask uses whichever FD is active
     fd_active = fd_custom if use_custom_fd else fd_fmriprep
-    fd_label = "custom" if use_custom_fd else "fMRIPrep"
-
-    stats = compute_stats(fd_active, dvars_raw, fd_thresh)
-
-    print(f"\n── Motion summary: {label} ──")
-    print(f"  FD source           : {fd_label}")
-    print(f"  Total frames        : {stats['n_frames']}")
-    print(f"  Mean FD (fMRIPrep)  : {np.nanmean(fd_fmriprep):.4f} mm")
-    print(f"  Mean FD (custom)    : {np.nanmean(fd_custom):.4f} mm")
-    print(f"  Median FD           : {stats['median_fd']:.4f} mm")
-    print(f"  Max FD              : {stats['max_fd']:.4f} mm")
-    print(f"  Frames FD > {fd_thresh} mm : {stats['n_censored']}")
-    print(f"  Censored            : {stats['pct_censored']:.1f}%")
-    print(f"  Mean std_dvars      : {stats['mean_std_dvars']:.4f}")
-
+    fd_source = "custom (Goldberg/Lynch filtered)" if use_custom_fd else "fMRIPrep default"
     censor_mask = np.where(np.isnan(fd_active), False, fd_active > fd_thresh)
     censor_indices = np.where(censor_mask)[0].astype(int)
+
+    print(f"\n── Motion summary: {label} ──")
+    print(f"  FD used for censoring   : {fd_source}")
+    print(f"  Total frames            : {n_frames}")
+    print(f"  Mean FD  (fMRIPrep)     : {stats_fmriprep['mean_fd_fmriprep']:.4f} mm")
+    print(f"  Mean FD  (custom)       : {stats_custom['mean_fd_custom']:.4f} mm")
+    print(f"  Median FD (custom)      : {stats_custom['median_fd_custom']:.4f} mm")
+    print(f"  Max FD   (custom)       : {stats_custom['max_fd_custom']:.4f} mm")
+    print(f"  Frames FD > {fd_thresh} mm (custom) : {stats_custom['n_censored_custom']}")
+    print(f"  Censored (custom)       : {stats_custom['pct_censored_custom']:.1f}%")
+    print(f"  Mean std_dvars          : {float(np.nanmean(dvars_raw)):.4f}")
 
     npy_path = output_dirs["results"] / f"{label}_high_motion_indices.npy"
     np.save(npy_path, censor_indices)
@@ -221,9 +227,11 @@ def run_motion_qc(confounds_path, subject_id, session_id, output_dirs,
     print(f"  Indices saved: {npy_path}")
 
     return {
-        "subject": subject_id,
-        "session": session_id,
-        "mean_fd_fmriprep": float(np.nanmean(fd_fmriprep)),
-        "mean_fd_custom": float(np.nanmean(fd_custom)),
-        **stats,
+        "subject":         subject_id,
+        "session":         session_id,
+        "n_frames":        n_frames,
+        **stats_fmriprep,
+        **stats_custom,
+        "mean_std_dvars":  float(np.nanmean(dvars_raw)),
+        "max_std_dvars":   float(np.nanmax(dvars_raw)),
     }
