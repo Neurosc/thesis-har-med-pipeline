@@ -27,16 +27,16 @@ print(f"Loading confounds: {CONFOUNDS_PATH}")
 df = pd.read_csv(CONFOUNDS_PATH, sep="\t")
 print(f"  Shape: {df.shape[0]} frames x {df.shape[1]} columns")
 
-if "framewise_displacement" not in df.columns or "dvars" not in df.columns:
+if "framewise_displacement" not in df.columns or "std_dvars" not in df.columns:
     fd_cols = [c for c in df.columns if "fd" in c.lower() or "dvars" in c.lower()]
     raise ValueError(
-        "Required columns 'framewise_displacement' and/or 'dvars' not found.\n"
+        "Required columns 'framewise_displacement' and/or 'std_dvars' not found.\n"
         f"Columns containing 'fd' or 'dvars': {fd_cols}"
     )
 
 # Step 3: Extract time series; replace NaN with 0 for plotting only
 fd_raw = df["framewise_displacement"].to_numpy(dtype=float)
-dvars_raw = df["dvars"].to_numpy(dtype=float)
+dvars_raw = df["std_dvars"].to_numpy(dtype=float)
 
 fd_plot = np.where(np.isnan(fd_raw), 0.0, fd_raw)
 dvars_plot = np.where(np.isnan(dvars_raw), 0.0, dvars_raw)
@@ -57,7 +57,7 @@ print(f"  Median FD           : {median_fd:.4f} mm")
 print(f"  Max FD              : {max_fd:.4f} mm")
 print(f"  Frames FD > {FD_THRESHOLD} mm : {n_censored}")
 print(f"  Censored            : {pct_censored:.1f}%")
-print(f"  Mean DVARS          : {mean_dvars:.4f}")
+print(f"  Mean std_dvars      : {mean_dvars:.4f}")
 
 # Step 5: High-motion frame indices
 censor_mask = np.where(np.isnan(fd_raw), False, fd_raw > FD_THRESHOLD)
@@ -83,10 +83,13 @@ axes[0].set_ylabel("FD (mm)")
 axes[0].set_title("Framewise Displacement")
 axes[0].legend(fontsize=8, loc="upper right")
 
-# Panel 2: DVARS
+# Panel 2: std_dvars
 axes[1].plot(frames, dvars_plot, color="darkorange", linewidth=0.9)
-axes[1].set_ylabel("DVARS")
-axes[1].set_title("DVARS (raw, before denoising)")
+axes[1].axhline(1.5, color="black", linestyle="--", linewidth=1,
+                label="Threshold (1.5, Power et al. 2014)")
+axes[1].set_ylabel("std_dvars")
+axes[1].set_title("Standardized DVARS (std_dvars)")
+axes[1].legend(fontsize=8, loc="upper right")
 
 # Panel 3: censored frames strip
 censor_strip = censor_mask.astype(float).reshape(1, -1)
