@@ -11,8 +11,8 @@ CONFOUNDS_PATH = Path(
     "sub-01/ses-01/func/"
     "sub-01_ses-01_task-rest_desc-confounds_timeseries.tsv.gz"
 )
-FIGURES_DIR = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/00_QC/figures/individual")
-RESULTS_DIR = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/00_QC/results/individual")
+FIGURES_DIR = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/figures/individual")
+RESULTS_DIR = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/results/individual")
 FD_THRESHOLD = 0.3   # mm (Goldberg et al. 2024)
 DVARS_THRESHOLD = 1.5  # std_dvars (Power et al. 2014)
 # ─────────────────────────────────────────────────────────────────────────────

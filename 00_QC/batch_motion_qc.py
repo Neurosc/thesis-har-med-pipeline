@@ -13,11 +13,11 @@ from utils.motion_qc import run_motion_qc
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-QC_ROOT = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/00_QC")
-FIGURES_INDIV = QC_ROOT / "figures" / "individual"
-RESULTS_INDIV = QC_ROOT / "results" / "individual"
-FIGURES_GROUP = QC_ROOT / "figures"
-RESULTS_GROUP = QC_ROOT / "results"
+HAR_MED_ROOT = Path("/BICNAS2/group-northoff/jkokino/har_med_codes")
+FIGURES_INDIV = HAR_MED_ROOT / "figures" / "individual"
+RESULTS_INDIV = HAR_MED_ROOT / "results" / "individual"
+FIGURES_GROUP = HAR_MED_ROOT / "figures"
+RESULTS_GROUP = HAR_MED_ROOT / "results"
 FD_THRESHOLD = 0.3    # mm (Goldberg et al. 2024)
 DVARS_THRESHOLD = 1.5  # std_dvars (Power et al. 2014)
 TASK = "rest"
