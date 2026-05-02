@@ -7,9 +7,9 @@ from pathlib import Path
 
 # ── Configurable paths and parameters ────────────────────────────────────────
 CONFOUNDS_PATH = Path(
-    "/BICNAS2/group-northoff/jkokino/"
+    "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep/"
     "sub-01/ses-01/func/"
-    "sub-01_ses-01_task-rest_desc-confounds_timeseries.tsv"
+    "sub-01_ses-01_task-rest_desc-confounds_timeseries.tsv.gz"
 )
 OUTPUT_DIR = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/figures")
 RESULTS_DIR = Path("/BICNAS2/group-northoff/jkokino/har_med_codes/results")
