@@ -38,8 +38,9 @@ if "framewise_displacement" not in df.columns or "std_dvars" not in df.columns:
 fd_raw = df["framewise_displacement"].to_numpy(dtype=float)
 dvars_raw = df["std_dvars"].to_numpy(dtype=float)
 
-fd_plot = np.where(np.isnan(fd_raw), 0.0, fd_raw)
-dvars_plot = np.where(np.isnan(dvars_raw), 0.0, dvars_raw)
+# Keep NaN so matplotlib skips frame 0 naturally instead of dropping to zero
+fd_plot = fd_raw.copy()
+dvars_plot = dvars_raw.copy()
 
 # Step 4: Summary statistics (exclude NaN — frame 0 is not a real displacement)
 n_frames = len(fd_raw)
@@ -76,7 +77,7 @@ fig.suptitle(f"Motion QC — {subject_label}", fontsize=13, y=1.01)
 frames = np.arange(n_frames)
 
 # Panel 1: FD
-axes[0].plot(frames, fd_plot, color="steelblue", linewidth=0.9)
+axes[0].plot(frames, fd_plot, color="steelblue", linewidth=1.2)
 axes[0].axhline(FD_THRESHOLD, color="black", linestyle="--", linewidth=1,
                 label=f"Threshold ({FD_THRESHOLD} mm)")
 axes[0].set_ylabel("FD (mm)")
@@ -84,9 +85,10 @@ axes[0].set_title("Framewise Displacement")
 axes[0].legend(fontsize=8, loc="upper right")
 
 # Panel 2: std_dvars
-axes[1].plot(frames, dvars_plot, color="darkorange", linewidth=0.9)
+axes[1].plot(frames, dvars_plot, color="darkorange", linewidth=1.2)
 axes[1].axhline(1.5, color="black", linestyle="--", linewidth=1,
                 label="Threshold (1.5, Power et al. 2014)")
+axes[1].set_ylim(0, 5)
 axes[1].set_ylabel("std_dvars")
 axes[1].set_title("Standardized DVARS (std_dvars)")
 axes[1].legend(fontsize=8, loc="upper right")
