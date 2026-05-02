@@ -21,6 +21,7 @@ RESULTS_GROUP = HAR_MED_ROOT / "results"
 FD_THRESHOLD = 0.3    # mm (Goldberg et al. 2024)
 DVARS_THRESHOLD = 1.5  # std_dvars (Power et al. 2014)
 TASK = "rest"
+USE_CUSTOM_FD = True   # Goldberg/Lynch filtered FD (recommended)
 # ─────────────────────────────────────────────────────────────────────────────
 
 for d in (FIGURES_INDIV, RESULTS_INDIV, FIGURES_GROUP, RESULTS_GROUP):
@@ -66,6 +67,8 @@ for subject_id, session_id, confounds_path in iterator:
             output_dirs=output_dirs,
             fd_thresh=FD_THRESHOLD,
             dvars_thresh=DVARS_THRESHOLD,
+            use_custom_fd=USE_CUSTOM_FD,
+            compare_fd=False,  # keep individual figures clean in batch mode
         )
         summaries.append(stats)
     except Exception as exc:
@@ -74,7 +77,9 @@ for subject_id, session_id, confounds_path in iterator:
 
 # Step 4: Master summary table
 df = pd.DataFrame(summaries, columns=[
-    "subject", "session", "n_frames", "mean_fd", "median_fd", "max_fd",
+    "subject", "session",
+    "mean_fd_fmriprep", "mean_fd_custom",
+    "n_frames", "mean_fd", "median_fd", "max_fd",
     "n_censored", "pct_censored", "mean_std_dvars", "max_std_dvars",
     "n_frames_remaining",
 ])
@@ -135,6 +140,35 @@ group_fig_path = FIGURES_GROUP / "group_motion_summary.png"
 plt.savefig(group_fig_path, dpi=300, bbox_inches="tight")
 plt.close(fig)
 print(f"Group figure saved: {group_fig_path}")
+
+# FD comparison figure: fMRIPrep vs custom
+fig_cmp, ax_cmp = plt.subplots(figsize=(7, 6))
+ax_cmp.scatter(df["mean_fd_fmriprep"], df["mean_fd_custom"],
+               alpha=0.8, edgecolors="white", linewidths=0.5, color="steelblue")
+lim_max = max(df["mean_fd_fmriprep"].max(), df["mean_fd_custom"].max()) * 1.1
+ax_cmp.plot([0, lim_max], [0, lim_max], color="black", linestyle="--",
+            linewidth=1, label="y = x")
+corr = df["mean_fd_fmriprep"].corr(df["mean_fd_custom"])
+ratio = (df["mean_fd_custom"] / df["mean_fd_fmriprep"]).mean()
+ax_cmp.set_xlabel("Mean FD — fMRIPrep (mm)")
+ax_cmp.set_ylabel("Mean FD — Custom filtered (mm)")
+ax_cmp.set_title("Effect of respiratory filtering on mean FD")
+ax_cmp.legend(fontsize=8)
+ax_cmp.set_xlim(0, lim_max)
+ax_cmp.set_ylim(0, lim_max)
+ax_cmp.text(0.05, 0.92, f"r = {corr:.3f}   ratio = {ratio:.3f}",
+            transform=ax_cmp.transAxes, fontsize=9)
+plt.tight_layout()
+cmp_fig_path = FIGURES_GROUP / "fd_comparison.png"
+plt.savefig(cmp_fig_path, dpi=300, bbox_inches="tight")
+plt.close(fig_cmp)
+print(f"FD comparison figure saved: {cmp_fig_path}")
+
+print(f"\n── FD filtering effect ──")
+print(f"  Pearson r (fMRIPrep vs custom) : {corr:.4f}")
+print(f"  Mean ratio (custom / fMRIPrep) : {ratio:.4f}")
+print(f"  Mean fMRIPrep FD               : {df['mean_fd_fmriprep'].mean():.4f} mm")
+print(f"  Mean custom FD                 : {df['mean_fd_custom'].mean():.4f} mm")
 
 # Step 6: Final console summary
 total = len(summaries)
