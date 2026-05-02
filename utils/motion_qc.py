@@ -227,11 +227,13 @@ def run_motion_qc(confounds_path, subject_id, session_id, output_dirs,
     print(f"  Indices saved: {npy_path}")
 
     return {
-        "subject":         subject_id,
-        "session":         session_id,
-        "n_frames":        n_frames,
+        "subject":            subject_id,
+        "session":            session_id,
+        "n_frames":           n_frames,
         **stats_fmriprep,
         **stats_custom,
-        "mean_std_dvars":  float(np.nanmean(dvars_raw)),
-        "max_std_dvars":   float(np.nanmax(dvars_raw)),
+        "mean_std_dvars":     float(np.nanmean(dvars_raw)),
+        "max_std_dvars":      float(np.nanmax(dvars_raw)),
+        # Single n_frames_remaining based on custom FD censoring (for downstream scripts)
+        "n_frames_remaining": stats_custom["n_frames_remaining_custom"],
     }

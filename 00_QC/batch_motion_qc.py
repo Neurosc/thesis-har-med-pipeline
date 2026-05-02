@@ -13,7 +13,7 @@ from utils.motion_qc import run_motion_qc
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-HAR_MED_ROOT = Path("/BICNAS2/group-northoff/jkokino/har_med_codes")
+HAR_MED_ROOT = Path(__file__).resolve().parents[1]  # repo root, works from any cwd
 FIGURES_INDIV = HAR_MED_ROOT / "figures" / "individual"
 RESULTS_INDIV = HAR_MED_ROOT / "results" / "individual"
 FIGURES_GROUP = HAR_MED_ROOT / "figures"
@@ -84,10 +84,11 @@ for subject_id, session_id, confounds_path in iterator:
 TSV_COLUMNS = [
     "subject", "session", "n_frames",
     "mean_fd_fmriprep", "median_fd_fmriprep", "max_fd_fmriprep",
-    "n_censored_fmriprep", "pct_censored_fmriprep", "n_frames_remaining_fmriprep",
+    "n_censored_fmriprep", "pct_censored_fmriprep",
     "mean_fd_custom", "median_fd_custom", "max_fd_custom",
-    "n_censored_custom", "pct_censored_custom", "n_frames_remaining_custom",
+    "n_censored_custom", "pct_censored_custom",
     "mean_std_dvars", "max_std_dvars",
+    "n_frames_remaining",  # based on custom FD censoring
 ]
 df = pd.DataFrame(summaries, columns=TSV_COLUMNS)
 tsv_path = RESULTS_GROUP / "motion_summary_all.tsv"
