@@ -29,8 +29,9 @@ def compute_custom_fd(
     tr=1.5,
     bandstop_low=0.2,
     bandstop_high=0.5,
-    backward_diff_n=2,
+    backward_diff_n=1,
     sphere_radius_mm=50.0,
+    verbose=True,
 ):
     """
     Compute Goldberg/Lynch-style FD with respiratory bandstop filtering.
@@ -46,6 +47,11 @@ def compute_custom_fd(
     5. FD = sum of absolute values across all 6 parameters.
 
     Returns 1D array of length n_timepoints (NaN at first backward_diff_n frames).
+
+    Note on backward_diff_n: Goldberg/Lynch used 4-TR differences for HCP data
+    (TR=0.72s). No published guidance supports scaling this to longer TRs. All
+    major pipelines (fMRIPrep, XCP-D, CONN, AFNI) use 1-TR backward differences;
+    the respiratory filter is retained here as the key Goldberg/Lynch contribution.
     """
     missing_motion = [c for c in MOTION_COLS if c not in confounds_df.columns]
     if missing_motion:
@@ -58,10 +64,11 @@ def compute_custom_fd(
 
     if bandstop_high >= nyq:
         clipped = nyq * 0.99
-        print(
-            f"  WARNING: bandstop_high ({bandstop_high} Hz) >= Nyquist "
-            f"({nyq:.4f} Hz). Clipping to {clipped:.4f} Hz."
-        )
+        if verbose:
+            print(
+                f"  WARNING: bandstop_high ({bandstop_high} Hz) >= Nyquist "
+                f"({nyq:.4f} Hz). Clipping to {clipped:.4f} Hz."
+            )
         bandstop_high = clipped
 
     b, a = signal.butter(4, [bandstop_low / nyq, bandstop_high / nyq], btype="bandstop")

@@ -10,9 +10,10 @@ CONFOUNDS_PATH = Path(
     "sub-01/ses-01/func/"
     "sub-01_ses-01_task-rest_desc-confounds_timeseries.tsv.gz"
 )
-_REPO_ROOT  = Path(__file__).resolve().parents[1]  # har_med_codes/, works from any cwd
-FIGURES_DIR = _REPO_ROOT / "figures" / "individual"
-RESULTS_DIR = _REPO_ROOT / "results" / "individual"
+_REPO_ROOT  = Path(__file__).resolve().parents[1]   # har_med_codes/
+_QC_DIR     = _REPO_ROOT / "00_QC"
+FIGURES_DIR = _QC_DIR / "figures" / "individual"
+RESULTS_DIR = _QC_DIR / "results"
 FD_THRESHOLD = 0.3    # mm (Goldberg et al. 2024)
 DVARS_THRESHOLD = 1.5  # std_dvars (Power et al. 2014)
 USE_CUSTOM_FD = True   # Goldberg/Lynch filtered FD (recommended)

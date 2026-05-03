@@ -13,11 +13,11 @@ from utils.motion_qc import run_motion_qc
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-HAR_MED_ROOT = Path(__file__).resolve().parents[1]  # repo root, works from any cwd
-FIGURES_INDIV = HAR_MED_ROOT / "figures" / "individual"
-RESULTS_INDIV = HAR_MED_ROOT / "results" / "individual"
-FIGURES_GROUP = HAR_MED_ROOT / "figures"
-RESULTS_GROUP = HAR_MED_ROOT / "results"
+HAR_MED_ROOT  = Path(__file__).resolve().parents[1]  # repo root, works from any cwd
+_QC_DIR       = HAR_MED_ROOT / "00_QC"
+FIGURES_INDIV = _QC_DIR / "figures" / "individual"   # per-run PNGs
+FIGURES_GROUP = _QC_DIR / "figures"                  # group PNGs
+RESULTS_DIR   = _QC_DIR / "results"                  # TSVs and .npy files
 FD_THRESHOLD = 0.3    # mm (Goldberg et al. 2024)
 DVARS_THRESHOLD = 1.5  # std_dvars (Power et al. 2014)
 TASK = "rest"
@@ -29,7 +29,7 @@ print(
     "and 2-TR backward difference, in addition to fMRIPrep default FD."
 )
 
-for d in (FIGURES_INDIV, RESULTS_INDIV, FIGURES_GROUP, RESULTS_GROUP):
+for d in (FIGURES_INDIV, FIGURES_GROUP, RESULTS_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 # Step 2: Auto-discover subjects and sessions
@@ -59,7 +59,7 @@ try:
 except ImportError:
     iterator = runs
 
-output_dirs = {"figures": FIGURES_INDIV, "results": RESULTS_INDIV}
+output_dirs = {"figures": FIGURES_INDIV, "results": RESULTS_DIR}
 summaries = []
 failed = []
 
@@ -91,7 +91,7 @@ TSV_COLUMNS = [
     "n_frames_remaining",  # based on custom FD censoring
 ]
 df = pd.DataFrame(summaries, columns=TSV_COLUMNS)
-tsv_path = RESULTS_GROUP / "motion_summary_all.tsv"
+tsv_path = RESULTS_DIR / "motion_summary_all.tsv"
 df.to_csv(tsv_path, sep="\t", index=False)
 print("\n── Master summary table ──")
 print(df.to_string())
