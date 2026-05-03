@@ -16,7 +16,7 @@ FIGURES_DIR    = _QC_DIR / "figures"
 RESULTS_DIR    = _QC_DIR / "results"
 FD_THRESHOLDS  = [0.3, 0.5]   # mm — comparison, no threshold decided yet
 TASK           = "rest"
-TR             = 1.5
+TR             = 1.8
 BACKWARD_DIFF_N = 1
 BAD_RUN_PCT    = 50.0          # % censored above which a run is flagged
 # ──────────────────────────────────────────────────────────────────────────────
@@ -25,8 +25,8 @@ for d in (FIGURES_DIR, RESULTS_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
 print(
-    f"Custom FD: respiratory bandstop filter [0.2 Hz – min(0.5, 0.99×Nyquist)], "
-    f"order-4 zero-phase Butterworth, {BACKWARD_DIFF_N}-TR backward difference."
+    f"FD: Power 2012 method — {BACKWARD_DIFF_N}-TR backward difference, "
+    f"50 mm sphere for rotations, TR={TR} s. No respiratory filtering."
 )
 
 # ── Step 1: Discover all confounds files ──────────────────────────────────────

@@ -45,9 +45,9 @@ har_med_codes/
 - Number of subjects: 40
 - Sessions per subject: 2 (ses-01, ses-02)
 - Task name: `rest`
-- TR: 1.5 s
+- TR: 1.8 s
 - Number of volumes per run: 240
-- Total scan duration: 360 s (6 minutes)
+- Total scan duration: 432 s (7.2 minutes)
 - BOLD voxel grid (MNI space): (113, 134, 97)
 - Output space: MNI152NLin2009cAsym
 - fMRIPrep version: 23.0.2

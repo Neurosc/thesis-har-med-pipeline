@@ -26,56 +26,39 @@ def load_confounds(confounds_path):
 
 def compute_custom_fd(
     confounds_df,
-    tr=1.5,
-    bandstop_low=0.2,
-    bandstop_high=0.5,
+    tr=1.8,
+    bandstop_low=None,
+    bandstop_high=None,
     backward_diff_n=1,
     sphere_radius_mm=50.0,
     verbose=True,
 ):
-    """
-    Compute Goldberg/Lynch-style FD with respiratory bandstop filtering.
-
-    Steps:
-    1. Extract 6 motion parameters (trans x/y/z mm, rot x/y/z rad).
-    2. Apply zero-phase Butterworth bandstop filter (order 4) at
-       bandstop_low–bandstop_high Hz. If bandstop_high >= Nyquist,
-       clips to 0.99 * Nyquist with a warning.
-    3. Backward differences over backward_diff_n TRs; first
-       backward_diff_n values are NaN.
-    4. Rotational diffs converted to mm via sphere_radius_mm.
-    5. FD = sum of absolute values across all 6 parameters.
-
-    Returns 1D array of length n_timepoints (NaN at first backward_diff_n frames).
-
-    Note on backward_diff_n: Goldberg/Lynch used 4-TR differences for HCP data
-    (TR=0.72s). No published guidance supports scaling this to longer TRs. All
-    major pipelines (fMRIPrep, XCP-D, CONN, AFNI) use 1-TR backward differences;
-    the respiratory filter is retained here as the key Goldberg/Lynch contribution.
-    """
+    # FD computed per Power et al. 2012: 1-TR backward differences, 50 mm sphere
+    # for rotations. No respiratory filtering (verified empirically via
+    # respiratory_spectrum_check.py).
     missing_motion = [c for c in MOTION_COLS if c not in confounds_df.columns]
     if missing_motion:
         raise ValueError(f"Motion parameter columns missing: {missing_motion}")
 
     params = confounds_df[MOTION_COLS].to_numpy(dtype=float)
 
-    fs = 1.0 / tr
-    nyq = fs / 2.0
-
-    if bandstop_high >= nyq:
-        clipped = nyq * 0.99
-        if verbose:
-            print(
-                f"  WARNING: bandstop_high ({bandstop_high} Hz) >= Nyquist "
-                f"({nyq:.4f} Hz). Clipping to {clipped:.4f} Hz."
-            )
-        bandstop_high = clipped
-
-    b, a = signal.butter(4, [bandstop_low / nyq, bandstop_high / nyq], btype="bandstop")
-
-    filtered = np.empty_like(params)
-    for i in range(params.shape[1]):
-        filtered[:, i] = signal.filtfilt(b, a, params[:, i], padtype="odd")
+    if bandstop_low is not None and bandstop_high is not None:
+        fs = 1.0 / tr
+        nyq = fs / 2.0
+        if bandstop_high >= nyq:
+            clipped = nyq * 0.99
+            if verbose:
+                print(
+                    f"  WARNING: bandstop_high ({bandstop_high} Hz) >= Nyquist "
+                    f"({nyq:.4f} Hz). Clipping to {clipped:.4f} Hz."
+                )
+            bandstop_high = clipped
+        b, a = signal.butter(4, [bandstop_low / nyq, bandstop_high / nyq], btype="bandstop")
+        filtered = np.empty_like(params)
+        for i in range(params.shape[1]):
+            filtered[:, i] = signal.filtfilt(b, a, params[:, i], padtype="odd")
+    else:
+        filtered = params
 
     n = len(filtered)
     diffs = np.full((n, 6), np.nan)
