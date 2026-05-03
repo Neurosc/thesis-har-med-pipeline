@@ -2,7 +2,6 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -106,55 +105,27 @@ def _detect_peak(freqs, psd, band_low, band_high, factor):
     return None
 
 
-def _plot_spectrum_ax(ax, freqs, psd, param, peak_info, is_phase_encode):
-    """Render a single PSD subplot."""
-    color = PARAM_COLOR_MAP[param]
+def _plot_overlay_ax(ax, param_psds, title, xlabel=True):
+    """
+    Plot all 6 motion parameters as overlaid lines on a single axes.
 
-    # Highlight phase-encode panel
-    if is_phase_encode:
-        for spine in ax.spines.values():
-            spine.set_edgecolor("#D65F5F")
-            spine.set_linewidth(2.0)
-        ax.set_facecolor("#fff5f5")
+    param_psds: dict of param → (freqs, psd)
+    trans_y (phase-encode) is drawn with linewidth=2.5; all others linewidth=1.0.
+    """
+    for param, (freqs, psd) in param_psds.items():
+        lw = 2.5 if param == PHASE_ENCODE_PARAM else 1.0
+        ax.plot(freqs, psd, color=PARAM_COLOR_MAP[param], linewidth=lw,
+                label=f"{param} *" if param == PHASE_ENCODE_PARAM else param)
 
-    # Respiratory band
-    ax.axvspan(RESP_BAND_LOW, NYQUIST, color="red", alpha=0.10,
-               label="Resp. band (direct + aliased)")
-
-    # Aliased frequency markers
-    alias_colors = ["#888888", "#aaaaaa", "#bbbbbb", "#cccccc"]
-    for (lbl, af), ac in zip(ALIASED_FREQS.items(), alias_colors):
-        if RESP_BAND_LOW <= af <= NYQUIST:
-            ax.axvline(af, color=ac, linestyle=":", linewidth=0.9)
-
-    # Nyquist line
     ax.axvline(NYQUIST, color="black", linestyle="--", linewidth=1.0,
                label=f"Nyquist ({NYQUIST:.3f} Hz)")
-
-    ax.plot(freqs, psd, color=color, linewidth=1.2)
-
-    # Mark detected peak
-    if peak_info is not None:
-        pf, pr = peak_info
-        psd_at_peak = float(psd[np.argmin(np.abs(freqs - pf))])
-        ax.plot(pf, psd_at_peak, "o", color="red", markersize=5, zorder=5)
-        ax.annotate(
-            f"{pf:.3f} Hz\n({pr:.1f}×)",
-            xy=(pf, psd_at_peak),
-            xytext=(pf + 0.01, psd_at_peak * 1.5),
-            fontsize=6,
-            color="red",
-            arrowprops=dict(arrowstyle="-", color="red", lw=0.6),
-        )
-
     ax.set_yscale("log")
     ax.set_xlim(0, NYQUIST)
-    ax.set_xlabel("Frequency (Hz)", fontsize=7)
-    ax.set_ylabel("Power", fontsize=7)
-    ax.tick_params(labelsize=6)
-
-    title = f"{param} *" if is_phase_encode else param
-    ax.set_title(title, fontsize=9, fontweight="bold" if is_phase_encode else "normal")
+    ax.set_title(title, fontsize=10)
+    if xlabel:
+        ax.set_xlabel("Frequency (Hz)", fontsize=9)
+    ax.set_ylabel("Power", fontsize=9)
+    ax.legend(fontsize=8, loc="upper left", ncol=2)
 
 
 # ── Steps 1–4: Per-run computation and figures ────────────────────────────────
@@ -226,32 +197,15 @@ for subject_id in SUBJECTS_TO_INSPECT:
 
             all_peaks[subject_id][session_id] = run_peak_info
 
-            # Per-run figure
-            fig, axes = plt.subplots(2, 3, figsize=(13, 7))
-            fig.suptitle(
-                f"{label} — motion parameter PSDs  "
-                f"(TR={TR} s, Nyquist={NYQUIST:.3f} Hz)",
-                fontsize=11, y=1.01,
+            # Per-run figure — single axes, all 6 parameters overlaid
+            fig, ax = plt.subplots(figsize=(8, 5))
+            _plot_overlay_ax(
+                ax, run_psds,
+                title=(
+                    f"{label} — motion parameter PSDs  "
+                    f"(TR={TR} s, Nyquist={NYQUIST:.3f} Hz)"
+                ),
             )
-
-            for ax, param in zip(axes.flat, MOTION_COLS):
-                freqs_p, psd_p = run_psds[param]
-                _plot_spectrum_ax(
-                    ax, freqs_p, psd_p, param,
-                    run_peak_info[param],
-                    is_phase_encode=(param == PHASE_ENCODE_PARAM),
-                )
-
-            # Shared legend on first subplot
-            handles = [
-                mpatches.Patch(color="red", alpha=0.25, label="Resp. band (direct + aliased)"),
-                plt.Line2D([0], [0], color="black", linestyle="--", linewidth=1,
-                           label=f"Nyquist ({NYQUIST:.3f} Hz)"),
-                plt.Line2D([0], [0], marker="o", color="red", linestyle="None",
-                           markersize=5, label=f"Peak (>{PEAK_FACTOR:.0f}× baseline)"),
-            ]
-            axes.flat[0].legend(handles=handles, fontsize=6, loc="upper right")
-
             plt.tight_layout()
             fig_path = OUTPUT_DIR / f"{label}_respiratory.png"
             plt.savefig(fig_path, dpi=300, bbox_inches="tight")
@@ -268,42 +222,31 @@ for subject_id in SUBJECTS_TO_INSPECT:
             print(f"  ERROR: {label} — {exc}")
             all_peaks[subject_id][session_id] = None
 
-# ── Step 5: Group summary figure (2 rows × 6 cols) ────────────────────────────
-fig_grp, axes_grp = plt.subplots(
-    2, 6, figsize=(22, 7), sharey="row",
-    gridspec_kw={"hspace": 0.45, "wspace": 0.25},
-)
+# ── Step 5: Group summary figure — 2 panels (low / high), overlaid lines ──────
+fig_grp, (ax_low, ax_high) = plt.subplots(1, 2, figsize=(14, 5))
 fig_grp.suptitle(
-    "Mean PSD by group and parameter — respiratory band shaded  "
+    f"Mean PSD by group — all motion parameters overlaid  "
     f"(TR={TR} s, Nyquist={NYQUIST:.3f} Hz)",
     fontsize=12,
 )
 
-row_labels  = ["Low-motion (n=10 runs)", "High-motion (n=10 runs)"]
-group_keys  = ["low", "high"]
-
-for row_idx, (group_key, row_label) in enumerate(zip(group_keys, row_labels)):
-    for col_idx, param in enumerate(MOTION_COLS):
-        ax = axes_grp[row_idx, col_idx]
-        is_pe = param == PHASE_ENCODE_PARAM
-
+for ax, group_key, title in [
+    (ax_low,  "low",  "Low-motion subjects (n=10 runs)"),
+    (ax_high, "high", "High-motion subjects (n=10 runs)"),
+]:
+    mean_psds = {}
+    for param in MOTION_COLS:
         arrays = group_psds[group_key][param]
-        if arrays:
-            min_len = min(len(a) for a in arrays)
-            stack = np.stack([a[:min_len] for a in arrays])
-            mean_psd = np.mean(stack, axis=0)
-            f_plot   = freqs_ref[:min_len] if freqs_ref is not None else \
-                       np.linspace(0, NYQUIST, min_len)
-            _plot_spectrum_ax(ax, f_plot, mean_psd, param, None, is_pe)
+        if not arrays:
+            continue
+        min_len = min(len(a) for a in arrays)
+        stack = np.stack([a[:min_len] for a in arrays])
+        f_plot = freqs_ref[:min_len] if freqs_ref is not None else \
+                 np.linspace(0, NYQUIST, min_len)
+        mean_psds[param] = (f_plot, np.mean(stack, axis=0))
+    _plot_overlay_ax(ax, mean_psds, title=title)
 
-        if col_idx == 0:
-            ax.set_ylabel(f"Power\n{row_label}", fontsize=8)
-
-        # Highlight trans_y column title
-        if is_pe:
-            ax.set_title(f"{param} *\n(phase-encode)", fontsize=8,
-                         color="#D65F5F", fontweight="bold")
-
+plt.tight_layout()
 grp_path = OUTPUT_DIR / "group_summary.png"
 plt.savefig(grp_path, dpi=300, bbox_inches="tight")
 plt.close(fig_grp)
