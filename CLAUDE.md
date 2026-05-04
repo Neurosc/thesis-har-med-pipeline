@@ -105,6 +105,13 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
 - DMT vs non-DMT subgroup comparison
 
+## Thesis Figure Output
+
+- All thesis-bound figures go to: `00_QC/thesis_figures/supplementary/`
+- Do NOT use `00_QC/figures_thesis/` — that directory was created by mistake and removed
+- Active excluded-subjects panel script: `00_QC/excluded_subjects_panel.py`
+- See `00_QC/thesis_figures/README.md` for the full figure index
+
 ## Things NOT to redo
 - Do not reapply respiratory filter (empirically tested, not needed)
 - Do not switch to 4-TR backward difference (no justification for our TR)
