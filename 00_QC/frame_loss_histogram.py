@@ -10,7 +10,6 @@ from utils.thesis_style import apply_thesis_style, PALETTE
 apply_thesis_style()
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
@@ -43,21 +42,26 @@ ax.hist(
     bins=bins,
     stacked=True,
     color=[PALETTE["group_A_pre"], PALETTE["group_A_post"]],
-    label=["ses-01 (pre)", "ses-02 (post)"],
+    label=["Pre-retreat", "Post-retreat"],
     edgecolor="white",
-    linewidth=0.4,
+    linewidth=0.3,
 )
 
 # Threshold marker only — no label, no shading
 ax.axvline(50, color="#333333", linewidth=0.6, linestyle="--")
 
 ax.set_xlim(0, 100)
-ax.set_xticks([0, 25, 50, 75, 100])
+ax.set_xticks([0, 25, 75, 100])
 ax.set_xlabel("Frame loss (%)")
 ax.set_ylabel("Number of runs")
-ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-ax.legend(loc="upper right")
+counts_01, _ = np.histogram(pct_ses01, bins=bins)
+counts_02, _ = np.histogram(pct_ses02, bins=bins)
+stacked_max = int(np.max(counts_01 + counts_02))
+max_y = int(np.ceil(stacked_max / 4) * 4)
+ax.set_yticks(np.arange(0, max_y + 4, 4))
+
+ax.legend(loc="upper right", fontsize=7)
 
 plt.tight_layout()
 
