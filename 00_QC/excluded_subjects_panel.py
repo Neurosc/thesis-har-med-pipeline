@@ -1,8 +1,11 @@
 import sys
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams["font.family"] = "sans-serif"
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -16,14 +19,16 @@ OUT_PATH      = QC_DIR / "thesis_figures" / "supplementary" / "fig_S_excluded_su
 TASK          = "rest"
 TR            = 1.8
 FD_THRESH     = 0.3
+Y_MAX         = 5.0
 
+# Ordered by % censored descending (sub-12 both sessions first, then sub-26/36/06/08)
 EXCLUDED_RUNS = [
-    ("sub-06", "ses-01"),
-    ("sub-08", "ses-02"),
-    ("sub-12", "ses-01"),
     ("sub-12", "ses-02"),
+    ("sub-12", "ses-01"),
     ("sub-26", "ses-01"),
     ("sub-36", "ses-02"),
+    ("sub-06", "ses-01"),
+    ("sub-08", "ses-02"),
 ]
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -43,37 +48,64 @@ for subject_id, session_id in EXCLUDED_RUNS:
     n_above = int(np.sum(fd[~np.isnan(fd)] > FD_THRESH))
     print(f"  {len(fd)} frames, {n_above} above threshold ({100.0 * n_above / len(fd):.1f}%)")
 
-# ── Shared Y axis: 0 to global max rounded up ──────────────────────────────────
-global_max = max(float(np.nanmax(fd)) for fd in fd_arrays)
-y_upper = float(np.ceil(global_max))
-print(f"\nShared Y-axis: 0 – {y_upper:.1f} mm (global max {global_max:.3f} mm)")
-
 # ── Figure ─────────────────────────────────────────────────────────────────────
 fig, axes = plt.subplots(2, 3, figsize=(14, 6), sharey=True, sharex=True)
-fig.suptitle("Excluded runs (>50% frames censored at FD > 0.3 mm)", fontsize=11)
+
+fig.suptitle(
+    "Runs excluded due to excessive head motion (>50% frames with FD > 0.3 mm)",
+    fontsize=11,
+)
 
 for idx, ((subject_id, session_id), fd) in enumerate(zip(EXCLUDED_RUNS, fd_arrays)):
     ax = axes.flat[idx]
     frames = np.arange(len(fd))
-
-    ax.plot(frames, fd, linewidth=0.9, color="steelblue", zorder=2)
-
     above = ~np.isnan(fd) & (fd > FD_THRESH)
-    ax.scatter(frames[above], fd[above], color="red", s=6, zorder=3, linewidths=0)
-
-    ax.axhline(FD_THRESH, color="black", linestyle="--", linewidth=1.0)
-
     pct_censored = 100.0 * int(np.sum(above)) / len(fd)
-    ax.set_title(f"{subject_id} {session_id} ({pct_censored:.1f}% censored)", fontsize=9)
+
+    # Shaded vertical bands for censored frames
+    ax.fill_between(frames, 0, Y_MAX, where=above,
+                    color="red", alpha=0.25, linewidth=0, zorder=1)
+
+    # FD time series
+    ax.plot(frames, fd, linewidth=1.2, color="#333333", zorder=2)
+
+    # Threshold line with right-edge label
+    ax.axhline(FD_THRESH, color="black", linestyle="--", linewidth=0.8, zorder=3)
+    ax.text(238, FD_THRESH + 0.10, "0.3 mm",
+            fontsize=7, ha="right", va="bottom", color="black", zorder=4)
+
+    # Two-line title: subject (black) + % censored (red)
+    # annotate sits just above the axes; set_title sits above that
+    ax.set_title(f"{subject_id} {session_id}", fontsize=10, color="black", pad=18)
+    ax.annotate(
+        f"{pct_censored:.1f}% censored",
+        xy=(0.5, 1.0), xycoords="axes fraction",
+        xytext=(0, 3), textcoords="offset points",
+        fontsize=9, color="#C0392B", ha="center", va="bottom",
+        clip_on=False, annotation_clip=False,
+    )
 
     ax.set_xlim(0, 240)
-    ax.set_ylim(0, y_upper)
-    ax.tick_params(labelsize=7)
+    ax.set_ylim(0, Y_MAX)
+    ax.tick_params(labelsize=9)
 
-fig.supylabel("FD (mm)", fontsize=10)
-fig.supxlabel("Frame", fontsize=10)
+    if idx % 3 == 0:
+        ax.set_ylabel("FD (mm)", fontsize=9)
+    if idx >= 3:
+        ax.set_xlabel("Frame", fontsize=9)
 
-plt.tight_layout()
+# Single figure-level legend between suptitle and top row
+legend_elements = [
+    Line2D([0], [0], color="#333333", linewidth=1.2, label="FD"),
+    Patch(facecolor="red", alpha=0.25, edgecolor="none",
+          label="Censored frames (FD > 0.3 mm)"),
+    Line2D([0], [0], color="black", linestyle="--", linewidth=0.8,
+           label="Threshold (0.3 mm)"),
+]
+fig.legend(handles=legend_elements, loc="upper center",
+           bbox_to_anchor=(0.5, 0.95), ncol=3, fontsize=9, frameon=False)
+
+plt.tight_layout(rect=[0, 0, 1, 0.85], h_pad=2.5)
 plt.savefig(OUT_PATH, dpi=300, bbox_inches="tight")
 plt.close(fig)
 print(f"\nSaved: {OUT_PATH}")
