@@ -67,6 +67,50 @@ Goldberg, A., Rosario, I., Power, J., Horga, G., & Wengler, K. (2024).
 Strategies for motion- and respiration-robust estimation of fMRI intrinsic
 neural timescales. *Imaging Neuroscience*, 2.
 
+## Decisions Made So Far
+
+### Dataset specifics (corrected)
+- TR is **1.8 s** (NOT 1.5 s — original CLAUDE.md was wrong, corrected after reading BOLD JSON header)
+- Sampling frequency: 0.556 Hz, Nyquist: 0.278 Hz
+- Phase-encoding direction: j (= Y axis, so trans_y is the phase-encode parameter)
+- Volumes per run: 240 → total scan duration: 432 s = 7.2 min
+
+### FD computation
+- Standard Power et al. 2012 FD as computed by fMRIPrep
+- 1-TR backward differences
+- 50 mm sphere for rotation conversion
+- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `00_QC/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
+- Rationale for not using Lynch/Goldberg 4-TR window: no published guidance exists for non-HCP TRs; all major pipelines use 1-TR
+
+### Frame censoring
+- Threshold: **FD > 0.3 mm** (following Goldberg et al. 2024 recommendation for ACW)
+- Rationale: ACW is particularly sensitive to residual tissue-specific effects of motion spikes; supervisor (Ben) recommended sticking to 0.3 mm despite data loss
+
+### Subject exclusion
+- Criterion: any run with >50% frames censored at FD > 0.3 mm → entire subject excluded (within-subject design)
+- **Excluded subjects: sub-06, sub-08, sub-12, sub-26, sub-36** (5 subjects)
+- **Final sample: 35 subjects × 2 sessions = 70 runs**
+- See `00_QC/results/excluded_subjects.tsv` for details
+- Use `utils/subject_filter.py:get_included_subjects()` to filter subject lists in downstream scripts
+
+### Denoising pipeline (planned, following Goldberg et al. 2024)
+- Nuisance regression: WM mean + CSF mean + 6 motion parameters + 6 motion derivatives + spike regressors for high-motion frames
+- Lomb-Scargle interpolation for censored frames
+- Bandpass filter: 0.01–0.1 Hz
+- All applied in a single GLM (not sequentially)
+- GSR: optional, will run with and without
+
+### Final analysis (planned)
+- Autocorrelation Window (ACW) calculation in self vs non-self regions
+- Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
+- DMT vs non-DMT subgroup comparison
+
+## Things NOT to redo
+- Do not reapply respiratory filter (empirically tested, not needed)
+- Do not switch to 4-TR backward difference (no justification for our TR)
+- Do not include excluded subjects in any downstream analysis
+- Do not change FD threshold without consulting supervisor
+
 ## Conventions
 
 - Figures saved as 300 dpi PNG
