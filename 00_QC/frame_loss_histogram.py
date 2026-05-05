@@ -34,7 +34,7 @@ pct_ses02 = df.loc[df[SES_COL] == "ses-02", PCT_COL].to_numpy(dtype=float)
 print(f"ses-01 runs: {len(pct_ses01)}  |  ses-02 runs: {len(pct_ses02)}")
 
 # ── Figure ─────────────────────────────────────────────────────────────────────
-fig, ax = plt.subplots(figsize=(3.5, 2.6))
+fig, ax = plt.subplots(figsize=(3.35, 2.5))
 
 bins = np.arange(0, 105, 5)
 ax.hist(
