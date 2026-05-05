@@ -186,6 +186,119 @@ def _bandpass(
     return sp_signal.filtfilt(b, a, data, axis=1)
 
 
+# ─── Diagnostic helpers ───────────────────────────────────────────────────────
+
+DIAG_DIR = OUT_DIR / "_diagnostic"
+
+
+def _masked_stats(Y: np.ndarray) -> dict:
+    flat = Y.ravel()
+    return {
+        "mean": float(np.nanmean(flat)),
+        "std":  float(np.nanstd(flat)),
+        "min":  float(np.nanmin(flat)),
+        "max":  float(np.nanmax(flat)),
+    }
+
+
+def _save_snapshot(
+    step: int,
+    label: str,
+    Y: np.ndarray,
+    mask_flat: np.ndarray,
+    vol_shape: tuple,
+    affine: np.ndarray,
+    header,
+) -> Path:
+    n_all = len(mask_flat)
+    snap_flat = np.zeros(n_all, dtype=np.float32)
+    snap_flat[mask_flat] = np.nanmean(Y, axis=1).astype(np.float32)
+    out_path = DIAG_DIR / f"step{step:02d}_{label}_mean.nii.gz"
+    nib.save(nib.Nifti1Image(snap_flat.reshape(vol_shape), affine, header), out_path)
+    return out_path
+
+
+def denoise_diagnostic(
+    bold_data: np.ndarray,
+    mask_flat: np.ndarray,
+    confounds_df: pd.DataFrame,
+    spike_idx: np.ndarray,
+    affine: np.ndarray,
+    header,
+) -> None:
+    """Run -GSR pipeline with stats + NIfTI snapshot after each of 5 stages."""
+    DIAG_DIR.mkdir(parents=True, exist_ok=True)
+    vol_shape = bold_data.shape[:3]
+    n_times   = bold_data.shape[3]
+    records   = []
+
+    def _check(step, label, Y):
+        s = _masked_stats(Y)
+        records.append((step, label, s))
+        snap = _save_snapshot(step, label, Y, mask_flat, vol_shape, affine, header)
+        print(f"  [{step}] {label}")
+        print(f"        mean={s['mean']:.6g}  std={s['std']:.6g}"
+              f"  min={s['min']:.6g}  max={s['max']:.6g}")
+        print(f"        snapshot → {snap.name}")
+
+    print("\n" + "─" * 64)
+    print("DIAGNOSTIC PIPELINE  (-GSR, sub-01 ses-01)")
+    print("─" * 64)
+
+    # Step 1: raw BOLD
+    bold_2d = bold_data.reshape(-1, n_times).astype(np.float64)
+    Y_raw   = bold_2d[mask_flat]
+    _check(1, "raw_BOLD_input", Y_raw)
+
+    # Step 2: after voxel detrending
+    X = _build_regressors(confounds_df, spike_idx, include_gsr=False)
+    X = _detrend(X)
+    X = _standardize(X)
+    Y_det = _detrend(Y_raw.T).T
+    _check(2, "after_voxel_detrend", Y_det)
+
+    # Step 3: after GLM residuals
+    betas, _, _, _ = np.linalg.lstsq(X, Y_det.T, rcond=None)
+    residuals = Y_det - (X @ betas).T
+    _check(3, "after_GLM_residuals", residuals)
+
+    # Step 4: after Lomb-Scargle interpolation
+    good_idx   = np.setdiff1d(np.arange(n_times), spike_idx)
+    res_interp = residuals.copy()
+    if len(spike_idx) > 0:
+        res_interp[:, spike_idx] = _lombscargle_interp(
+            residuals, good_idx, spike_idx, n_times, TR
+        )
+    _check(4, "after_LS_interpolation", res_interp)
+
+    # Step 5: after bandpass filter
+    filtered = _bandpass(res_interp, TR, low=BP_LOW, high=BP_HIGH, order=BP_ORDER)
+    _check(5, "after_bandpass_filter", filtered)
+
+    # Summary table
+    print("\n" + "─" * 72)
+    print(f"{'Step':<6} {'Stage':<30} {'mean':>12} {'std':>12} {'min':>12} {'max':>12}")
+    print("─" * 72)
+    for step, label, s in records:
+        print(
+            f"{step:<6} {label:<30} "
+            f"{s['mean']:>12.4g} {s['std']:>12.4g} "
+            f"{s['min']:>12.4g} {s['max']:>12.4g}"
+        )
+    print("─" * 72)
+    print(f"\nSnapshots saved to: {DIAG_DIR}")
+
+    # Flag first explosion (std grows >1000x vs raw)
+    raw_std = records[0][2]["std"]
+    for step, label, s in records[1:]:
+        if s["std"] > raw_std * 1000:
+            print(f"\n*** EXPLOSION at step {step}: {label} ***")
+            print(f"    std: {raw_std:.4g} (raw) → {s['std']:.4g}")
+            break
+    else:
+        print("\nNo explosion >1000x raw std detected.")
+
+
 # ─── Main pipeline function ───────────────────────────────────────────────────
 
 def denoise(
@@ -264,47 +377,8 @@ def main():
     n_censored = len(spike_idx)
     pct        = 100.0 * n_censored / n_frames
 
-    gsr_path   = OUT_DIR / f"{SUBJECT}_{SESSION}_{TASK}_desc-denoisedGSR_bold.nii.gz"
-    nogsr_path = OUT_DIR / f"{SUBJECT}_{SESSION}_{TASK}_desc-denoisedNoGSR_bold.nii.gz"
-
-    print("\nRunning +GSR pipeline...")
-    gsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx, include_gsr=True)
-    nib.save(nib.Nifti1Image(gsr_data, affine, header), gsr_path)
-    print(f"  Saved: {gsr_path}")
-
-    print("Running -GSR pipeline...")
-    nogsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx, include_gsr=False)
-    nib.save(nib.Nifti1Image(nogsr_data, affine, header), nogsr_path)
-    print(f"  Saved: {nogsr_path}")
-
-    n_base = 14
-    summary = (
-        f"\n─── Denoising summary: {SUBJECT}_{SESSION} ───\n"
-        f"Total frames: {n_frames}\n"
-        f"High-motion frames censored: {n_censored} ({pct:.1f}%)\n"
-        f"Number of nuisance regressors: {n_base} (no GSR) or {n_base + 1} (with GSR)"
-        f" + {n_censored} spike regressors\n"
-        f"Bandpass: {BP_LOW}–{BP_HIGH} Hz, Butterworth order {BP_ORDER}\n"
-        f"Output: {gsr_path}\n"
-        f"Output: {nogsr_path}\n"
-    )
-    print(summary)
-
-    log_path = OUT_DIR / f"{SUBJECT}_{SESSION}_denoising_log.txt"
-    log_path.write_text(summary)
-
-    # Sanity check: post-denoising std should be within ~10x of pre-denoising std
-    pre_std   = float(np.std(bold_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
-    nogsr_std = float(np.std(nogsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
-    gsr_std   = float(np.std(gsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
-    print(f"Sanity check: post-denoising std = {nogsr_std:.1f} (expected: similar order to pre-denoising std)")
-    print(f"Pre-denoising std (within brain mask): {pre_std:.1f}")
-    print(f"Post-denoising -GSR std: {nogsr_std:.1f}")
-    print(f"Post-denoising +GSR std: {gsr_std:.1f}")
-    if nogsr_std > pre_std * 10 or gsr_std > pre_std * 10:
-        print("WARNING: post-denoising std is >10x pre-denoising — pipeline may still be broken")
-    elif nogsr_std < pre_std * 0.1 or gsr_std < pre_std * 0.1:
-        print("WARNING: post-denoising std is <0.1x pre-denoising — unexpectedly aggressive denoising")
+    # Diagnostic mode: run -GSR only with per-stage instrumentation
+    denoise_diagnostic(bold_data, mask_flat, confounds_df, spike_idx, affine, header)
 
 
 if __name__ == "__main__":
