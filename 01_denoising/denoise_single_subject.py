@@ -5,17 +5,14 @@ Subject: sub-01, ses-01
 
 Implements Goldberg et al. (2024) strategy:
   - Single GLM with WM, CSF, 6 motion, 6 derivatives, spike regressors (+/- GSR)
-  - Lomb-Scargle interpolation at censored frames (vectorized sinusoidal basis,
-    mathematically equivalent to LombScargle on irregularly-sampled non-censored data)
+  - Lomb-Scargle interpolation at censored frames via astropy.timeseries.LombScargle
+    (frequency grid from autofrequency, VanderPlas 2018; falls back to linear
+    interpolation if the basis is ill-conditioned)
   - Bandpass filter: 0.01-0.1 Hz, Butterworth order 2, zero-phase (filtfilt)
 
 Two output versions (both include spike regressors + interpolation):
   +GSR +censor : desc-denoisedGSR_bold.nii.gz
   -GSR +censor : desc-denoisedNoGSR_bold.nii.gz
-
-DIAGNOSTIC MODE (current):
-  Runs -GSR pipeline only with per-stage sanity checks (stats + NIfTI snapshots).
-  Snapshots saved to results/_diagnostic/. Use to identify where values explode.
 """
 
 import sys
@@ -24,6 +21,7 @@ import pandas as pd
 import nibabel as nib
 from pathlib import Path
 from scipy import signal as sp_signal
+from astropy.timeseries import LombScargle
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -45,8 +43,7 @@ CONFOUNDS_PATH = Path(
     "/sub-01_ses-01_task-rest_desc-confounds_timeseries.tsv.gz"
 )
 
-OUT_DIR  = Path(__file__).resolve().parent / "results"
-DIAG_DIR = OUT_DIR / "_diagnostic"
+OUT_DIR = Path(__file__).resolve().parent / "results"
 
 # ─── Parameters ───────────────────────────────────────────────────────────────
 
@@ -75,14 +72,14 @@ GSR_COL = "global_signal"
 def _detrend(X: np.ndarray) -> np.ndarray:
     """Remove mean + linear trend from each column of X (column = one time series)."""
     n = X.shape[0]
-    t = np.arange(n, dtype=np.float64) - (n - 1) / 2.0  # mean-centred time axis
+    t = np.arange(n, dtype=np.float64) - (n - 1) / 2.0
     D = np.column_stack([np.ones(n), t])
     betas, _, _, _ = np.linalg.lstsq(D, X, rcond=None)
     return X - D @ betas
 
 
 def _standardize(X: np.ndarray) -> np.ndarray:
-    """Z-score each column; constant columns (e.g. zero-padded NaN regressors) kept as-is."""
+    """Z-score each column; constant columns kept as-is."""
     mu = X.mean(axis=0)
     sd = X.std(axis=0, ddof=1)
     sd[sd == 0] = 1.0
@@ -96,17 +93,15 @@ def _build_regressors(
 ) -> np.ndarray:
     """
     Assemble (n_times, n_regressors) nuisance matrix.
-    NaNs replaced with 0 here — before detrending / standardization.
+    NaNs replaced with 0 before detrending / standardization.
     """
     cols = WM_CSF_COLS + MOTION_COLS + DERIV_COLS
     if include_gsr:
         cols = cols + [GSR_COL]
 
     X = confounds_df[cols].to_numpy(dtype=np.float64)
-    # Replace NaN before any arithmetic (first-frame derivatives are NaN)
     X = np.where(np.isnan(X), 0.0, X)
 
-    # One-hot spike regressors: one column per high-motion frame
     n_times = X.shape[0]
     if len(spike_idx) > 0:
         spikes = np.zeros((n_times, len(spike_idx)), dtype=np.float64)
@@ -125,49 +120,57 @@ def _lombscargle_interp(
     tr: float,
 ) -> np.ndarray:
     """
-    Reconstruct residuals at censored frames via sinusoidal basis regression on
-    non-censored frames — the vectorized equivalent of Lomb-Scargle interpolation
-    on irregularly-sampled data (astropy.timeseries.LombScargle or equivalent).
+    Interpolate residuals at censored frames using a sinusoidal basis whose
+    frequency grid comes from astropy LombScargle.autofrequency (VanderPlas 2018).
+    nyquist_factor=1 caps frequencies at the average Nyquist of the good frames.
 
-    Fits a sum-of-sinusoids model (constant + sin/cos at each frequency up to
-    Nyquist) to the non-censored frames, then evaluates the model at the
-    censored frames. Vectorized across all in-mask voxels simultaneously.
+    If the resulting basis is ill-conditioned (cond > 1e8), falls back to
+    per-voxel linear interpolation between non-censored neighbours.
 
     Parameters
     ----------
-    residuals : (n_vox, n_times)  full residual array
-    good_idx  : 1-D int array of non-censored frame indices
-    bad_idx   : 1-D int array of censored frame indices to fill
-    n_times   : total number of frames
+    residuals : (n_vox, n_times)
+    good_idx  : non-censored frame indices
+    bad_idx   : censored frame indices to fill
+    n_times   : total frames
     tr        : TR in seconds
 
     Returns
     -------
-    (n_vox, n_bad)  interpolated values at censored frames
+    (n_vox, n_bad) interpolated values
     """
     t      = np.arange(n_times, dtype=np.float64) * tr
     t_good = t[good_idx]
     t_bad  = t[bad_idx]
     n_good = len(good_idx)
+    n_vox  = residuals.shape[0]
 
-    T_total  = n_times * tr
-    max_freq = 1.0 / (2.0 * tr)   # Nyquist
-    min_freq = 1.0 / T_total      # fundamental frequency
-    # Cap n_freqs so the system is not underdetermined: 2*n_freqs+1 <= n_good
-    n_freqs = min((n_good - 1) // 2, max(1, int(round(max_freq / min_freq))))
-    freqs   = np.linspace(min_freq, max_freq, n_freqs)
+    # Frequency grid: field-standard autofrequency (VanderPlas 2018).
+    # samples_per_peak=5 keeps the grid well-resolved; nyquist_factor=1 prevents
+    # extrapolation above the average Nyquist of the non-censored samples.
+    freqs = LombScargle(t_good, np.ones(n_good)).autofrequency(
+        samples_per_peak=5, nyquist_factor=1
+    )
 
     def _basis(t_pts: np.ndarray) -> np.ndarray:
-        # (n_pts, n_freqs)
         phases = 2.0 * np.pi * t_pts[:, None] * freqs[None, :]
         return np.column_stack([np.ones(len(t_pts)), np.sin(phases), np.cos(phases)])
 
-    X_good = _basis(t_good)   # (n_good, 1+2*n_freqs)
-    X_bad  = _basis(t_bad)    # (n_bad,  1+2*n_freqs)
+    X_good = _basis(t_good)   # (n_good, 1 + 2*n_freqs)
+    X_bad  = _basis(t_bad)    # (n_bad,  1 + 2*n_freqs)
 
-    # Solve for all voxels simultaneously: betas → (1+2*n_freqs, n_vox)
+    # Condition check on the design matrix (same for all voxels).
+    # A near-singular basis produces wildly wrong predictions; linear interpolation
+    # is the safe fallback and sufficient for bandpass pre-conditioning.
+    cond = np.linalg.cond(X_good)
+    if cond > 1e8:
+        result = np.empty((n_vox, len(bad_idx)), dtype=np.float64)
+        for vi in range(n_vox):
+            result[vi] = np.interp(t_bad, t_good, residuals[vi, good_idx])
+        return result
+
     betas, _, _, _ = np.linalg.lstsq(X_good, residuals[:, good_idx].T, rcond=None)
-    return (X_bad @ betas).T   # (n_vox, n_bad)
+    return (X_bad @ betas).T
 
 
 def _bandpass(
@@ -177,134 +180,13 @@ def _bandpass(
     high: float = 0.1,
     order: int = 2,
 ) -> np.ndarray:
-    """Zero-phase Butterworth bandpass filter, applied along the time axis (axis=1)."""
+    """Zero-phase Butterworth bandpass filter along time axis (axis=1)."""
     nyq = 1.0 / (2.0 * tr)
     b, a = sp_signal.butter(order, [low / nyq, high / nyq], btype="bandpass")
     return sp_signal.filtfilt(b, a, data, axis=1)
 
 
-# ─── Diagnostic helpers ───────────────────────────────────────────────────────
-
-def _masked_stats(Y: np.ndarray) -> dict:
-    """Compute stats on a (n_vox, n_times) masked array."""
-    flat = Y.ravel()
-    return {
-        "mean": float(np.nanmean(flat)),
-        "std":  float(np.nanstd(flat)),
-        "min":  float(np.nanmin(flat)),
-        "max":  float(np.nanmax(flat)),
-    }
-
-
-def _save_snapshot(
-    step: int,
-    label: str,
-    Y: np.ndarray,
-    mask_flat: np.ndarray,
-    vol_shape: tuple,
-    affine: np.ndarray,
-    header,
-) -> Path:
-    """Save temporal-mean snapshot as 3D NIfTI to DIAG_DIR."""
-    n_all = len(mask_flat)
-    snap_flat = np.zeros(n_all, dtype=np.float32)
-    snap_flat[mask_flat] = np.nanmean(Y, axis=1).astype(np.float32)
-    snap_vol = snap_flat.reshape(vol_shape)
-    out_path = DIAG_DIR / f"step{step:02d}_{label}_mean.nii.gz"
-    nib.save(nib.Nifti1Image(snap_vol, affine, header), out_path)
-    return out_path
-
-
-# ─── Diagnostic pipeline ──────────────────────────────────────────────────────
-
-def denoise_diagnostic(
-    bold_data: np.ndarray,
-    mask_flat: np.ndarray,
-    confounds_df: pd.DataFrame,
-    spike_idx: np.ndarray,
-    affine: np.ndarray,
-    header,
-) -> None:
-    """
-    Run -GSR pipeline with a sanity check after each stage.
-    Prints stats table and saves mean-volume snapshots to DIAG_DIR.
-    Does NOT fix anything — purely diagnostic.
-    """
-    DIAG_DIR.mkdir(parents=True, exist_ok=True)
-    vol_shape = bold_data.shape[:3]
-    n_times   = bold_data.shape[3]
-
-    records = []   # (step, label, stats_dict)
-
-    def _check(step, label, Y):
-        s = _masked_stats(Y)
-        records.append((step, label, s))
-        snap = _save_snapshot(step, label, Y, mask_flat, vol_shape, affine, header)
-        print(f"  [{step}] {label}")
-        print(f"        mean={s['mean']:.6g}  std={s['std']:.6g}"
-              f"  min={s['min']:.6g}  max={s['max']:.6g}")
-        print(f"        snapshot → {snap.name}")
-
-    # ── Step 1: raw BOLD within mask ──────────────────────────────────────────
-    bold_2d = bold_data.reshape(-1, n_times).astype(np.float64)
-    Y_raw   = bold_2d[mask_flat]   # (n_vox, n_times)
-    print("\n" + "─" * 64)
-    print("DIAGNOSTIC PIPELINE  (-GSR, sub-01 ses-01)")
-    print("─" * 64)
-    _check(1, "raw_BOLD_input", Y_raw)
-
-    # ── Step 2: after voxel detrending ───────────────────────────────────────
-    X = _build_regressors(confounds_df, spike_idx, include_gsr=False)
-    X = _detrend(X)
-    X = _standardize(X)
-
-    Y_det = _detrend(Y_raw.T).T   # (n_vox, n_times)
-    _check(2, "after_voxel_detrend", Y_det)
-
-    # ── Step 3: after GLM regression (residuals) ──────────────────────────────
-    betas, _, _, _ = np.linalg.lstsq(X, Y_det.T, rcond=None)
-    residuals = Y_det - (X @ betas).T   # (n_vox, n_times)
-    _check(3, "after_GLM_residuals", residuals)
-
-    # ── Step 4: after Lomb-Scargle interpolation ──────────────────────────────
-    good_idx = np.setdiff1d(np.arange(n_times), spike_idx)
-    res_interp = residuals.copy()
-    if len(spike_idx) > 0:
-        res_interp[:, spike_idx] = _lombscargle_interp(
-            residuals, good_idx, spike_idx, n_times, TR
-        )
-    _check(4, "after_LS_interpolation", res_interp)
-
-    # ── Step 5: after bandpass filter ─────────────────────────────────────────
-    filtered = _bandpass(res_interp, TR, low=BP_LOW, high=BP_HIGH, order=BP_ORDER)
-    _check(5, "after_bandpass_filter", filtered)
-
-    # ── Summary table ─────────────────────────────────────────────────────────
-    print("\n" + "─" * 64)
-    print(f"{'Step':<6} {'Stage':<30} {'mean':>12} {'std':>12} {'min':>12} {'max':>12}")
-    print("─" * 64)
-    for step, label, s in records:
-        print(
-            f"{step:<6} {label:<30} "
-            f"{s['mean']:>12.4g} {s['std']:>12.4g} "
-            f"{s['min']:>12.4g} {s['max']:>12.4g}"
-        )
-    print("─" * 64)
-    print(f"\nDiagnostic snapshots saved to: {DIAG_DIR}")
-
-    # Report where the explosion first occurs
-    stds = [r[2]["std"] for r in records]
-    explosion_threshold = stds[0] * 1000   # flag if std grows >1000x vs input
-    for i, (step, label, s) in enumerate(records[1:], start=1):
-        if s["std"] > explosion_threshold:
-            print(f"\n*** EXPLOSION DETECTED at step {step}: {label} ***")
-            print(f"    std grew from {stds[0]:.4g} (raw) to {s['std']:.4g}")
-            break
-    else:
-        print("\nNo explosion detected (std stayed within 1000x of raw BOLD).")
-
-
-# ─── Production pipeline ─────────────────────────────────────────────────────
+# ─── Main pipeline function ───────────────────────────────────────────────────
 
 def denoise(
     bold_data: np.ndarray,
@@ -324,45 +206,31 @@ def denoise(
     4. Lomb-Scargle interpolation at censored frames
     5. Bandpass filter 0.01-0.1 Hz (Butterworth order 2, filtfilt)
 
-    Parameters
-    ----------
-    bold_data    : (nx, ny, nz, n_times) float32
-    mask_flat    : (nx*ny*nz,) bool
-    confounds_df : fMRIPrep confounds DataFrame
-    spike_idx    : 1-D int array of high-motion frame indices (FD > threshold)
-    include_gsr  : whether to include global_signal regressor
-
     Returns
     -------
     (nx, ny, nz, n_times) float32 — zeros outside mask, denoised inside
     """
     n_times  = bold_data.shape[3]
-    bold_2d  = bold_data.reshape(-1, n_times).astype(np.float64)  # (n_vox_all, n_times)
-    Y        = bold_2d[mask_flat]                                   # (n_vox, n_times)
+    bold_2d  = bold_data.reshape(-1, n_times).astype(np.float64)
+    Y        = bold_2d[mask_flat]
 
-    # Build nuisance regressor matrix and prepare it
-    X = _build_regressors(confounds_df, spike_idx, include_gsr)    # (n_times, n_reg)
+    X = _build_regressors(confounds_df, spike_idx, include_gsr)
     X = _detrend(X)
     X = _standardize(X)
 
-    # Detrend each voxel time series (columns of Y.T are voxel time series)
-    Y = _detrend(Y.T).T    # (n_vox, n_times)
+    Y = _detrend(Y.T).T
 
-    # Single GLM: fit all voxels simultaneously
-    betas, _, _, _ = np.linalg.lstsq(X, Y.T, rcond=None)          # (n_reg, n_vox)
-    residuals = Y - (X @ betas).T                                   # (n_vox, n_times)
+    betas, _, _, _ = np.linalg.lstsq(X, Y.T, rcond=None)
+    residuals = Y - (X @ betas).T
 
-    # Lomb-Scargle interpolation at censored frames
     good_idx = np.setdiff1d(np.arange(n_times), spike_idx)
     if len(spike_idx) > 0:
         residuals[:, spike_idx] = _lombscargle_interp(
             residuals, good_idx, spike_idx, n_times, TR
         )
 
-    # Bandpass filter (applied after interpolation)
     filtered = _bandpass(residuals, TR, low=BP_LOW, high=BP_HIGH, order=BP_ORDER)
 
-    # Reconstruct full-volume output (zeros outside mask)
     out_2d = np.zeros_like(bold_2d)
     out_2d[mask_flat] = filtered
     return out_2d.reshape(bold_data.shape).astype(np.float32)
@@ -373,7 +241,6 @@ def denoise(
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load BOLD, mask, confounds
     print(f"Loading BOLD:      {BOLD_PATH}")
     bold_img  = nib.load(BOLD_PATH)
     bold_data = bold_img.get_fdata(dtype=np.float32)
@@ -387,7 +254,6 @@ def main():
     print(f"Loading confounds: {CONFOUNDS_PATH}")
     confounds_df = pd.read_csv(CONFOUNDS_PATH, sep="\t")
 
-    # Compute FD and identify high-motion frames
     sys.path.insert(0, str(REPO_ROOT))
     from utils.motion_qc import compute_custom_fd
 
@@ -398,11 +264,47 @@ def main():
     n_censored = len(spike_idx)
     pct        = 100.0 * n_censored / n_frames
 
-    print(f"\nHigh-motion frames (FD > {FD_THRESH} mm): {n_censored} / {n_frames} ({pct:.1f}%)")
-    print(f"n_freqs in LS basis: {min((n_frames - n_censored - 1) // 2, int(round((1/(2*TR)) / (1/(n_frames*TR)))))}")
+    gsr_path   = OUT_DIR / f"{SUBJECT}_{SESSION}_{TASK}_desc-denoisedGSR_bold.nii.gz"
+    nogsr_path = OUT_DIR / f"{SUBJECT}_{SESSION}_{TASK}_desc-denoisedNoGSR_bold.nii.gz"
 
-    # ── Diagnostic run (-GSR only) ────────────────────────────────────────────
-    denoise_diagnostic(bold_data, mask_flat, confounds_df, spike_idx, affine, header)
+    print("\nRunning +GSR pipeline...")
+    gsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx, include_gsr=True)
+    nib.save(nib.Nifti1Image(gsr_data, affine, header), gsr_path)
+    print(f"  Saved: {gsr_path}")
+
+    print("Running -GSR pipeline...")
+    nogsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx, include_gsr=False)
+    nib.save(nib.Nifti1Image(nogsr_data, affine, header), nogsr_path)
+    print(f"  Saved: {nogsr_path}")
+
+    n_base = 14
+    summary = (
+        f"\n─── Denoising summary: {SUBJECT}_{SESSION} ───\n"
+        f"Total frames: {n_frames}\n"
+        f"High-motion frames censored: {n_censored} ({pct:.1f}%)\n"
+        f"Number of nuisance regressors: {n_base} (no GSR) or {n_base + 1} (with GSR)"
+        f" + {n_censored} spike regressors\n"
+        f"Bandpass: {BP_LOW}–{BP_HIGH} Hz, Butterworth order {BP_ORDER}\n"
+        f"Output: {gsr_path}\n"
+        f"Output: {nogsr_path}\n"
+    )
+    print(summary)
+
+    log_path = OUT_DIR / f"{SUBJECT}_{SESSION}_denoising_log.txt"
+    log_path.write_text(summary)
+
+    # Sanity check: post-denoising std should be within ~10x of pre-denoising std
+    pre_std   = float(np.std(bold_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
+    nogsr_std = float(np.std(nogsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
+    gsr_std   = float(np.std(gsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
+    print(f"Sanity check: post-denoising std = {nogsr_std:.1f} (expected: similar order to pre-denoising std)")
+    print(f"Pre-denoising std (within brain mask): {pre_std:.1f}")
+    print(f"Post-denoising -GSR std: {nogsr_std:.1f}")
+    print(f"Post-denoising +GSR std: {gsr_std:.1f}")
+    if nogsr_std > pre_std * 10 or gsr_std > pre_std * 10:
+        print("WARNING: post-denoising std is >10x pre-denoising — pipeline may still be broken")
+    elif nogsr_std < pre_std * 0.1 or gsr_std < pre_std * 0.1:
+        print("WARNING: post-denoising std is <0.1x pre-denoising — unexpectedly aggressive denoising")
 
 
 if __name__ == "__main__":
