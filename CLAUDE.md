@@ -93,12 +93,15 @@ neural timescales. *Imaging Neuroscience*, 2.
 - See `00_QC/results/excluded_subjects.tsv` for details
 - Use `utils/subject_filter.py:get_included_subjects()` to filter subject lists in downstream scripts
 
-### Denoising pipeline (planned, following Goldberg et al. 2024)
-- Nuisance regression: WM mean + CSF mean + 6 motion parameters + 6 motion derivatives + spike regressors for high-motion frames
-- Lomb-Scargle interpolation for censored frames
-- Bandpass filter: 0.01–0.1 Hz
-- All applied in a single GLM (not sequentially)
-- GSR: optional, will run with and without
+### Denoising pipeline (implemented)
+- Volumetric only (MNI152NLin2009cAsym)
+- Single GLM regression with: WM mean, CSF mean, 6 motion + 6 derivatives, spike regressors for FD>0.3 mm frames
+- Two versions: +GSR+censor and -GSR+censor (frame censoring always on)
+- Lomb-Scargle interpolation of censored frames after regression
+- Bandpass 0.01-0.1 Hz, Butterworth order 2, zero-phase, after interpolation
+- Output: `01_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz` and `desc-denoisedNoGSR_bold.nii.gz`
+- Single-subject test script: `01_denoising/denoise_single_subject.py`
+- Batch script: TBD
 
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
