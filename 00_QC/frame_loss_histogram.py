@@ -51,7 +51,8 @@ ax.hist(
 ax.axvline(50, color="#333333", linewidth=0.6, linestyle="--")
 
 ax.set_xlim(0, 100)
-ax.set_xticks([0, 25, 75, 100])
+ax.set_xticks([0, 25, 50, 75, 100])
+ax.set_xticklabels(["", "25", "50", "75", "100"])
 ax.set_xlabel("Frame loss (%)")
 ax.set_ylabel("Number of runs")
 
@@ -59,7 +60,9 @@ counts_01, _ = np.histogram(pct_ses01, bins=bins)
 counts_02, _ = np.histogram(pct_ses02, bins=bins)
 stacked_max = int(np.max(counts_01 + counts_02))
 max_y = int(np.ceil(stacked_max / 4) * 4)
-ax.set_yticks(np.arange(0, max_y + 4, 4))
+yticks = np.arange(0, max_y + 4, 4)
+ax.set_yticks(yticks)
+ax.set_yticklabels(["" if t == 0 else str(t) for t in yticks])
 
 ax.legend(loc="upper right", fontsize=7)
 
