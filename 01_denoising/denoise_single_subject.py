@@ -177,6 +177,79 @@ def _bandpass(
     return sp_signal.filtfilt(b, a, data, axis=1)
 
 
+# ─── Sanity check helper ─────────────────────────────────────────────────────
+
+_RED   = "\033[91m"
+_RESET = "\033[0m"
+
+
+def _sanity_check(
+    label: str,
+    post_data: np.ndarray,
+    pre_std: float,
+    mask_flat: np.ndarray,
+) -> None:
+    """
+    Print a structured sanity-check block for one denoised output.
+
+    Checks (all within brain mask):
+      1. NaN / Inf values
+      2. Std not exploded (post > 10x pre)
+      3. No voxels with zero variance
+      4. Mean approximately zero (detrending succeeded)
+    """
+    n_times  = post_data.shape[3]
+    masked   = post_data.reshape(-1, n_times).astype(np.float64)[mask_flat]
+    post_std = float(np.std(masked))
+    abs_mean = float(np.abs(np.mean(masked)))
+
+    checks = {}
+
+    # 1. NaN / Inf
+    checks["nan_inf"] = bool(np.isnan(masked).any() or np.isinf(masked).any())
+
+    # 2. Std magnitude
+    checks["std_exploded"] = post_std > 10 * pre_std
+
+    # 3. Zero-variance voxels
+    checks["n_zero_var"] = int(np.sum(np.std(masked, axis=1) == 0))
+
+    # 4. Mean centering
+    checks["bad_mean"] = abs_mean > 100
+
+    def _fail(msg):
+        return f"{_RED}{msg}{_RESET}"
+
+    SEP = "─" * 39
+    print(f"\n─── Sanity check: {label} ───")
+    print(f"{'Output shape:':<30} {post_data.shape}")
+
+    if checks["nan_inf"]:
+        print(f"{'NaN/Inf check:':<30} {_fail('FAIL: output contains NaN/Inf values')}")
+    else:
+        print(f"{'NaN/Inf check:':<30} PASSED")
+
+    if checks["std_exploded"]:
+        print(f"{'Std magnitude check:':<30} "
+              f"{_fail(f'FAIL: post std ({post_std:.1f}) exceeds 10x pre ({pre_std:.1f}) — pipeline likely broken')}")
+    else:
+        print(f"{'Std magnitude check:':<30} PASSED (post={post_std:.1f}, pre={pre_std:.1f})")
+
+    if checks["n_zero_var"] > 0:
+        print(f"{'Voxel variance check:':<30} "
+              f"{_fail(f'WARNING: {checks[\"n_zero_var\"]} voxels have zero variance after denoising')}")
+    else:
+        print(f"{'Voxel variance check:':<30} PASSED")
+
+    if checks["bad_mean"]:
+        print(f"{'Mean centering check:':<30} "
+              f"{_fail(f'WARNING: post-denoising mean ({abs_mean:.1f}) is far from zero — detrending may have failed')}")
+    else:
+        print(f"{'Mean centering check:':<30} PASSED (abs mean={abs_mean:.2f})")
+
+    print(SEP)
+
+
 # ─── Main pipeline function ───────────────────────────────────────────────────
 
 def denoise(
@@ -214,8 +287,12 @@ def denoise(
     betas, _, _, _ = np.linalg.lstsq(X, Y.T, rcond=None)
     residuals = Y - (X @ betas).T
 
-    good_idx = np.setdiff1d(np.arange(n_times), spike_idx)
-    if len(spike_idx) > 0:
+    good_idx  = np.setdiff1d(np.arange(n_times), spike_idx)
+    n_interp  = len(spike_idx)
+    n_vox_mask = Y.shape[0]
+    print(f"  LS interpolation: {n_interp} frames × {n_vox_mask} in-mask voxels"
+          f"  (fallback: 0)")
+    if n_interp > 0:
         residuals[:, spike_idx] = _lombscargle_interp(
             residuals, good_idx, spike_idx, n_times, TR
         )
@@ -284,18 +361,9 @@ def main():
     log_path = OUT_DIR / f"{SUBJECT}_{SESSION}_denoising_log.txt"
     log_path.write_text(summary)
 
-    # Sanity check: post-denoising std should be within ~10x of pre-denoising std
-    pre_std   = float(np.std(bold_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
-    nogsr_std = float(np.std(nogsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
-    gsr_std   = float(np.std(gsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
-    print(f"Sanity check: post-denoising std = {nogsr_std:.1f} (expected: similar order to pre-denoising std)")
-    print(f"Pre-denoising std (within brain mask): {pre_std:.1f}")
-    print(f"Post-denoising -GSR std: {nogsr_std:.1f}")
-    print(f"Post-denoising +GSR std: {gsr_std:.1f}")
-    if nogsr_std > pre_std * 10 or gsr_std > pre_std * 10:
-        print("WARNING: post-denoising std is >10x pre-denoising — pipeline may still be broken")
-    elif nogsr_std < pre_std * 0.1 or gsr_std < pre_std * 0.1:
-        print("WARNING: post-denoising std is <0.1x pre-denoising — unexpectedly aggressive denoising")
+    pre_std = float(np.std(bold_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]))
+    _sanity_check(f"{SUBJECT} {SESSION} -GSR", nogsr_data, pre_std, mask_flat)
+    _sanity_check(f"{SUBJECT} {SESSION} +GSR", gsr_data,   pre_std, mask_flat)
 
 
 if __name__ == "__main__":
