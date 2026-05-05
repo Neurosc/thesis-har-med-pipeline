@@ -12,6 +12,10 @@ Implements Goldberg et al. (2024) strategy:
 Two output versions (both include spike regressors + interpolation):
   +GSR +censor : desc-denoisedGSR_bold.nii.gz
   -GSR +censor : desc-denoisedNoGSR_bold.nii.gz
+
+DIAGNOSTIC MODE (current):
+  Runs -GSR pipeline only with per-stage sanity checks (stats + NIfTI snapshots).
+  Snapshots saved to results/_diagnostic/. Use to identify where values explode.
 """
 
 import sys
@@ -41,7 +45,8 @@ CONFOUNDS_PATH = Path(
     "/sub-01_ses-01_task-rest_desc-confounds_timeseries.tsv.gz"
 )
 
-OUT_DIR = Path(__file__).resolve().parent / "results"
+OUT_DIR  = Path(__file__).resolve().parent / "results"
+DIAG_DIR = OUT_DIR / "_diagnostic"
 
 # ─── Parameters ───────────────────────────────────────────────────────────────
 
@@ -178,7 +183,128 @@ def _bandpass(
     return sp_signal.filtfilt(b, a, data, axis=1)
 
 
-# ─── Main pipeline function ───────────────────────────────────────────────────
+# ─── Diagnostic helpers ───────────────────────────────────────────────────────
+
+def _masked_stats(Y: np.ndarray) -> dict:
+    """Compute stats on a (n_vox, n_times) masked array."""
+    flat = Y.ravel()
+    return {
+        "mean": float(np.nanmean(flat)),
+        "std":  float(np.nanstd(flat)),
+        "min":  float(np.nanmin(flat)),
+        "max":  float(np.nanmax(flat)),
+    }
+
+
+def _save_snapshot(
+    step: int,
+    label: str,
+    Y: np.ndarray,
+    mask_flat: np.ndarray,
+    vol_shape: tuple,
+    affine: np.ndarray,
+    header,
+) -> Path:
+    """Save temporal-mean snapshot as 3D NIfTI to DIAG_DIR."""
+    n_all = len(mask_flat)
+    snap_flat = np.zeros(n_all, dtype=np.float32)
+    snap_flat[mask_flat] = np.nanmean(Y, axis=1).astype(np.float32)
+    snap_vol = snap_flat.reshape(vol_shape)
+    out_path = DIAG_DIR / f"step{step:02d}_{label}_mean.nii.gz"
+    nib.save(nib.Nifti1Image(snap_vol, affine, header), out_path)
+    return out_path
+
+
+# ─── Diagnostic pipeline ──────────────────────────────────────────────────────
+
+def denoise_diagnostic(
+    bold_data: np.ndarray,
+    mask_flat: np.ndarray,
+    confounds_df: pd.DataFrame,
+    spike_idx: np.ndarray,
+    affine: np.ndarray,
+    header,
+) -> None:
+    """
+    Run -GSR pipeline with a sanity check after each stage.
+    Prints stats table and saves mean-volume snapshots to DIAG_DIR.
+    Does NOT fix anything — purely diagnostic.
+    """
+    DIAG_DIR.mkdir(parents=True, exist_ok=True)
+    vol_shape = bold_data.shape[:3]
+    n_times   = bold_data.shape[3]
+
+    records = []   # (step, label, stats_dict)
+
+    def _check(step, label, Y):
+        s = _masked_stats(Y)
+        records.append((step, label, s))
+        snap = _save_snapshot(step, label, Y, mask_flat, vol_shape, affine, header)
+        print(f"  [{step}] {label}")
+        print(f"        mean={s['mean']:.6g}  std={s['std']:.6g}"
+              f"  min={s['min']:.6g}  max={s['max']:.6g}")
+        print(f"        snapshot → {snap.name}")
+
+    # ── Step 1: raw BOLD within mask ──────────────────────────────────────────
+    bold_2d = bold_data.reshape(-1, n_times).astype(np.float64)
+    Y_raw   = bold_2d[mask_flat]   # (n_vox, n_times)
+    print("\n" + "─" * 64)
+    print("DIAGNOSTIC PIPELINE  (-GSR, sub-01 ses-01)")
+    print("─" * 64)
+    _check(1, "raw_BOLD_input", Y_raw)
+
+    # ── Step 2: after voxel detrending ───────────────────────────────────────
+    X = _build_regressors(confounds_df, spike_idx, include_gsr=False)
+    X = _detrend(X)
+    X = _standardize(X)
+
+    Y_det = _detrend(Y_raw.T).T   # (n_vox, n_times)
+    _check(2, "after_voxel_detrend", Y_det)
+
+    # ── Step 3: after GLM regression (residuals) ──────────────────────────────
+    betas, _, _, _ = np.linalg.lstsq(X, Y_det.T, rcond=None)
+    residuals = Y_det - (X @ betas).T   # (n_vox, n_times)
+    _check(3, "after_GLM_residuals", residuals)
+
+    # ── Step 4: after Lomb-Scargle interpolation ──────────────────────────────
+    good_idx = np.setdiff1d(np.arange(n_times), spike_idx)
+    res_interp = residuals.copy()
+    if len(spike_idx) > 0:
+        res_interp[:, spike_idx] = _lombscargle_interp(
+            residuals, good_idx, spike_idx, n_times, TR
+        )
+    _check(4, "after_LS_interpolation", res_interp)
+
+    # ── Step 5: after bandpass filter ─────────────────────────────────────────
+    filtered = _bandpass(res_interp, TR, low=BP_LOW, high=BP_HIGH, order=BP_ORDER)
+    _check(5, "after_bandpass_filter", filtered)
+
+    # ── Summary table ─────────────────────────────────────────────────────────
+    print("\n" + "─" * 64)
+    print(f"{'Step':<6} {'Stage':<30} {'mean':>12} {'std':>12} {'min':>12} {'max':>12}")
+    print("─" * 64)
+    for step, label, s in records:
+        print(
+            f"{step:<6} {label:<30} "
+            f"{s['mean']:>12.4g} {s['std']:>12.4g} "
+            f"{s['min']:>12.4g} {s['max']:>12.4g}"
+        )
+    print("─" * 64)
+    print(f"\nDiagnostic snapshots saved to: {DIAG_DIR}")
+
+    # Report where the explosion first occurs
+    stds = [r[2]["std"] for r in records]
+    explosion_threshold = stds[0] * 1000   # flag if std grows >1000x vs input
+    for i, (step, label, s) in enumerate(records[1:], start=1):
+        if s["std"] > explosion_threshold:
+            print(f"\n*** EXPLOSION DETECTED at step {step}: {label} ***")
+            print(f"    std grew from {stds[0]:.4g} (raw) to {s['std']:.4g}")
+            break
+    else:
+        print("\nNo explosion detected (std stayed within 1000x of raw BOLD).")
+
+
+# ─── Production pipeline ─────────────────────────────────────────────────────
 
 def denoise(
     bold_data: np.ndarray,
@@ -272,39 +398,11 @@ def main():
     n_censored = len(spike_idx)
     pct        = 100.0 * n_censored / n_frames
 
-    # Define output paths
-    gsr_path   = OUT_DIR / f"{SUBJECT}_{SESSION}_{TASK}_desc-denoisedGSR_bold.nii.gz"
-    nogsr_path = OUT_DIR / f"{SUBJECT}_{SESSION}_{TASK}_desc-denoisedNoGSR_bold.nii.gz"
+    print(f"\nHigh-motion frames (FD > {FD_THRESH} mm): {n_censored} / {n_frames} ({pct:.1f}%)")
+    print(f"n_freqs in LS basis: {min((n_frames - n_censored - 1) // 2, int(round((1/(2*TR)) / (1/(n_frames*TR)))))}")
 
-    # +GSR +censor
-    print("\nRunning +GSR pipeline...")
-    gsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx, include_gsr=True)
-    nib.save(nib.Nifti1Image(gsr_data, affine, header), gsr_path)
-    print(f"  Saved: {gsr_path}")
-
-    # -GSR +censor
-    print("Running -GSR pipeline...")
-    nogsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx, include_gsr=False)
-    nib.save(nib.Nifti1Image(nogsr_data, affine, header), nogsr_path)
-    print(f"  Saved: {nogsr_path}")
-
-    # Summary
-    n_base = 14   # WM + CSF + 6 motion + 6 derivatives
-    summary = (
-        f"\n─── Denoising summary: {SUBJECT}_{SESSION} ───\n"
-        f"Total frames: {n_frames}\n"
-        f"High-motion frames censored: {n_censored} ({pct:.1f}%)\n"
-        f"Number of nuisance regressors: {n_base} (no GSR) or {n_base + 1} (with GSR)"
-        f" + {n_censored} spike regressors\n"
-        f"Bandpass: {BP_LOW}–{BP_HIGH} Hz, Butterworth order {BP_ORDER}\n"
-        f"Output: {gsr_path}\n"
-        f"Output: {nogsr_path}\n"
-    )
-    print(summary)
-
-    log_path = OUT_DIR / f"{SUBJECT}_{SESSION}_denoising_log.txt"
-    log_path.write_text(summary)
-    print(f"Log saved: {log_path}")
+    # ── Diagnostic run (-GSR only) ────────────────────────────────────────────
+    denoise_diagnostic(bold_data, mask_flat, confounds_df, spike_idx, affine, header)
 
 
 if __name__ == "__main__":
