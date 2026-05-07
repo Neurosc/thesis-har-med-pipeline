@@ -372,25 +372,30 @@ def dvars_calc(Y, scale=1/100, trans_power=1/3,
     return DVARS, Stat
 
 
-# ─── 3. Four-panel QC figure (Mu Reinwald / Afyouni fMRIDiag_plot.m style) ───
+# ─── 3. Four-panel QC figure — Afyouni & Nichols (2018) fMRIDiag style ───────
 
 def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
-                   title=None, figsize=(10, 12),
-                   fd_thresh=0.5, prac_sig_thresh=5.0):
+                   figsize=(8, 10), fd_thresh=0.5, prac_sig_thresh=5.0):
     """
-    Four-panel fMRI diagnostic figure, faithful replication of the Mu Reinwald /
-    Afyouni fMRIDiag_plot.m layout.
+    Four-panel fMRI diagnostic figure. Faithful replication of Afyouni & Nichols
+    (2018) DVARS paper Fig. 5 / fMRIDiag_plot.m.
+
+    No figure title is added (matches reference exactly).
+    Serif font applied locally via rcParams; caller should NOT apply
+    apply_thesis_style() before calling this function.
 
     Panels
     ------
-    1 (narrow) — Motion: FD (black), |Rotation| (cyan), |Translation| (light
-      cyan) on left y-axis; √D-var (thin red) on right y-axis (orange label);
-      red dashed threshold line.
-    2 (large)  — DSE variance: √A-var (green), √D-var (blue), √S-var (gold),
-      E-var (+, purple); left = √Variance, right = % of A-var (nonlinear);
-      gray vertical bands at DVARS p < 0.05.
-    3 (small)  — Δ%D-var (blue); orange bands where |Δ%D-var| > prac_sig_thresh.
-    4 (large)  — Voxel carpet plot, grayscale, per-voxel z-scored.
+    1  Motion:  FD (black) + |Rotation| (cyan) + |Translation| (sky-blue) on
+                left; √D-var bars (red, semi-transparent) on right twinx.
+                Red dashed threshold line at fd_thresh.
+    2  DSE:     √A-var (green), √D-var (blue), √S-var (orange), E-var (+ purple)
+                on left; linear % of A-var scale on right twinx.
+                Gray axvspan bands at DVARS p < 0.05. Horizontal gridlines.
+    3  Δ%D-var: bars (blue) + orange axvspan at |Δ%D-var| > prac_sig_thresh.
+                Y-ticks fixed at -2, 5, 12, 19, 26.
+    4  Carpet:  Grayscale voxel×time, per-voxel z-scored, clipped ±3.
+                Only this panel carries the x-axis label "Scans".
 
     Parameters
     ----------
@@ -398,151 +403,184 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     dvars_stat      : Stat dict from dvars_calc() — needs 'pvals' key
     fd              : (T,) FD time series (mm)
     abs_mov         : (T, 2) — col 0: sum|Δrot|×50 mm, col 1: sum|Δtrans| mm
-    Y_carpet        : (n_vox, T) brain-masked BOLD (raw signal, will be z-scored)
-    title           : figure suptitle string
-    figsize         : (width, height) in inches, default (10, 12)
-    fd_thresh       : reference threshold line on Panel 1 (default 0.5 mm)
-    prac_sig_thresh : |Δ%D-var| threshold for orange bands (default 5.0)
+    Y_carpet        : (n_vox, T) brain-masked BOLD (z-scored/clipped internally)
+    figsize         : (width, height) in inches, default (8, 10)
+    fd_thresh       : threshold reference line on Panel 1, default 0.5 mm
+    prac_sig_thresh : |Δ%D-var| threshold for orange bands, default 5.0
 
     Returns
     -------
     fig : matplotlib.figure.Figure
     """
-    import matplotlib.ticker as mticker
     from matplotlib.patches import Patch
 
+    # ── Serif font — local to this figure (restore on exit) ───────────────────
+    _save = {k: plt.rcParams[k] for k in
+             ('font.family', 'font.serif', 'font.size',
+              'axes.titlesize', 'axes.labelsize',
+              'xtick.labelsize', 'ytick.labelsize', 'legend.fontsize')}
+    plt.rcParams.update({
+        'font.family':      'serif',
+        'font.serif':       ['DejaVu Serif', 'Computer Modern Roman',
+                             'Times New Roman', 'serif'],
+        'font.size':         9,
+        'axes.titlesize':    9,
+        'axes.labelsize':    9,
+        'xtick.labelsize':   8,
+        'ytick.labelsize':   8,
+        'legend.fontsize':   8,
+    })
+
     T  = len(V_dse['Avar_ts'])
-    xA = np.arange(T)       # 0 … T-1  (length T)
-    xD = np.arange(1, T)    # 1 … T-1  (length T-1, D/S-var frame axis)
+    xA = np.arange(T)       # 0 … T-1
+    xD = np.arange(1, T)    # 1 … T-1  (D/S-var frame axis)
 
     fig = plt.figure(figsize=figsize)
     gs  = fig.add_gridspec(
         4, 1,
-        height_ratios=[1.0, 4.5, 1.2, 3.5],
-        hspace=0.0,
-        left=0.10, right=0.88,
-        top=(0.93 if title else 0.97),
-        bottom=0.06,
+        height_ratios=[1, 4, 1, 3],
+        hspace=0.05,
+        left=0.11, right=0.89,
+        top=0.97,  bottom=0.07,
     )
-    ax1 = fig.add_subplot(gs[0])
-    ax2 = fig.add_subplot(gs[1], sharex=ax1)
-    ax3 = fig.add_subplot(gs[2], sharex=ax1)
-    ax4 = fig.add_subplot(gs[3], sharex=ax1)
+    ax1l = fig.add_subplot(gs[0])
+    ax2l = fig.add_subplot(gs[1], sharex=ax1l)
+    ax3  = fig.add_subplot(gs[2], sharex=ax1l)
+    ax4  = fig.add_subplot(gs[3], sharex=ax1l)
 
-    for ax in (ax1, ax2, ax3):
-        ax.tick_params(axis='x', which='both', labelbottom=False, bottom=False)
+    for _ax in (ax1l, ax2l, ax3):
+        _ax.tick_params(axis='x', which='both', labelbottom=False, bottom=False)
+
+    def _hide_spines(ax, keep_left=True, keep_bottom=True):
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(not keep_left)
+        if not keep_bottom:
+            ax.spines['bottom'].set_visible(False)
 
     # ── Panel 1: Motion ────────────────────────────────────────────────────────
     fd_arr = np.asarray(fd, dtype=float)
-    ax1.plot(xA, fd_arr, color='black',   lw=0.7, label='FD',           zorder=3)
+    ax1l.plot(xA, fd_arr,      color='black',   lw=0.7, label='FD',            zorder=3)
     if abs_mov is not None:
         am = np.asarray(abs_mov, dtype=float)
-        ax1.plot(xA, am[:, 0], color='cyan',    lw=0.6, label='|Rotation|',
-                 zorder=2)
-        ax1.plot(xA, am[:, 1], color='#87CEEB', lw=0.6, label='|Translation|',
-                 zorder=2)
-    ax1.axhline(fd_thresh, color='red', lw=1.0, ls='--', zorder=4)
-    ax1.set_ylabel('FD (mm)', fontsize=8)
-    ax1.legend(loc='upper left', fontsize=7, frameon=False,
-               handlelength=1.4, handletextpad=0.4, borderpad=0.2)
+        ax1l.plot(xA, am[:, 0], color='#00FFFF', lw=0.6, label='|Rotation|',   zorder=2)
+        ax1l.plot(xA, am[:, 1], color='#87CEEB', lw=0.6, label='|Translation|', zorder=2)
+    ax1l.axhline(fd_thresh, color='#E41A1C', lw=1.0, ls='--', zorder=4)
+    ax1l.set_ylabel('FD (mm)')
+    ax1l.legend(frameon=True, edgecolor='black', facecolor='white',
+                loc='upper left', handlelength=1.5, handletextpad=0.4)
+    ax1l.spines['top'].set_visible(False)
+    ax1l.spines['right'].set_visible(False)
 
-    # Right axis: √D-var labelled "D (mm)"
+    # Right axis: √D-var as semi-transparent red bars
     sqrt_dvar_p1 = np.sqrt(np.maximum(V_dse['Dvar_ts'], 0.0))
-    ax1r = ax1.twinx()
-    ax1r.plot(xD, sqrt_dvar_p1, color='red', lw=0.5, alpha=0.85, zorder=2)
-    ax1r.set_ylabel('D (mm)', color='darkorange', fontsize=8)
-    ax1r.tick_params(axis='y', colors='darkorange', labelsize=7)
+    ax1r = ax1l.twinx()
+    ax1r.bar(xD, sqrt_dvar_p1, width=0.5, color='red', alpha=0.5, zorder=2)
+    # Ticks at spec values; auto-scale if data exceeds range
+    d_max = float(sqrt_dvar_p1.max()) if len(sqrt_dvar_p1) else 2.5
+    ax1r.set_ylim(0, max(2.5, d_max) * 1.1)
+    ax1r.set_yticks([0.5, 1.0, 1.5, 2.0, 2.5])
+    ax1r.set_ylabel('D (mm)', color='red')
+    ax1r.tick_params(axis='y', colors='red')
     ax1r.spines['right'].set_visible(True)
-    ax1r.spines['right'].set_color('darkorange')
-    ax1r.spines['top'].set_visible(False)
-    ax1r.spines['left'].set_visible(False)
-    ax1r.spines['bottom'].set_visible(False)
+    ax1r.spines['right'].set_color('red')
+    for _s in ('top', 'left', 'bottom'):
+        ax1r.spines[_s].set_visible(False)
 
     # ── Panel 2: DSE variance components ──────────────────────────────────────
-    sqrt_avar = np.sqrt(np.maximum(V_dse['Avar_ts'], 0.0))   # (T,)
-    sqrt_dvar = np.sqrt(np.maximum(V_dse['Dvar_ts'], 0.0))   # (T-1,)
-    sqrt_svar = np.sqrt(np.maximum(V_dse['Svar_ts'], 0.0))   # (T-1,)
-    sqrt_evar = np.sqrt(np.maximum(V_dse['Evar_ts'], 0.0))   # (2,)
-    mean_avar = float(V_dse['Avar_ts'].mean())
+    sqrt_avar    = np.sqrt(np.maximum(V_dse['Avar_ts'], 0.0))  # (T,)
+    sqrt_dvar    = np.sqrt(np.maximum(V_dse['Dvar_ts'], 0.0))  # (T-1,)
+    sqrt_svar    = np.sqrt(np.maximum(V_dse['Svar_ts'], 0.0))  # (T-1,)
+    sqrt_evar    = np.sqrt(np.maximum(V_dse['Evar_ts'], 0.0))  # (2,)
+    mean_sqrt_av = float(sqrt_avar.mean())                      # denominator for %
 
-    # Gray bands: DVARS statistically significant frames (p < 0.05)
+    # Gray axvspan bands: stat-significant frames (DVARS p < 0.05)
     if dvars_stat is not None and 'pvals' in dvars_stat:
-        pvals   = np.asarray(dvars_stat['pvals'])   # (T-1,)
-        sig_xD  = xD[pvals < 0.05]
+        pvals  = np.asarray(dvars_stat['pvals'])                # (T-1,)
+        sig_xD = xD[pvals < 0.05]
         for xf in sig_xD:
-            ax2.axvspan(xf - 0.5, xf + 0.5,
-                        color='gray', alpha=0.25, lw=0, zorder=0)
+            ax2l.axvspan(xf - 0.5, xf + 0.5,
+                         color='#CCCCCC', alpha=0.4, lw=0, zorder=0)
 
-    ax2.plot(xA, sqrt_avar, color='#2CA02C', lw=1.0, label='A-var', zorder=3)
-    ax2.plot(xD, sqrt_dvar, color='#1F77B4', lw=0.8, label='D-var', zorder=3)
-    ax2.plot(xD, sqrt_svar, color='#DAA520', lw=0.9, label='S-var', zorder=3)
-    ax2.plot([0, T - 1], [sqrt_evar[0], sqrt_evar[1]], '+',
-             color='purple', markersize=9, mew=1.5, label='E-var', zorder=4,
-             linestyle='none')
+    # Horizontal gridlines (drawn before lines so lines are on top)
+    ax2l.yaxis.grid(True, color='gray', alpha=0.3, lw=0.5, zorder=0)
+    ax2l.set_axisbelow(True)
 
-    sig_patch = Patch(facecolor='gray', alpha=0.4, label='Statistically Significant')
-    handles, labels_leg = ax2.get_legend_handles_labels()
-    ax2.legend(handles + [sig_patch], labels_leg + ['Statistically Significant'],
-               loc='upper left', fontsize=7, frameon=False,
-               handlelength=1.4, handletextpad=0.4, borderpad=0.2)
-    ax2.set_ylabel('√Variance', fontsize=8)
+    ax2l.plot(xA, sqrt_avar, color='#4DAF4A', lw=1.0, label='A-var', zorder=3)
+    ax2l.plot(xD, sqrt_dvar, color='#377EB8', lw=0.8, label='D-var', zorder=3)
+    ax2l.plot(xD, sqrt_svar, color='#FF7F00', lw=0.9, label='S-var', zorder=3)
+    ax2l.plot([0, T - 1], [sqrt_evar[0], sqrt_evar[1]], '+',
+              color='#984EA3', markersize=12, mew=2.0, linestyle='none',
+              label='E-var', zorder=4)
 
-    # Secondary right y-axis: % of A-var (nonlinear: pct = sqrt_var² / mean_avar * 100)
-    _ma = mean_avar  # captured in closure
+    sig_patch = Patch(facecolor='#CCCCCC', alpha=0.4, label='Statistically Significant')
+    _h, _lb = ax2l.get_legend_handles_labels()
+    ax2l.legend(_h + [sig_patch], _lb + ['Statistically Significant'],
+                frameon=True, edgecolor='black', facecolor='white',
+                loc='upper left', handlelength=1.5, handletextpad=0.4)
+    ax2l.set_ylabel('√Variance')
+    ax2l.spines['top'].set_visible(False)
+    ax2l.spines['right'].set_visible(False)
 
-    def _to_pct(x):
-        return np.asarray(x, dtype=float) ** 2 / _ma * 100.0
-
-    def _from_pct(x):
-        return np.sqrt(np.maximum(np.asarray(x, dtype=float) * _ma / 100.0, 0.0))
-
-    secax2 = ax2.secondary_yaxis('right', functions=(_to_pct, _from_pct))
-    secax2.set_ylabel('% of A-var', color='darkorange', fontsize=8)
-    secax2.tick_params(axis='y', colors='darkorange', labelsize=7)
-    try:
-        secax2.spines['right'].set_color('darkorange')
-    except Exception:
-        pass
+    # Right twinx: linear % of A-var  (pct = 100 × sqrt(Xvar) / mean(sqrt(Avar)))
+    ax2r = ax2l.twinx()
+    ax2r.set_ylabel('% of A-var')
+    ax2r.spines['top'].set_visible(False)
+    ax2r.spines['left'].set_visible(False)
+    ax2r.spines['bottom'].set_visible(False)
+    ax2r.spines['right'].set_visible(True)
+    # Compute left-axis extent from data, then mirror to right with linear scaling
+    all_sv = np.concatenate([sqrt_avar, sqrt_dvar, sqrt_svar, sqrt_evar])
+    y2_lo  = max(0.0, all_sv.min() * 0.95)
+    y2_hi  = all_sv.max() * 1.05
+    ax2l.set_ylim(y2_lo, y2_hi)
+    factor = 100.0 / mean_sqrt_av
+    ax2r.set_ylim(y2_lo * factor, y2_hi * factor)
 
     # ── Panel 3: Δ%D-var ──────────────────────────────────────────────────────
-    delta_dvar = np.asarray(V_dse['Stat']['DeltapDvar'], dtype=float)   # (T-1,)
+    delta_dvar = np.asarray(V_dse['Stat']['DeltapDvar'], dtype=float)  # (T-1,)
 
-    # Orange bands: practically significant frames
     prac_xD = xD[np.abs(delta_dvar) > prac_sig_thresh]
     for xf in prac_xD:
         ax3.axvspan(xf - 0.5, xf + 0.5,
-                    color='orange', alpha=0.35, lw=0, zorder=0)
+                    color='#FF7F00', alpha=0.3, lw=0, zorder=0)
 
-    ax3.plot(xD, delta_dvar, color='#1F77B4', lw=0.7, zorder=3)
-    prac_patch = Patch(facecolor='orange', alpha=0.4, label='Practically Significant')
-    ax3.legend(handles=[prac_patch], loc='upper left', fontsize=7, frameon=False,
-               handlelength=1.4, handletextpad=0.4, borderpad=0.2)
-    ax3.set_ylabel('Δ%D-var', fontsize=8)
+    ax3.bar(xD, delta_dvar, width=1.0, color='#377EB8', alpha=0.85, zorder=2)
+    ax3.set_yticks([-2, 5, 12, 19, 26])
+    prac_patch = Patch(facecolor='#FF7F00', alpha=0.3, label='Practically Significant')
+    ax3.legend(handles=[prac_patch], frameon=True, edgecolor='black',
+               facecolor='white', loc='upper left',
+               handlelength=1.5, handletextpad=0.4)
+    ax3.set_ylabel('Δ%D-var')
+    ax3.spines['top'].set_visible(False)
+    ax3.spines['right'].set_visible(False)
 
     # ── Panel 4: Voxel carpet plot ─────────────────────────────────────────────
     if Y_carpet is not None:
         Y_c = np.asarray(Y_carpet, dtype=np.float32)   # (n_vox, T)
-        mu  = Y_c.mean(axis=1, keepdims=True)
-        sd  = Y_c.std(axis=1,  keepdims=True)
-        sd[sd == 0.0] = 1.0
-        Y_z   = (Y_c - mu) / sd
-        n_vox = Y_z.shape[0]
-        ax4.imshow(Y_z, aspect='auto', cmap='gray',
-                   vmin=-2.0, vmax=2.0, interpolation='nearest',
+        Y_c = Y_c - Y_c.mean(axis=1, keepdims=True)
+        _sd = Y_c.std(axis=1, keepdims=True)
+        _sd[_sd == 0.0] = 1.0
+        Y_c = Y_c / _sd
+        Y_disp = np.clip(Y_c, -3.0, 3.0)
+        n_vox  = Y_disp.shape[0]
+        ax4.imshow(Y_disp, cmap='gray', aspect='auto',
+                   vmin=-3.0, vmax=3.0, interpolation='nearest',
                    rasterized=True)
-        # Y-axis: tick labels in ×10⁵ units
-        tick_step = max(1, n_vox // 4)
-        yticks = np.arange(0, n_vox + 1, tick_step)
-        ax4.set_yticks(yticks)
-        ax4.set_yticklabels([f'{v * 1e-5:.1f}' for v in yticks], fontsize=7)
-        ax4.text(-0.085, 1.0, '×10⁵', transform=ax4.transAxes,
-                 va='bottom', ha='left', fontsize=7)
-    ax4.set_ylabel('Voxels', fontsize=8)
-    ax4.set_xlabel('Scans',  fontsize=8)
+        # Y-axis in ×10⁵ units
+        _step  = max(1, n_vox // 4)
+        _ytix  = np.arange(_step, n_vox + 1, _step)
+        ax4.set_yticks(_ytix)
+        ax4.set_yticklabels([f'{v * 1e-5:.1f}' for v in _ytix])
+        ax4.text(-0.065, 1.0, '×10⁵', transform=ax4.transAxes,
+                 va='bottom', ha='left', fontsize=8)
+    ax4.set_ylabel('Voxels')
+    ax4.set_xlabel('Scans')
+    ax4.spines['top'].set_visible(False)
+    ax4.spines['right'].set_visible(False)
 
-    ax1.set_xlim(0, T - 1)
+    ax1l.set_xlim(0, T - 1)
 
-    if title:
-        fig.suptitle(title, fontsize=10, fontweight='normal')
+    # Restore rcParams so caller is not affected
+    plt.rcParams.update(_save)
 
     return fig
