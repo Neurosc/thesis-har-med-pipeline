@@ -436,6 +436,7 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     xD = np.arange(1, T)    # 1 … T-1  (D/S-var frame axis)
 
     fig = plt.figure(figsize=figsize)
+    fig.patch.set_facecolor('white')
     gs  = fig.add_gridspec(
         4, 1,
         height_ratios=[1, 4, 1, 3],
@@ -448,43 +449,28 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     ax3  = fig.add_subplot(gs[2], sharex=ax1l)
     ax4  = fig.add_subplot(gs[3], sharex=ax1l)
 
+    # Fix 1: opaque white backgrounds on all panels
+    for _ax in (ax1l, ax2l, ax3, ax4):
+        _ax.set_facecolor('white')
+
     for _ax in (ax1l, ax2l, ax3):
         _ax.tick_params(axis='x', which='both', labelbottom=False, bottom=False)
 
-    def _hide_spines(ax, keep_left=True, keep_bottom=True):
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(not keep_left)
-        if not keep_bottom:
-            ax.spines['bottom'].set_visible(False)
-
-    # ── Panel 1: Motion ────────────────────────────────────────────────────────
+    # ── Panel 1: Motion only — FD, |Rotation|, |Translation| ─────────────────
+    # Fix 5: no D-var twinx; single clean panel
     fd_arr = np.asarray(fd, dtype=float)
-    ax1l.plot(xA, fd_arr,      color='black',   lw=0.7, label='FD',            zorder=3)
+    ax1l.plot(xA, fd_arr,      color='black',   lw=1.0, label='FD',            zorder=3)
     if abs_mov is not None:
         am = np.asarray(abs_mov, dtype=float)
-        ax1l.plot(xA, am[:, 0], color='#00FFFF', lw=0.6, label='|Rotation|',   zorder=2)
-        ax1l.plot(xA, am[:, 1], color='#87CEEB', lw=0.6, label='|Translation|', zorder=2)
-    ax1l.axhline(fd_thresh, color='#E41A1C', lw=1.0, ls='--', zorder=4)
+        ax1l.plot(xA, am[:, 0], color='#00FFFF', lw=1.0, label='|Rotation|',   zorder=2)
+        ax1l.plot(xA, am[:, 1], color='#87CEEB', lw=1.0, label='|Translation|', zorder=2)
+    # Fix 2: threshold line lw=1.5
+    ax1l.axhline(fd_thresh, color='#E41A1C', lw=1.5, ls='--', zorder=4)
     ax1l.set_ylabel('FD (mm)')
     ax1l.legend(frameon=True, edgecolor='black', facecolor='white',
                 loc='upper left', handlelength=1.5, handletextpad=0.4)
     ax1l.spines['top'].set_visible(False)
     ax1l.spines['right'].set_visible(False)
-
-    # Right axis: √D-var as semi-transparent red bars
-    sqrt_dvar_p1 = np.sqrt(np.maximum(V_dse['Dvar_ts'], 0.0))
-    ax1r = ax1l.twinx()
-    ax1r.bar(xD, sqrt_dvar_p1, width=0.5, color='red', alpha=0.5, zorder=2)
-    # Ticks at spec values; auto-scale if data exceeds range
-    d_max = float(sqrt_dvar_p1.max()) if len(sqrt_dvar_p1) else 2.5
-    ax1r.set_ylim(0, max(2.5, d_max) * 1.1)
-    ax1r.set_yticks([0.5, 1.0, 1.5, 2.0, 2.5])
-    ax1r.set_ylabel('D (mm)', color='red')
-    ax1r.tick_params(axis='y', colors='red')
-    ax1r.spines['right'].set_visible(True)
-    ax1r.spines['right'].set_color('red')
-    for _s in ('top', 'left', 'bottom'):
-        ax1r.spines[_s].set_visible(False)
 
     # ── Panel 2: DSE variance components ──────────────────────────────────────
     sqrt_avar    = np.sqrt(np.maximum(V_dse['Avar_ts'], 0.0))  # (T,)
@@ -493,26 +479,28 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     sqrt_evar    = np.sqrt(np.maximum(V_dse['Evar_ts'], 0.0))  # (2,)
     mean_sqrt_av = float(sqrt_avar.mean())                      # denominator for %
 
-    # Gray axvspan bands: stat-significant frames (DVARS p < 0.05)
+    # Fix 4: darker gray stat-sig bands (#888888, alpha=0.5)
     if dvars_stat is not None and 'pvals' in dvars_stat:
         pvals  = np.asarray(dvars_stat['pvals'])                # (T-1,)
         sig_xD = xD[pvals < 0.05]
         for xf in sig_xD:
             ax2l.axvspan(xf - 0.5, xf + 0.5,
-                         color='#CCCCCC', alpha=0.4, lw=0, zorder=0)
+                         color='#888888', alpha=0.5, lw=0, zorder=0)
 
-    # Horizontal gridlines (drawn before lines so lines are on top)
+    # Horizontal gridlines
     ax2l.yaxis.grid(True, color='gray', alpha=0.3, lw=0.5, zorder=0)
     ax2l.set_axisbelow(True)
 
-    ax2l.plot(xA, sqrt_avar, color='#4DAF4A', lw=1.0, label='A-var', zorder=3)
-    ax2l.plot(xD, sqrt_dvar, color='#377EB8', lw=0.8, label='D-var', zorder=3)
-    ax2l.plot(xD, sqrt_svar, color='#FF7F00', lw=0.9, label='S-var', zorder=3)
+    # Fix 2: DSE traces lw=1.2
+    ax2l.plot(xA, sqrt_avar, color='#4DAF4A', lw=1.2, label='A-var', zorder=3)
+    ax2l.plot(xD, sqrt_dvar, color='#377EB8', lw=1.2, label='D-var', zorder=3)
+    ax2l.plot(xD, sqrt_svar, color='#FF7F00', lw=1.2, label='S-var', zorder=3)
     ax2l.plot([0, T - 1], [sqrt_evar[0], sqrt_evar[1]], '+',
               color='#984EA3', markersize=12, mew=2.0, linestyle='none',
               label='E-var', zorder=4)
 
-    sig_patch = Patch(facecolor='#CCCCCC', alpha=0.4, label='Statistically Significant')
+    # Fix 4: legend patch matches darker gray
+    sig_patch = Patch(facecolor='#888888', alpha=0.5, label='Statistically Significant')
     _h, _lb = ax2l.get_legend_handles_labels()
     ax2l.legend(_h + [sig_patch], _lb + ['Statistically Significant'],
                 frameon=True, edgecolor='black', facecolor='white',
@@ -523,12 +511,12 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
 
     # Right twinx: linear % of A-var  (pct = 100 × sqrt(Xvar) / mean(sqrt(Avar)))
     ax2r = ax2l.twinx()
+    ax2r.set_facecolor('none')   # transparent so ax2l white shows through
     ax2r.set_ylabel('% of A-var')
     ax2r.spines['top'].set_visible(False)
     ax2r.spines['left'].set_visible(False)
     ax2r.spines['bottom'].set_visible(False)
     ax2r.spines['right'].set_visible(True)
-    # Compute left-axis extent from data, then mirror to right with linear scaling
     all_sv = np.concatenate([sqrt_avar, sqrt_dvar, sqrt_svar, sqrt_evar])
     y2_lo  = max(0.0, all_sv.min() * 0.95)
     y2_hi  = all_sv.max() * 1.05
@@ -539,14 +527,16 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     # ── Panel 3: Δ%D-var ──────────────────────────────────────────────────────
     delta_dvar = np.asarray(V_dse['Stat']['DeltapDvar'], dtype=float)  # (T-1,)
 
+    # Fix 3: prac-sig bands red #E41A1C (was orange #FF7F00)
     prac_xD = xD[np.abs(delta_dvar) > prac_sig_thresh]
     for xf in prac_xD:
         ax3.axvspan(xf - 0.5, xf + 0.5,
-                    color='#FF7F00', alpha=0.3, lw=0, zorder=0)
+                    color='#E41A1C', alpha=0.3, lw=0, zorder=0)
 
     ax3.bar(xD, delta_dvar, width=1.0, color='#377EB8', alpha=0.85, zorder=2)
     ax3.set_yticks([-2, 5, 12, 19, 26])
-    prac_patch = Patch(facecolor='#FF7F00', alpha=0.3, label='Practically Significant')
+    # Fix 3: legend patch red
+    prac_patch = Patch(facecolor='#E41A1C', alpha=0.3, label='Practically Significant')
     ax3.legend(handles=[prac_patch], frameon=True, edgecolor='black',
                facecolor='white', loc='upper left',
                handlelength=1.5, handletextpad=0.4)
@@ -566,7 +556,6 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
         ax4.imshow(Y_disp, cmap='gray', aspect='auto',
                    vmin=-3.0, vmax=3.0, interpolation='nearest',
                    rasterized=True)
-        # Y-axis in ×10⁵ units
         _step  = max(1, n_vox // 4)
         _ytix  = np.arange(_step, n_vox + 1, _step)
         ax4.set_yticks(_ytix)
