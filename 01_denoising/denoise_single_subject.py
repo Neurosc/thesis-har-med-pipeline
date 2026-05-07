@@ -5,10 +5,9 @@ Subject: sub-01, ses-01
 
 Implements Goldberg et al. (2024) strategy:
   - Single GLM with WM, CSF, 6 motion, 6 derivatives, spike regressors (+/- GSR)
-  - Lomb-Scargle interpolation at censored frames: frequency grid from
-    astropy LombScargle.autofrequency, capped at n_good//4 to keep the
-    sinusoidal basis well-overdetermined (VanderPlas 2018)
-  - Bandpass filter: 0.01-0.1 Hz, Butterworth order 2, zero-phase (filtfilt)
+  - Lomb-Scargle interpolation + bandpass: faithful Python port of CBIG_preproc_censor.m
+    (Jingwei Li, Yeo Lab; Power et al. 2014 Eq. 3-4 supplementary).
+    Bandpass 0.01-0.1 Hz applied via frequency-domain masking inside LS (no Butterworth).
 
 Two output versions (both include spike regressors + interpolation):
   +GSR +censor : desc-denoisedGSR_bold.nii.gz
@@ -20,8 +19,6 @@ import numpy as np
 import pandas as pd
 import nibabel as nib
 from pathlib import Path
-from scipy import signal as sp_signal
-from astropy.timeseries import LombScargle
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -51,11 +48,13 @@ TR        = 1.8   # seconds (verified from BOLD JSON header, NOT 1.5)
 FD_THRESH = 0.3   # mm — Goldberg et al. 2024 recommendation for ACW
 BP_LOW    = 0.01  # Hz
 BP_HIGH   = 0.1   # Hz
-BP_ORDER  = 2
 
 SUBJECT = "sub-01"
 SESSION = "ses-01"
 TASK    = "task-rest"
+
+LS_OVERSAMPLE_FAC = 8
+LS_BATCH_SIZE     = 5000   # voxels per batch to avoid OOM
 
 # fMRIPrep confound column names
 WM_CSF_COLS = ["white_matter", "csf"]
@@ -112,69 +111,97 @@ def _build_regressors(
     return X
 
 
-def _lombscargle_interp(
-    residuals: np.ndarray,
-    good_idx: np.ndarray,
-    bad_idx: np.ndarray,
-    n_times: int,
-    tr: float,
-) -> np.ndarray:
+def _cbig_lomb_scargle_bandpass(
+    in_series: np.ndarray,       # (num_in_time, nChannel) — good-frame data
+    in_sample_time: np.ndarray,  # (num_in_time,) — times of good frames
+    out_sample_time: np.ndarray, # (num_out_time,) — times of all frames
+    outliers: np.ndarray,        # (num_out_time,) int — 1=censored, 0=good
+    low_f: float = 0.01,
+    high_f: float = 0.1,
+    oversample_fac: int = 8,
+) -> tuple:
     """
-    Interpolate residuals at censored frames using a sinusoidal basis.
+    Faithful Python port of CBIG_preproc_censor.m (Jingwei Li, Yeo Lab CBIG).
 
-    Frequency grid from astropy LombScargle.autofrequency (VanderPlas 2018),
-    subsampled to at most n_good//4 frequencies so the basis stays
-    well-overdetermined (≥2x more data points than parameters).
+    Lomb-Scargle interpolation of censored frames with simultaneous bandpass
+    filtering via frequency-domain masking (Power et al. 2014, Eq. 3-4 suppl.).
 
-    Parameters
-    ----------
-    residuals : (n_vox, n_times)
-    good_idx  : non-censored frame indices
-    bad_idx   : censored frame indices to fill
-    n_times   : total frames
-    tr        : TR in seconds
+    Frequency grid:  f = 1/(T*ofac) : 1/(T*ofac) : N_uncen/(2*T)
+    Phase shift tau: makes cos/sin orthogonal on the irregular time grid.
+    Coefficients:    diagonal projection (Eq. 3) — no cross-frequency coupling.
+    Reconstruction:  Eq. 4; bandpass by zeroing out-of-band coefficients.
+    Std correction:  stdfac = input_std / output_std at good frames, applied twice.
 
     Returns
     -------
-    (n_vox, n_bad) interpolated values
+    out_bp     : (num_out_time, nChannel) — bandpass-filtered reconstruction
+    interm_out : (num_out_time, nChannel) — full-spectrum reconstruction
     """
-    t      = np.arange(n_times, dtype=np.float64) * tr
-    t_good = t[good_idx]
-    t_bad  = t[bad_idx]
-    n_good = len(good_idx)
+    num_in_time, nChannel = in_series.shape
 
-    # Full autofrequency grid, then cap to n_good//4 to keep the sinusoidal
-    # basis overdetermined. Subsampling evenly preserves spectral coverage.
-    all_freqs = LombScargle(t_good, np.ones(n_good)).autofrequency(
-        samples_per_peak=5, nyquist_factor=1
-    )
-    n_cap  = max(1, n_good // 4)
-    idx    = np.round(np.linspace(0, len(all_freqs) - 1, n_cap)).astype(int)
-    freqs  = all_freqs[idx]   # (n_cap,) — evenly distributed across the grid
+    # Mean-subtract (MATLAB: input_mean = mean(in_series,1))
+    input_mean = in_series.mean(axis=0)              # (nChannel,)
+    # N-normalised std to match MATLAB std(x,1)
+    input_std  = in_series.std(axis=0, ddof=0)       # (nChannel,)
+    data       = in_series - input_mean               # (num_in_time, nChannel)
 
-    def _basis(t_pts: np.ndarray) -> np.ndarray:
-        phases = 2.0 * np.pi * t_pts[:, None] * freqs[None, :]
-        return np.column_stack([np.ones(len(t_pts)), np.sin(phases), np.cos(phases)])
+    # Frequency grid (MATLAB colon: df : df : N/(2*T))
+    T      = in_sample_time.max() - in_sample_time.min()
+    df     = 1.0 / (T * oversample_fac)
+    # n_freq = floor(N_uncen * ofac / 2) — exact integer equivalent
+    n_freq = int(num_in_time * oversample_fac / 2)
+    f      = np.arange(1, n_freq + 1) * df           # (num_freq_bin,)
+    w      = 2.0 * np.pi * f                          # (num_freq_bin,)
 
-    X_good = _basis(t_good)   # (n_good, 1 + 2*n_cap)
-    X_bad  = _basis(t_bad)    # (n_bad,  1 + 2*n_cap)
+    # Phase shift tau per frequency (Scargle 1982)
+    # tau = atan2(sum(sin(2wt)), sum(cos(2wt))) / (2w)
+    phase_2w = 2.0 * w[:, None] * in_sample_time[None, :]   # (num_freq_bin, num_in_time)
+    tau = (np.arctan2(np.sin(phase_2w).sum(axis=1),
+                      np.cos(phase_2w).sum(axis=1))
+           / (2.0 * w))                                      # (num_freq_bin,)
 
-    # Vectorized fit: solve for all voxels simultaneously
-    betas, _, _, _ = np.linalg.lstsq(X_good, residuals[:, good_idx].T, rcond=None)
-    return (X_bad @ betas).T   # (n_vox, n_bad)
+    # Sinusoidal basis at input (good) times
+    arg_in = w[:, None] * (in_sample_time[None, :] - tau[:, None])  # (num_freq_bin, num_in_time)
+    cterm  = np.cos(arg_in)   # (num_freq_bin, num_in_time)
+    sterm  = np.sin(arg_in)   # (num_freq_bin, num_in_time)
 
+    # Eq. 3 — diagonal projection coefficients
+    cos_denom = (cterm ** 2).sum(axis=1, keepdims=True)   # (num_freq_bin, 1)
+    sin_denom = (sterm ** 2).sum(axis=1, keepdims=True)   # (num_freq_bin, 1)
+    cos_denom = np.where(cos_denom == 0.0, 1.0, cos_denom)
+    sin_denom = np.where(sin_denom == 0.0, 1.0, sin_denom)
 
-def _bandpass(
-    data: np.ndarray,
-    tr: float,
-    low: float = 0.01,
-    high: float = 0.1,
-    order: int = 2,
-) -> np.ndarray:
-    """Zero-phase Butterworth bandpass filter along time axis (axis=1)."""
-    nyq = 1.0 / (2.0 * tr)
-    b, a = sp_signal.butter(order, [low / nyq, high / nyq], btype="bandpass")
-    return sp_signal.filtfilt(b, a, data, axis=1)
+    # (num_freq_bin, num_in_time) @ (num_in_time, nChannel) = (num_freq_bin, nChannel)
+    cos_coeff = (cterm @ data) / cos_denom   # (num_freq_bin, nChannel)
+    sin_coeff = (sterm @ data) / sin_denom   # (num_freq_bin, nChannel)
+    del cterm, sterm, arg_in, phase_2w
+
+    # Sinusoidal basis at output (all) times
+    arg_out   = w[:, None] * (out_sample_time[None, :] - tau[:, None])  # (num_freq_bin, num_out_time)
+    cterm_new = np.cos(arg_out)   # (num_freq_bin, num_out_time)
+    sterm_new = np.sin(arg_out)   # (num_freq_bin, num_out_time)
+    del arg_out
+
+    # Eq. 4 — full-spectrum reconstruction
+    # (num_out_time, num_freq_bin) @ (num_freq_bin, nChannel) = (num_out_time, nChannel)
+    interm_out = cterm_new.T @ cos_coeff + sterm_new.T @ sin_coeff   # (num_out_time, nChannel)
+
+    # Std correction at good frames (stdfac = input_std / output_std)
+    good_mask = (outliers == 0)
+    out_std   = interm_out[good_mask].std(axis=0, ddof=0)
+    out_std   = np.where(out_std == 0.0, 1.0, out_std)
+    interm_out = interm_out * (input_std / out_std)[None, :]
+
+    # Bandpass: reconstruct using only in-band coefficients (zero out rest)
+    fpass        = ~((f < low_f) | (f > high_f))               # (num_freq_bin,) True = passband
+    out_bp       = (cterm_new[fpass].T @ cos_coeff[fpass]
+                    + sterm_new[fpass].T @ sin_coeff[fpass])    # (num_out_time, nChannel)
+
+    out_std_bp   = out_bp[good_mask].std(axis=0, ddof=0)
+    out_std_bp   = np.where(out_std_bp == 0.0, 1.0, out_std_bp)
+    out_bp       = out_bp * (input_std / out_std_bp)[None, :]
+
+    return out_bp, interm_out   # both (num_out_time, nChannel)
 
 
 # ─── Sanity check helper ─────────────────────────────────────────────────────
@@ -204,18 +231,10 @@ def _sanity_check(
     abs_mean = float(np.abs(np.mean(masked)))
 
     checks = {}
-
-    # 1. NaN / Inf
-    checks["nan_inf"] = bool(np.isnan(masked).any() or np.isinf(masked).any())
-
-    # 2. Std magnitude
+    checks["nan_inf"]      = bool(np.isnan(masked).any() or np.isinf(masked).any())
     checks["std_exploded"] = post_std > 10 * pre_std
-
-    # 3. Zero-variance voxels
-    checks["n_zero_var"] = int(np.sum(np.std(masked, axis=1) == 0))
-
-    # 4. Mean centering
-    checks["bad_mean"] = abs_mean > 100
+    checks["n_zero_var"]   = int(np.sum(np.std(masked, axis=1) == 0))
+    checks["bad_mean"]     = abs_mean > 100
 
     def _fail(msg):
         return f"{_RED}{msg}{_RESET}"
@@ -267,8 +286,10 @@ def denoise(
     1. Build & prepare regressor matrix (NaN→0, detrend, z-score)
     2. Detrend BOLD (mean + linear trend per voxel)
     3. Single GLM regression (numpy.linalg.lstsq); output = residuals
-    4. Lomb-Scargle interpolation at censored frames
-    5. Bandpass filter 0.01-0.1 Hz (Butterworth order 2, filtfilt)
+    4. CBIG Lomb-Scargle interpolation + bandpass (batched, ~5000 voxels/batch)
+       Bandpass 0.01–0.1 Hz via frequency-domain masking (no Butterworth)
+
+    5-stage diagnostics printed to stdout for validation.
 
     Returns
     -------
@@ -276,28 +297,70 @@ def denoise(
     """
     n_times  = bold_data.shape[3]
     bold_2d  = bold_data.reshape(-1, n_times).astype(np.float64)
-    Y        = bold_2d[mask_flat]
+    Y        = bold_2d[mask_flat]                                # (n_vox_mask, n_times)
+
+    # ── Stage 1: raw BOLD ──────────────────────────────────────────────────────
+    print(f"  [Stage 1] Raw BOLD std:                    {Y.std():.2f}")
 
     X = _build_regressors(confounds_df, spike_idx, include_gsr)
     X = _detrend(X)
     X = _standardize(X)
 
-    Y = _detrend(Y.T).T
+    Y_det = _detrend(Y.T).T
 
-    betas, _, _, _ = np.linalg.lstsq(X, Y.T, rcond=None)
-    residuals = Y - (X @ betas).T
+    # ── Stage 2: post-detrend ──────────────────────────────────────────────────
+    print(f"  [Stage 2] Post-detrend std:                {Y_det.std():.2f}")
 
-    good_idx  = np.setdiff1d(np.arange(n_times), spike_idx)
-    n_interp  = len(spike_idx)
-    n_vox_mask = Y.shape[0]
-    print(f"  LS interpolation: {n_interp} frames × {n_vox_mask} in-mask voxels"
-          f"  (fallback: 0)")
-    if n_interp > 0:
-        residuals[:, spike_idx] = _lombscargle_interp(
-            residuals, good_idx, spike_idx, n_times, TR
-        )
+    betas, _, _, _ = np.linalg.lstsq(X, Y_det.T, rcond=None)
+    residuals = Y_det - (X @ betas).T                           # (n_vox_mask, n_times)
 
-    filtered = _bandpass(residuals, TR, low=BP_LOW, high=BP_HIGH, order=BP_ORDER)
+    # ── Stage 3: post-GLM ──────────────────────────────────────────────────────
+    print(f"  [Stage 3] Post-GLM residuals std:          {residuals.std():.2f}")
+
+    good_idx = np.setdiff1d(np.arange(n_times), spike_idx)
+    n_good   = len(good_idx)
+    n_interp = len(spike_idx)
+    n_vox    = residuals.shape[0]
+    n_batches = -(-n_vox // LS_BATCH_SIZE)   # ceiling division
+    print(f"  LS: {n_interp} frames censored, {n_good} good frames, "
+          f"{n_vox} in-mask voxels → {n_batches} batch(es) of ≤{LS_BATCH_SIZE}")
+
+    t          = np.arange(n_times, dtype=np.float64) * TR
+    in_sample  = t[good_idx]                                    # (n_good,)
+    out_sample = t                                              # (n_times,)
+    outliers   = np.zeros(n_times, dtype=np.int32)
+    outliers[spike_idx] = 1
+
+    filtered = np.empty_like(residuals)
+    stage4_std = None   # recorded from first batch
+
+    for b_start in range(0, n_vox, LS_BATCH_SIZE):
+        b_end   = min(b_start + LS_BATCH_SIZE, n_vox)
+        in_ser  = residuals[b_start:b_end, :][:, good_idx].T   # (n_good, batch)
+
+        out_bp, interm_out = _cbig_lomb_scargle_bandpass(
+            in_series       = in_ser,
+            in_sample_time  = in_sample,
+            out_sample_time = out_sample,
+            outliers        = outliers,
+            low_f           = BP_LOW,
+            high_f          = BP_HIGH,
+            oversample_fac  = LS_OVERSAMPLE_FAC,
+        )                                                       # each (n_times, batch)
+
+        filtered[b_start:b_end, :] = out_bp.T
+
+        if b_start == 0:
+            stage4_std = float(interm_out.std())
+            print(f"      Batch 1 sample — interm std: {stage4_std:.2f}  "
+                  f"bp std: {float(out_bp.std()):.2f}")
+
+    # ── Stage 4: post-LS full-spectrum (sample from batch 1) ──────────────────
+    print(f"  [Stage 4] Post-LS full-spectrum std:       {stage4_std:.2f}  "
+          f"(first-batch sample)")
+
+    # ── Stage 5: post-LS + bandpass ───────────────────────────────────────────
+    print(f"  [Stage 5] Post-LS+bandpass std:            {filtered.std():.2f}")
 
     out_2d = np.zeros_like(bold_2d)
     out_2d[mask_flat] = filtered
@@ -352,7 +415,8 @@ def main():
         f"High-motion frames censored: {n_censored} ({pct:.1f}%)\n"
         f"Number of nuisance regressors: {n_base} (no GSR) or {n_base + 1} (with GSR)"
         f" + {n_censored} spike regressors\n"
-        f"Bandpass: {BP_LOW}–{BP_HIGH} Hz, Butterworth order {BP_ORDER}\n"
+        f"Bandpass: {BP_LOW}–{BP_HIGH} Hz via Lomb-Scargle frequency mask "
+        f"(oversample_fac={LS_OVERSAMPLE_FAC}, no Butterworth)\n"
         f"Output: {gsr_path}\n"
         f"Output: {nogsr_path}\n"
     )
