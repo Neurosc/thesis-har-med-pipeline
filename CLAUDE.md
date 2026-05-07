@@ -97,11 +97,13 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Volumetric only (MNI152NLin2009cAsym)
 - Single GLM regression with: WM mean, CSF mean, 6 motion + 6 derivatives, spike regressors for FD>0.3 mm frames
 - Two versions: +GSR+censor and -GSR+censor (frame censoring always on)
-- Lomb-Scargle interpolation of censored frames after regression
-- Bandpass 0.01-0.1 Hz, Butterworth order 2, zero-phase, after interpolation
+- Lomb-Scargle interpolation of censored frames after regression; faithful port of CBIG_preproc_censor.m (Jingwei Li, Yeo Lab)
+- Bandpass 0.01–0.1 Hz via frequency-domain masking inside LS (no Butterworth)
 - Output: `01_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz` and `desc-denoisedNoGSR_bold.nii.gz`
-- Single-subject test script: `01_denoising/denoise_single_subject.py`
-- Batch script: TBD
+- Shared core logic: `01_denoising/denoise_core.py` (imported by both scripts below)
+- Single-subject test script: `01_denoising/denoise_single_subject.py` (sub-01 ses-01)
+- Batch script: `01_denoising/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_denoising/results/_batch_log.tsv`
+- DSE/DVARS QC panels: `01_denoising/qc_dse_panels.py` (4 subjects × 2 sessions; output in `01_denoising/figures/dse_panels/`)
 
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
