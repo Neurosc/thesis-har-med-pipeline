@@ -372,125 +372,177 @@ def dvars_calc(Y, scale=1/100, trans_power=1/3,
     return DVARS, Stat
 
 
-# ─── 3. Five-panel QC figure ──────────────────────────────────────────────────
+# ─── 3. Four-panel QC figure (Mu Reinwald / Afyouni fMRIDiag_plot.m style) ───
 
-# Afyouni colour scheme
-_C_D   = '#D62728'   # red   — D (fast variance)
-_C_S   = '#1F77B4'   # blue  — S (slow variance)
-_C_E   = '#7F7F7F'   # grey  — E (edge)
-_C_gD  = '#F7B6B6'   # light red   — global D
-_C_gS  = '#AEC7E8'   # light blue  — global S
-_C_gE  = '#C7C7C7'   # light grey  — global E
-_C_FD  = '#2CA02C'   # green — FD
-_C_ROT = '#8C564B'   # brown — rotation
-_C_TR  = '#BCBD22'   # olive — translation
-
-
-def fmri_diag_plot(V_dse, dvars_stat, fd=None, abs_mov=None,
-                   sig_idx=None, title=None, figsize=(5, 7),
-                   fd_thresh=0.3, axes=None):
+def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
+                   title=None, figsize=(10, 12),
+                   fd_thresh=0.5, prac_sig_thresh=5.0):
     """
-    Five-panel fMRI diagnostic figure. Based on fMRIDiag_plot.m (Afyouni 2018)
-    and mu_test_dvars.m usage pattern.
+    Four-panel fMRI diagnostic figure, faithful replication of the Mu Reinwald /
+    Afyouni fMRIDiag_plot.m layout.
 
-    Reference: Afyouni S. & Nichols T.E., NeuroImage 172 (2018) 585-601.
+    Panels
+    ------
+    1 (narrow) — Motion: FD (black), |Rotation| (cyan), |Translation| (light
+      cyan) on left y-axis; √D-var (thin red) on right y-axis (orange label);
+      red dashed threshold line.
+    2 (large)  — DSE variance: √A-var (green), √D-var (blue), √S-var (gold),
+      E-var (+, purple); left = √Variance, right = % of A-var (nonlinear);
+      gray vertical bands at DVARS p < 0.05.
+    3 (small)  — Δ%D-var (blue); orange bands where |Δ%D-var| > prac_sig_thresh.
+    4 (large)  — Voxel carpet plot, grayscale, per-voxel z-scored.
 
     Parameters
     ----------
-    V_dse      : dict — from dse_decomposition()
-    dvars_stat : dict — Stat sub-dict from dse_decomposition() or from dvars_calc()
-    fd         : (T,) FD time series
-    abs_mov    : (T, 2) — col 0: |Rot|×10 (rad×10), col 1: |Trans| (mm)
-                 Matches MATLAB: [(FD_Stat.AbsRot)*10, FD_Stat.AbsTrans]
-    sig_idx    : 0-indexed frame positions in DVARS space (length T-1) marking
-                 significant timepoints (e.g. pvals < 0.05)
-    title      : panel column title
-    figsize    : (width_in, height_in) used only when axes=None
-    fd_thresh  : horizontal reference line on FD panel
-    axes       : optional (5,) array of pre-created Axes (for embedding in a
-                 larger multi-column figure)
+    V_dse           : dict from dse_decomposition()
+    dvars_stat      : Stat dict from dvars_calc() — needs 'pvals' key
+    fd              : (T,) FD time series (mm)
+    abs_mov         : (T, 2) — col 0: sum|Δrot|×50 mm, col 1: sum|Δtrans| mm
+    Y_carpet        : (n_vox, T) brain-masked BOLD (raw signal, will be z-scored)
+    title           : figure suptitle string
+    figsize         : (width, height) in inches, default (10, 12)
+    fd_thresh       : reference threshold line on Panel 1 (default 0.5 mm)
+    prac_sig_thresh : |Δ%D-var| threshold for orange bands (default 5.0)
 
     Returns
     -------
-    fig : matplotlib Figure
+    fig : matplotlib.figure.Figure
     """
+    import matplotlib.ticker as mticker
+    from matplotlib.patches import Patch
+
     T  = len(V_dse['Avar_ts'])
-    xA = np.arange(T)           # frame axis for A-var (length T)
-    xD = np.arange(1, T)        # frame axis for D/S-var (length T-1), 1-indexed
+    xA = np.arange(T)       # 0 … T-1  (length T)
+    xD = np.arange(1, T)    # 1 … T-1  (length T-1, D/S-var frame axis)
 
-    if axes is None:
-        fig, axes = plt.subplots(
-            5, 1, figsize=figsize, sharex=True,
-            gridspec_kw={'height_ratios': [1.2, 1.2, 1.5, 1.5, 1.5],
-                         'hspace': 0.45}
-        )
-    else:
-        fig = axes[0].get_figure()
+    fig = plt.figure(figsize=figsize)
+    gs  = fig.add_gridspec(
+        4, 1,
+        height_ratios=[1.0, 4.5, 1.2, 3.5],
+        hspace=0.0,
+        left=0.10, right=0.88,
+        top=(0.93 if title else 0.97),
+        bottom=0.06,
+    )
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1], sharex=ax1)
+    ax3 = fig.add_subplot(gs[2], sharex=ax1)
+    ax4 = fig.add_subplot(gs[3], sharex=ax1)
 
-    # ── Panel 1: FD ───────────────────────────────────────────────────────────
-    ax = axes[0]
-    if fd is not None:
-        ax.plot(xA, fd, color=_C_FD, lw=0.9, rasterized=True)
-        ax.axhline(fd_thresh, color='black', lw=0.7, ls='--', alpha=0.6)
-        _fd_nan = np.where(~np.isnan(fd) & (fd > fd_thresh))[0]
-        if len(_fd_nan):
-            ax.scatter(_fd_nan, fd[_fd_nan], color='red', s=6, zorder=4,
-                       linewidths=0)
-    ax.set_ylabel('FD (mm)', fontsize=8)
-    ax.set_title('Framewise Displacement', fontsize=8, pad=2)
+    for ax in (ax1, ax2, ax3):
+        ax.tick_params(axis='x', which='both', labelbottom=False, bottom=False)
 
-    # ── Panel 2: AbsMov ───────────────────────────────────────────────────────
-    ax = axes[1]
+    # ── Panel 1: Motion ────────────────────────────────────────────────────────
+    fd_arr = np.asarray(fd, dtype=float)
+    ax1.plot(xA, fd_arr, color='black',   lw=0.7, label='FD',           zorder=3)
     if abs_mov is not None:
-        am = np.asarray(abs_mov)
-        ax.plot(xA, am[:, 0], color=_C_ROT, lw=0.9, label='|Rot|×10',
-                rasterized=True)
-        ax.plot(xA, am[:, 1], color=_C_TR,  lw=0.9, label='|Trans|',
-                rasterized=True)
-        ax.legend(loc='upper right', fontsize=7, handlelength=1.2)
-    ax.set_ylabel('Motion', fontsize=8)
-    ax.set_title('AbsMov (|Rot|×10, |Trans|)', fontsize=8, pad=2)
+        am = np.asarray(abs_mov, dtype=float)
+        ax1.plot(xA, am[:, 0], color='cyan',    lw=0.6, label='|Rotation|',
+                 zorder=2)
+        ax1.plot(xA, am[:, 1], color='#87CEEB', lw=0.6, label='|Translation|',
+                 zorder=2)
+    ax1.axhline(fd_thresh, color='red', lw=1.0, ls='--', zorder=4)
+    ax1.set_ylabel('FD (mm)', fontsize=8)
+    ax1.legend(loc='upper left', fontsize=7, frameon=False,
+               handlelength=1.4, handletextpad=0.4, borderpad=0.2)
 
-    # ── Panel 3: Δ%D-var with significance markers ────────────────────────────
-    ax = axes[2]
-    dD = dvars_stat.get('DeltapDvar', V_dse['Stat']['DeltapDvar'])
-    ax.plot(xD, dD, color=_C_D, lw=0.9, rasterized=True)
-    ax.axhline(0, color='black', lw=0.5, ls='--', alpha=0.5)
-    if sig_idx is not None and len(sig_idx):
-        _si = np.asarray(sig_idx, dtype=int)
-        _si = _si[_si < len(dD)]
-        ax.scatter(xD[_si], dD[_si], color='black', s=10, zorder=5,
-                   linewidths=0, label='p<0.05')
-        ax.legend(loc='upper right', fontsize=7, handlelength=1.0)
-    ax.set_ylabel('Δ%D-var', fontsize=8)
-    ax.set_title('Standardised DVARS (Δ%D-var)', fontsize=8, pad=2)
+    # Right axis: √D-var labelled "D (mm)"
+    sqrt_dvar_p1 = np.sqrt(np.maximum(V_dse['Dvar_ts'], 0.0))
+    ax1r = ax1.twinx()
+    ax1r.plot(xD, sqrt_dvar_p1, color='red', lw=0.5, alpha=0.85, zorder=2)
+    ax1r.set_ylabel('D (mm)', color='darkorange', fontsize=8)
+    ax1r.tick_params(axis='y', colors='darkorange', labelsize=7)
+    ax1r.spines['right'].set_visible(True)
+    ax1r.spines['right'].set_color('darkorange')
+    ax1r.spines['top'].set_visible(False)
+    ax1r.spines['left'].set_visible(False)
+    ax1r.spines['bottom'].set_visible(False)
 
-    # ── Panel 4: Non-global D/S/E variance ────────────────────────────────────
-    ax = axes[3]
-    ax.plot(xD, V_dse['ng_Dvar_ts'], color=_C_D, lw=0.9,
-            label='ng_Dvar', rasterized=True)
-    ax.plot(xD, V_dse['ng_Svar_ts'], color=_C_S, lw=0.9,
-            label='ng_Svar', rasterized=True)
-    ax.scatter([xA[0], xA[-1]], V_dse['ng_Evar_ts'], color=_C_E,
-               s=20, zorder=5, linewidths=0, label='ng_Evar')
-    ax.set_ylabel('Var', fontsize=8)
-    ax.set_title('Non-global D/S/E var', fontsize=8, pad=2)
-    ax.legend(loc='upper right', fontsize=7, handlelength=1.2)
+    # ── Panel 2: DSE variance components ──────────────────────────────────────
+    sqrt_avar = np.sqrt(np.maximum(V_dse['Avar_ts'], 0.0))   # (T,)
+    sqrt_dvar = np.sqrt(np.maximum(V_dse['Dvar_ts'], 0.0))   # (T-1,)
+    sqrt_svar = np.sqrt(np.maximum(V_dse['Svar_ts'], 0.0))   # (T-1,)
+    sqrt_evar = np.sqrt(np.maximum(V_dse['Evar_ts'], 0.0))   # (2,)
+    mean_avar = float(V_dse['Avar_ts'].mean())
 
-    # ── Panel 5: Global D/S/E variance ────────────────────────────────────────
-    ax = axes[4]
-    ax.plot(xD, V_dse['g_Dvar_ts'], color=_C_gD, lw=0.9,
-            label='g_Dvar', rasterized=True)
-    ax.plot(xD, V_dse['g_Svar_ts'], color=_C_gS, lw=0.9,
-            label='g_Svar', rasterized=True)
-    ax.scatter([xA[0], xA[-1]], V_dse['g_Evar_ts'], color=_C_gE,
-               s=20, zorder=5, linewidths=0, label='g_Evar')
-    ax.set_ylabel('Var', fontsize=8)
-    ax.set_title('Global D/S/E var', fontsize=8, pad=2)
-    ax.set_xlabel('Frame index', fontsize=8)
-    ax.legend(loc='upper right', fontsize=7, handlelength=1.2)
+    # Gray bands: DVARS statistically significant frames (p < 0.05)
+    if dvars_stat is not None and 'pvals' in dvars_stat:
+        pvals   = np.asarray(dvars_stat['pvals'])   # (T-1,)
+        sig_xD  = xD[pvals < 0.05]
+        for xf in sig_xD:
+            ax2.axvspan(xf - 0.5, xf + 0.5,
+                        color='gray', alpha=0.25, lw=0, zorder=0)
+
+    ax2.plot(xA, sqrt_avar, color='#2CA02C', lw=1.0, label='A-var', zorder=3)
+    ax2.plot(xD, sqrt_dvar, color='#1F77B4', lw=0.8, label='D-var', zorder=3)
+    ax2.plot(xD, sqrt_svar, color='#DAA520', lw=0.9, label='S-var', zorder=3)
+    ax2.plot([0, T - 1], [sqrt_evar[0], sqrt_evar[1]], '+',
+             color='purple', markersize=9, mew=1.5, label='E-var', zorder=4,
+             linestyle='none')
+
+    sig_patch = Patch(facecolor='gray', alpha=0.4, label='Statistically Significant')
+    handles, labels_leg = ax2.get_legend_handles_labels()
+    ax2.legend(handles + [sig_patch], labels_leg + ['Statistically Significant'],
+               loc='upper left', fontsize=7, frameon=False,
+               handlelength=1.4, handletextpad=0.4, borderpad=0.2)
+    ax2.set_ylabel('√Variance', fontsize=8)
+
+    # Secondary right y-axis: % of A-var (nonlinear: pct = sqrt_var² / mean_avar * 100)
+    _ma = mean_avar  # captured in closure
+
+    def _to_pct(x):
+        return np.asarray(x, dtype=float) ** 2 / _ma * 100.0
+
+    def _from_pct(x):
+        return np.sqrt(np.maximum(np.asarray(x, dtype=float) * _ma / 100.0, 0.0))
+
+    secax2 = ax2.secondary_yaxis('right', functions=(_to_pct, _from_pct))
+    secax2.set_ylabel('% of A-var', color='darkorange', fontsize=8)
+    secax2.tick_params(axis='y', colors='darkorange', labelsize=7)
+    try:
+        secax2.spines['right'].set_color('darkorange')
+    except Exception:
+        pass
+
+    # ── Panel 3: Δ%D-var ──────────────────────────────────────────────────────
+    delta_dvar = np.asarray(V_dse['Stat']['DeltapDvar'], dtype=float)   # (T-1,)
+
+    # Orange bands: practically significant frames
+    prac_xD = xD[np.abs(delta_dvar) > prac_sig_thresh]
+    for xf in prac_xD:
+        ax3.axvspan(xf - 0.5, xf + 0.5,
+                    color='orange', alpha=0.35, lw=0, zorder=0)
+
+    ax3.plot(xD, delta_dvar, color='#1F77B4', lw=0.7, zorder=3)
+    prac_patch = Patch(facecolor='orange', alpha=0.4, label='Practically Significant')
+    ax3.legend(handles=[prac_patch], loc='upper left', fontsize=7, frameon=False,
+               handlelength=1.4, handletextpad=0.4, borderpad=0.2)
+    ax3.set_ylabel('Δ%D-var', fontsize=8)
+
+    # ── Panel 4: Voxel carpet plot ─────────────────────────────────────────────
+    if Y_carpet is not None:
+        Y_c = np.asarray(Y_carpet, dtype=np.float32)   # (n_vox, T)
+        mu  = Y_c.mean(axis=1, keepdims=True)
+        sd  = Y_c.std(axis=1,  keepdims=True)
+        sd[sd == 0.0] = 1.0
+        Y_z   = (Y_c - mu) / sd
+        n_vox = Y_z.shape[0]
+        ax4.imshow(Y_z, aspect='auto', cmap='gray',
+                   vmin=-2.0, vmax=2.0, interpolation='nearest',
+                   rasterized=True)
+        # Y-axis: tick labels in ×10⁵ units
+        tick_step = max(1, n_vox // 4)
+        yticks = np.arange(0, n_vox + 1, tick_step)
+        ax4.set_yticks(yticks)
+        ax4.set_yticklabels([f'{v * 1e-5:.1f}' for v in yticks], fontsize=7)
+        ax4.text(-0.085, 1.0, '×10⁵', transform=ax4.transAxes,
+                 va='bottom', ha='left', fontsize=7)
+    ax4.set_ylabel('Voxels', fontsize=8)
+    ax4.set_xlabel('Scans',  fontsize=8)
+
+    ax1.set_xlim(0, T - 1)
 
     if title:
-        fig.suptitle(title, fontsize=9, y=1.01)
+        fig.suptitle(title, fontsize=10, fontweight='normal')
 
     return fig
