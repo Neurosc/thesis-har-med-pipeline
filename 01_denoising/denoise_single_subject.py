@@ -254,9 +254,10 @@ def _sanity_check(
     else:
         print(f"{'Std magnitude check:':<30} PASSED (post={post_std:.1f}, pre={pre_std:.1f})")
 
-    if checks["n_zero_var"] > 0:
+    n_zero_var = checks["n_zero_var"]
+    if n_zero_var > 0:
         print(f"{'Voxel variance check:':<30} "
-              f"{_fail(f'WARNING: {checks[\"n_zero_var\"]} voxels have zero variance after denoising')}")
+              f"{_fail(f'WARNING: {n_zero_var} voxels have zero variance after denoising')}")
     else:
         print(f"{'Voxel variance check:':<30} PASSED")
 
