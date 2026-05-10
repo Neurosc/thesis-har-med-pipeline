@@ -103,7 +103,11 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Shared core logic: `01_denoising/denoise_core.py` (imported by both scripts below)
 - Single-subject test script: `01_denoising/denoise_single_subject.py` (sub-01 ses-01)
 - Batch script: `01_denoising/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_denoising/results/_batch_log.tsv`
-- DSE/DVARS QC panels: `01_denoising/qc_dse_panels.py` (4 subjects × 2 sessions; output in `01_denoising/figures/dse_panels/`)
+### Denoising QC
+- Method: simple DVARS pre/post comparison + FD-DVARS coupling
+- Script: `01_denoising/qc_dvars_comparison.py`
+- Test subject: sub-01 ses-01 only
+- DSE decomposition was tried but discarded as overcomplicated
 
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
