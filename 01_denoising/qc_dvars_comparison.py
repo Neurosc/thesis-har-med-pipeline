@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DVARS before/after denoising comparison — sub-01 ses-01.
+DVARS before/after denoising comparison — sub-21 ses-01.
 
 Panels (shared x-axis, frame index):
   1  FD                          (black, threshold at 0.3 mm)
@@ -44,7 +44,7 @@ DENOISED_ROOT = Path(__file__).resolve().parent / "results"
 OUT_DIR       = Path(__file__).resolve().parent / "figures"
 LOG_DIR       = Path(__file__).resolve().parent / "results"
 
-SUB = "sub-01"
+SUB = "sub-21"
 SES = "ses-01"
 TR  = 1.8
 
