@@ -109,6 +109,15 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Test subject: sub-01 ses-01 only
 - DSE decomposition was tried but discarded as overcomplicated
 
+### QC-FC Analysis (CONN methodology)
+- Script: `01_denoising/qc_fc/qc_fc_compute.py`
+- Two metrics: DV (per-subject distribution shape), DQ (across-subject FC-motion coupling)
+- 5000 random voxel pairs, fixed seed 42 — same pairs for all 70 runs and both pre/post
+- Tested only -GSR version (Lynch standard)
+- DV = 100 * exp(-k * |mode/IQR|); k calibrated from pre-denoising data (median pre-displacement → DV=5%)
+- DQ = 100 * overlap(observed QC-FC KDE, permutation null KDE); combined = min across 3 QC measures
+- Figures in `01_denoising/qc_fc/figures/`; results in `01_denoising/qc_fc/results/`
+
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
