@@ -82,6 +82,10 @@ TASK        = "task-rest"
 SPACE       = "MNI152NLin2009cAsym"
 N_PERMS     = 1000
 
+RECOMPUTE_FC = False   # set True to force-recompute FC arrays from scratch
+RECOMPUTE_DV = True    # set True to recompute DV scores
+RECOMPUTE_DQ = False   # set True to recompute DQ (slow: 1000 perms × 3 measures)
+
 
 # ─── Path helpers ─────────────────────────────────────────────────────────────
 
@@ -199,19 +203,19 @@ def kde_mode(values, n_grid=1000):
 
 def compute_dv_scores(fc_pre, fc_post, subjects):
     """
-    Compute per-subject DV scores (post-denoising only).
+    Compute per-subject DV scores (pre- and post-denoising).
 
     DV_i = 100 * exp(-k * |mode_i / IQR_i|)
 
-    k is calibrated from pre-denoising data: median |mode/IQR| across subjects
-    maps to DV = 5% (log(20) / median_pre_displacement).  Post-denoising
-    distributions centered at r≈0 will yield DV close to 100%.
+    k = 1.35 (CONN/Nieto-Castanon 2020): derived from the condition that
+    |mode/IQR| < 0.038 corresponds to DV ≈ 95%, i.e.
+    95 = 100 * exp(-k * 0.038)  →  k ≈ 1.35.
 
     Returns
     -------
-    dv_scores        : (n_subjects,) float64
-    k                : float — calibration constant
-    median_pre_disp  : float — median pre-denoising displacement
+    dv_scores_post : (n_subjects,) float64
+    dv_scores_pre  : (n_subjects,) float64
+    k              : float — calibration constant (1.35)
     """
     n_sub = len(subjects)
     disp_pre  = np.zeros(n_sub)
@@ -228,11 +232,13 @@ def compute_dv_scores(fc_pre, fc_post, subjects):
         if (i + 1) % 5 == 0:
             print(f"  DV: {i + 1}/{n_sub} subjects done")
 
-    median_pre = float(np.median(disp_pre))
-    k = np.log(20) / (median_pre + 1e-10)
+    # CONN definition: |mode/IQR| < 0.038 corresponds to DV ≈ 95%
+    # Solving 95 = 100 * exp(-k * 0.038) gives k ≈ 1.35
+    k = 1.35
 
-    dv_scores = 100.0 * np.exp(-k * disp_post)
-    return dv_scores, k, median_pre
+    dv_scores_post = 100.0 * np.exp(-k * disp_post)
+    dv_scores_pre  = 100.0 * np.exp(-k * disp_pre)
+    return dv_scores_post, dv_scores_pre, k
 
 
 # ─── QC-FC correlations ───────────────────────────────────────────────────────
@@ -384,7 +390,7 @@ def main():
         print(f"Saved: {PAIRS_NPY}")
 
     # ── FC per run (pre and post) ──────────────────────────────────────────────
-    if FC_PRE_NPY.exists() and FC_POST_NPY.exists():
+    if not RECOMPUTE_FC and FC_PRE_NPY.exists() and FC_POST_NPY.exists():
         print(f"\nLoading existing FC arrays ...")
         fc_pre  = np.load(str(FC_PRE_NPY))
         fc_post = np.load(str(FC_POST_NPY))
@@ -412,89 +418,94 @@ def main():
         print(f"Saved: {FC_PRE_NPY}")
         print(f"Saved: {FC_POST_NPY}")
 
-    # ── QC measures (70-vectors) ───────────────────────────────────────────────
-    print(f"\nCollecting QC measures for {n_runs} runs ...")
-    qc_mean_fd    = np.zeros(n_runs)
-    qc_invalid    = np.zeros(n_runs)
-    qc_prop_valid = np.zeros(n_runs)
+    # ── QC measures (70-vectors) — only needed for DQ ─────────────────────────
+    if RECOMPUTE_DQ:
+        print(f"\nCollecting QC measures for {n_runs} runs ...")
+        qc_mean_fd    = np.zeros(n_runs)
+        qc_invalid    = np.zeros(n_runs)
+        qc_prop_valid = np.zeros(n_runs)
 
-    run_idx = 0
-    for sub in subjects:
-        for ses in SESSIONS:
-            mfd, ninv, pv = compute_qc_measures(confounds_path(sub, ses))
-            qc_mean_fd[run_idx]    = mfd
-            qc_invalid[run_idx]    = ninv
-            qc_prop_valid[run_idx] = pv
-            run_idx += 1
+        run_idx = 0
+        for sub in subjects:
+            for ses in SESSIONS:
+                mfd, ninv, pv = compute_qc_measures(confounds_path(sub, ses))
+                qc_mean_fd[run_idx]    = mfd
+                qc_invalid[run_idx]    = ninv
+                qc_prop_valid[run_idx] = pv
+                run_idx += 1
 
-    qc_measures = {
-        "QC_MeanMotion":           qc_mean_fd,
-        "QC_InvalidScans":         qc_invalid,
-        "QC_ProportionValidScans": qc_prop_valid,
-    }
+        qc_measures = {
+            "QC_MeanMotion":           qc_mean_fd,
+            "QC_InvalidScans":         qc_invalid,
+            "QC_ProportionValidScans": qc_prop_valid,
+        }
 
     # ── Part A: DV scores ──────────────────────────────────────────────────────
     print("\nComputing DV scores (KDE mode + IQR per subject) ...")
-    dv_scores, k_dv, median_pre_disp = compute_dv_scores(
+    dv_scores_post, dv_scores_pre, k_dv = compute_dv_scores(
         fc_pre.astype(np.float64), fc_post.astype(np.float64), subjects
     )
 
-    low  = int(np.sum(dv_scores < 80))
-    mid  = int(np.sum((dv_scores >= 80) & (dv_scores <= 95)))
-    high = int(np.sum(dv_scores > 95))
+    low  = int(np.sum(dv_scores_post < 80))
+    mid  = int(np.sum((dv_scores_post >= 80) & (dv_scores_post <= 95)))
+    high = int(np.sum(dv_scores_post > 95))
 
     print(
         f"\nDV scores (n={len(subjects)}):\n"
-        f"  Mean:   {dv_scores.mean():.1f}%\n"
-        f"  Median: {np.median(dv_scores):.1f}%\n"
-        f"  Range:  {dv_scores.min():.1f}–{dv_scores.max():.1f}%\n"
-        f"  Subjects with DV < 80% (low): {low}\n"
-        f"  Subjects with DV 80-95% (intermediate): {mid}\n"
-        f"  Subjects with DV > 95% (high): {high}"
+        f"  Pre-denoising  — Mean: {dv_scores_pre.mean():.1f}%,  Median: {np.median(dv_scores_pre):.1f}%,  Range: {dv_scores_pre.min():.1f}–{dv_scores_pre.max():.1f}%\n"
+        f"  Post-denoising — Mean: {dv_scores_post.mean():.1f}%, Median: {np.median(dv_scores_post):.1f}%, Range: {dv_scores_post.min():.1f}–{dv_scores_post.max():.1f}%\n"
+        f"  Post-denoising: DV < 80% (low): {low},  80-95% (intermediate): {mid},  >95% (high): {high}"
     )
 
-    dv_df = pd.DataFrame({"subject": subjects, "dv_score_pct": dv_scores})
+    dv_df = pd.DataFrame({
+        "subject":     subjects,
+        "dv_pre_pct":  dv_scores_pre,
+        "dv_post_pct": dv_scores_post,
+    })
     dv_df.to_csv(str(DV_TSV), sep="\t", index=False, float_format="%.2f")
     print(f"\nSaved: {DV_TSV}")
 
     # ── Part B: DQ scores (post-denoising, all 3 QC measures) ─────────────────
-    print("\nComputing DQ scores for post-denoising ...")
-    fc_post_f64 = fc_post.astype(np.float64)
+    if RECOMPUTE_DQ:
+        print("\nComputing DQ scores for post-denoising ...")
+        fc_post_f64 = fc_post.astype(np.float64)
 
-    dq_vals = {}
-    for seed_off, (qc_name, qc_vec) in enumerate(qc_measures.items(), start=1):
-        obs  = _pearson_fc_qc(fc_post_f64, qc_vec)
-        null = compute_qcfc_null(fc_post_f64, qc_vec, N_PERMS, rng_seed=SEED + seed_off)
-        dq_vals[qc_name] = 100.0 * overlap_coeff(obs, null.ravel())
-        print(f"  {qc_name}: {dq_vals[qc_name]:.1f}%")
+        dq_vals = {}
+        for seed_off, (qc_name, qc_vec) in enumerate(qc_measures.items(), start=1):
+            obs  = _pearson_fc_qc(fc_post_f64, qc_vec)
+            null = compute_qcfc_null(fc_post_f64, qc_vec, N_PERMS, rng_seed=SEED + seed_off)
+            dq_vals[qc_name] = 100.0 * overlap_coeff(obs, null.ravel())
+            print(f"  {qc_name}: {dq_vals[qc_name]:.1f}%")
 
-    dq_combined = float(min(dq_vals.values()))
+        dq_combined = float(min(dq_vals.values()))
 
-    # Primary null (MeanMotion, post) — saved as reference
-    qcfc_post_obs = _pearson_fc_qc(fc_post_f64, qc_mean_fd)
-    null_post_mm  = compute_qcfc_null(fc_post_f64, qc_mean_fd, N_PERMS, rng_seed=SEED + 1)
+        # Primary null (MeanMotion, post) — saved as reference
+        qcfc_post_obs = _pearson_fc_qc(fc_post_f64, qc_mean_fd)
+        null_post_mm  = compute_qcfc_null(fc_post_f64, qc_mean_fd, N_PERMS, rng_seed=SEED + 1)
 
-    np.save(str(QCFC_OBS_NPY),  qcfc_post_obs)
-    np.save(str(QCFC_NULL_NPY), null_post_mm)
-    print(f"Saved: {QCFC_OBS_NPY}")
-    print(f"Saved: {QCFC_NULL_NPY}")
+        np.save(str(QCFC_OBS_NPY),  qcfc_post_obs)
+        np.save(str(QCFC_NULL_NPY), null_post_mm)
+        print(f"Saved: {QCFC_OBS_NPY}")
+        print(f"Saved: {QCFC_NULL_NPY}")
 
-    # Pre-denoising QC-FC (for figure top panel)
-    print("\nComputing pre-denoising QC-FC for figure ...")
-    fc_pre_f64   = fc_pre.astype(np.float64)
-    qcfc_pre_obs = _pearson_fc_qc(fc_pre_f64, qc_mean_fd)
-    null_pre_mm  = compute_qcfc_null(fc_pre_f64, qc_mean_fd, N_PERMS, rng_seed=SEED + 10)
-    dq_pre_val   = 100.0 * overlap_coeff(qcfc_pre_obs, null_pre_mm.ravel())
+        # Pre-denoising QC-FC (for figure top panel)
+        print("\nComputing pre-denoising QC-FC for figure ...")
+        fc_pre_f64   = fc_pre.astype(np.float64)
+        qcfc_pre_obs = _pearson_fc_qc(fc_pre_f64, qc_mean_fd)
+        null_pre_mm  = compute_qcfc_null(fc_pre_f64, qc_mean_fd, N_PERMS, rng_seed=SEED + 10)
+        dq_pre_val   = 100.0 * overlap_coeff(qcfc_pre_obs, null_pre_mm.ravel())
 
-    # ── DQ summary ────────────────────────────────────────────────────────────
-    dq_lines = (
-        f"QC_MeanMotion DQ:           {dq_vals['QC_MeanMotion']:.1f}%\n"
-        f"QC_InvalidScans DQ:         {dq_vals['QC_InvalidScans']:.1f}%\n"
-        f"QC_ProportionValidScans DQ: {dq_vals['QC_ProportionValidScans']:.1f}%\n"
-        f"Combined DQ (min):          {dq_combined:.1f}%\n"
-    )
-    DQ_TXT.write_text(dq_lines)
-    print(f"Saved: {DQ_TXT}")
+        # ── DQ summary ────────────────────────────────────────────────────────
+        dq_lines = (
+            f"QC_MeanMotion DQ:           {dq_vals['QC_MeanMotion']:.1f}%\n"
+            f"QC_InvalidScans DQ:         {dq_vals['QC_InvalidScans']:.1f}%\n"
+            f"QC_ProportionValidScans DQ: {dq_vals['QC_ProportionValidScans']:.1f}%\n"
+            f"Combined DQ (min):          {dq_combined:.1f}%\n"
+        )
+        DQ_TXT.write_text(dq_lines)
+        print(f"Saved: {DQ_TXT}")
+    else:
+        print("\nSkipping DQ computation (RECOMPUTE_DQ=False)")
 
     # ── Figures ────────────────────────────────────────────────────────────────
     print("\nGenerating DV figure ...")
@@ -504,16 +515,17 @@ def main():
         print(f"Saved: {out}")
     plt.close(fig_dv)
 
-    print("\nGenerating DQ figure ...")
-    fig_dq = make_dq_figure(
-        qcfc_pre_obs, qcfc_post_obs,
-        null_pre_mm, null_post_mm,
-        dq_pre_val, dq_combined,
-    )
-    for out in (DQ_FIG_PNG, DQ_FIG_PDF):
-        fig_dq.savefig(str(out), dpi=300, bbox_inches="tight")
-        print(f"Saved: {out}")
-    plt.close(fig_dq)
+    if RECOMPUTE_DQ:
+        print("\nGenerating DQ figure ...")
+        fig_dq = make_dq_figure(
+            qcfc_pre_obs, qcfc_post_obs,
+            null_pre_mm, null_post_mm,
+            dq_pre_val, dq_combined,
+        )
+        for out in (DQ_FIG_PNG, DQ_FIG_PDF):
+            fig_dq.savefig(str(out), dpi=300, bbox_inches="tight")
+            print(f"Saved: {out}")
+        plt.close(fig_dq)
 
     # ── Final console output ───────────────────────────────────────────────────
     print(
@@ -522,21 +534,23 @@ def main():
         f"Runs: {n_runs}\n"
         f"Random voxel pairs: {N_PAIRS} (seed {SEED})\n"
         f"Version: -GSR denoised\n"
-        f"\nDV (Data Validity) Scores\n"
-        f"  Mean: {dv_scores.mean():.1f}%\n"
-        f"  Median: {np.median(dv_scores):.1f}%\n"
-        f"  Range: {dv_scores.min():.1f}–{dv_scores.max():.1f}%\n"
-        f"  Distribution: low <80% ({low}), intermediate 80-95% ({mid}), high >95% ({high})\n"
-        f"\nDQ (Data Quality) Scores\n"
-        f"  QC_MeanMotion DQ:           {dq_vals['QC_MeanMotion']:.1f}%\n"
-        f"  QC_InvalidScans DQ:         {dq_vals['QC_InvalidScans']:.1f}%\n"
-        f"  QC_ProportionValidScans DQ: {dq_vals['QC_ProportionValidScans']:.1f}%\n"
-        f"  Combined DQ (min):          {dq_combined:.1f}%\n"
-        f"\nInterpretation:\n"
-        f"  - DV measures center/width of FC distribution per subject\n"
-        f"  - DQ measures FC-motion association (zero = no motion bias)\n"
-        f"  - Both >95% indicates effective denoising"
+        f"\nDV (Data Validity) Scores  [k=1.35, CONN/Nieto-Castanon 2020]\n"
+        f"  Pre-denoising  — Mean: {dv_scores_pre.mean():.1f}%,  Median: {np.median(dv_scores_pre):.1f}%,  Range: {dv_scores_pre.min():.1f}–{dv_scores_pre.max():.1f}%\n"
+        f"  Post-denoising — Mean: {dv_scores_post.mean():.1f}%, Median: {np.median(dv_scores_post):.1f}%, Range: {dv_scores_post.min():.1f}–{dv_scores_post.max():.1f}%\n"
+        f"  Post-denoising: low <80% ({low}),  intermediate 80-95% ({mid}),  high >95% ({high})\n"
     )
+    if RECOMPUTE_DQ:
+        print(
+            f"DQ (Data Quality) Scores\n"
+            f"  QC_MeanMotion DQ:           {dq_vals['QC_MeanMotion']:.1f}%\n"
+            f"  QC_InvalidScans DQ:         {dq_vals['QC_InvalidScans']:.1f}%\n"
+            f"  QC_ProportionValidScans DQ: {dq_vals['QC_ProportionValidScans']:.1f}%\n"
+            f"  Combined DQ (min):          {dq_combined:.1f}%\n"
+            f"\nInterpretation:\n"
+            f"  - DV measures center/width of FC distribution per subject\n"
+            f"  - DQ measures FC-motion association (zero = no motion bias)\n"
+            f"  - Both >95% indicates effective denoising"
+        )
 
 
 if __name__ == "__main__":
