@@ -459,13 +459,12 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     # ── Panel 1: Motion only — FD, |Rotation|, |Translation| ─────────────────
     # Fix 5: no D-var twinx; single clean panel
     fd_arr = np.asarray(fd, dtype=float)
-    ax1l.plot(xA, fd_arr,      color='black',   lw=1.0, label='FD',            zorder=3)
+    ax1l.plot(xA, fd_arr,      color='black',   lw=3.0, label='FD',            zorder=3)
     if abs_mov is not None:
         am = np.asarray(abs_mov, dtype=float)
-        ax1l.plot(xA, am[:, 0], color='#00FFFF', lw=1.0, label='|Rotation|',   zorder=2)
-        ax1l.plot(xA, am[:, 1], color='#87CEEB', lw=1.0, label='|Translation|', zorder=2)
-    # Fix 2: threshold line lw=1.5
-    ax1l.axhline(fd_thresh, color='#E41A1C', lw=1.5, ls='--', zorder=4)
+        ax1l.plot(xA, am[:, 0], color='#00FFFF', lw=3.0, label='|Rotation|',   zorder=2)
+        ax1l.plot(xA, am[:, 1], color='#87CEEB', lw=3.0, label='|Translation|', zorder=2)
+    ax1l.axhline(fd_thresh, color='#E41A1C', lw=2.5, ls='--', zorder=4)
     ax1l.set_ylabel('FD (mm)')
     ax1l.legend(frameon=True, edgecolor='black', facecolor='white',
                 loc='upper left', handlelength=1.5, handletextpad=0.4)
@@ -491,10 +490,9 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
     ax2l.yaxis.grid(True, color='gray', alpha=0.3, lw=0.5, zorder=0)
     ax2l.set_axisbelow(True)
 
-    # Fix 2: DSE traces lw=1.2
-    ax2l.plot(xA, sqrt_avar, color='#4DAF4A', lw=1.2, label='A-var', zorder=3)
-    ax2l.plot(xD, sqrt_dvar, color='#377EB8', lw=1.2, label='D-var', zorder=3)
-    ax2l.plot(xD, sqrt_svar, color='#FF7F00', lw=1.2, label='S-var', zorder=3)
+    ax2l.plot(xA, sqrt_avar, color='#4DAF4A', lw=3.0, label='A-var', zorder=3)
+    ax2l.plot(xD, sqrt_dvar, color='#377EB8', lw=3.0, label='D-var', zorder=3)
+    ax2l.plot(xD, sqrt_svar, color='#FF7F00', lw=3.0, label='S-var', zorder=3)
     ax2l.plot([0, T - 1], [sqrt_evar[0], sqrt_evar[1]], '+',
               color='#984EA3', markersize=12, mew=2.0, linestyle='none',
               label='E-var', zorder=4)
@@ -533,7 +531,8 @@ def fmri_diag_plot(V_dse, dvars_stat, fd, abs_mov, Y_carpet,
         ax3.axvspan(xf - 0.5, xf + 0.5,
                     color='#E41A1C', alpha=0.3, lw=0, zorder=0)
 
-    ax3.bar(xD, delta_dvar, width=1.0, color='#377EB8', alpha=0.85, zorder=2)
+    ax3.axhline(0, color='gray', lw=0.8, ls='-', zorder=1)
+    ax3.plot(xD, delta_dvar, lw=3.0, color='#377EB8', zorder=2)
     ax3.set_yticks([-2, 5, 12, 19, 26])
     # Fix 3: legend patch red
     prac_patch = Patch(facecolor='#E41A1C', alpha=0.3, label='Practically Significant')
