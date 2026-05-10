@@ -125,6 +125,12 @@ def make_figure(fd, dvars_raw, dvars_nogsr, dvars_gsr):
     ax4.set_ylim(dv_lo, dv_hi)
     ax4.set_xlabel("Frame index")
 
+    for ax in axes:
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
+        ax.spines['left'].set_position(('data', 0))
+        ax.spines['bottom'].set_position(('data', 0))
+
     fig.patch.set_facecolor("white")
     return fig
 
