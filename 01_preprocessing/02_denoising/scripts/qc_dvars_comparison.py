@@ -40,9 +40,9 @@ from utils.thesis_style import apply_thesis_style
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-DENOISED_ROOT = Path(__file__).resolve().parent / "results"
-OUT_DIR       = Path(__file__).resolve().parent / "figures"
-LOG_DIR       = Path(__file__).resolve().parent / "results"
+DENOISED_ROOT = Path(__file__).resolve().parents[1] / "results"
+OUT_DIR       = Path(__file__).resolve().parents[1] / "figures"
+LOG_DIR       = Path(__file__).resolve().parents[1] / "results"
 
 SUB = "sub-21"
 SES = "ses-01"

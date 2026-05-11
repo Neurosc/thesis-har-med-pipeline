@@ -36,7 +36,7 @@ from denoise_core import (
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-OUT_DIR = Path(__file__).resolve().parent / "results"
+OUT_DIR = Path(__file__).resolve().parents[1] / "results"
 
 SUBJECT = "sub-01"
 SESSION = "ses-01"

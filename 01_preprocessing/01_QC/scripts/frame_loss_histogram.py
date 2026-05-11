@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-QC_DIR   = Path(__file__).resolve().parent
+QC_DIR   = Path(__file__).resolve().parents[1]
 SUMMARY  = QC_DIR / "results" / "run_level_fd_summary.tsv"
 OUT_STEM = QC_DIR / "thesis_figures" / "supplementary" / "fig_S_frame_loss_distribution"
 # Column names as written by threshold_comparison_qc.py

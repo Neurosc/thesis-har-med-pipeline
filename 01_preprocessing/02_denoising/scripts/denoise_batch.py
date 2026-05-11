@@ -38,7 +38,7 @@ from utils.subject_filter import get_included_subjects
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-OUT_DIR  = Path(__file__).resolve().parent / "results"
+OUT_DIR  = Path(__file__).resolve().parents[1] / "results"
 LOG_PATH = OUT_DIR / "_batch_log.tsv"
 
 SESSIONS = ["ses-01", "ses-02"]

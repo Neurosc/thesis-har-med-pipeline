@@ -14,7 +14,7 @@ from utils.motion_qc import load_confounds, compute_custom_fd
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 FMRIPREP_ROOT = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
-QC_DIR        = Path(__file__).resolve().parent
+QC_DIR        = Path(__file__).resolve().parents[1]
 OUT_PATH      = QC_DIR / "thesis_figures" / "supplementary" / "fig_S_excluded_subjects_panel.png"
 TASK          = "rest"
 TR            = 1.8

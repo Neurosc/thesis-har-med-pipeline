@@ -11,7 +11,7 @@ from utils.motion_qc import load_confounds, compute_custom_fd
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 FMRIPREP_ROOT  = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
-_QC_DIR        = Path(__file__).resolve().parent
+_QC_DIR        = Path(__file__).resolve().parents[1]
 FIGURES_DIR    = _QC_DIR / "figures"
 RESULTS_DIR    = _QC_DIR / "results"
 FD_THRESHOLDS  = [0.3, 0.5]   # mm — comparison, no threshold decided yet
