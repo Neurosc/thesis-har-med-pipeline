@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from utils.motion_qc import load_confounds, compute_custom_fd
 
 # ── Configuration ─────────────────────────────────────────────────────────────

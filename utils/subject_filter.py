@@ -3,11 +3,11 @@ Subject inclusion/exclusion filter for the DMT-MED fMRI dataset.
 
 Excluded subjects: sub-06, sub-08, sub-12, sub-26, sub-36
 Criterion: any run with >50% frames censored at FD > 0.3 mm (within-subject design).
-Source: 00_QC/results/excluded_subjects.tsv
+Source: 01_preprocessing/01_QC/results/excluded_subjects.tsv
 Final sample: 35 subjects × 2 sessions = 70 runs.
 """
 
-# Hard exclusions per 00_QC results — CLAUDE.md "Subject exclusion"
+# Hard exclusions per 01_preprocessing/01_QC results — CLAUDE.md "Subject exclusion"
 _EXCLUDED = frozenset(["sub-06", "sub-08", "sub-12", "sub-26", "sub-36"])
 
 
@@ -16,7 +16,7 @@ def get_included_subjects(all_subjects=None):
     Return sorted list of included subjects after applying fixed exclusions.
 
     Excluded: sub-06, sub-08, sub-12, sub-26, sub-36 (criterion: >50% frames
-    censored at FD > 0.3 mm in any run). See 00_QC/results/excluded_subjects.tsv.
+    censored at FD > 0.3 mm in any run). See 01_preprocessing/01_QC/results/excluded_subjects.tsv.
 
     Parameters
     ----------

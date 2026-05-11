@@ -7,13 +7,13 @@ and both sessions, calling denoise_run() from denoise_core.py for each run.
 
 Usage (on server):
   conda activate fmri
-  python 01_denoising/denoise_batch.py
+  python 01_preprocessing/02_denoising/denoise_batch.py
 
 Outputs
 -------
-  01_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz
-  01_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedNoGSR_bold.nii.gz
-  01_denoising/results/_batch_log.tsv   (appended after each run)
+  01_preprocessing/02_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz
+  01_preprocessing/02_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedNoGSR_bold.nii.gz
+  01_preprocessing/02_denoising/results/_batch_log.tsv   (appended after each run)
 
 Existing outputs are skipped (both GSR and NoGSR must exist to skip).
 """
@@ -24,7 +24,7 @@ import datetime
 import csv
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (

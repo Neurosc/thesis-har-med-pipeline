@@ -14,7 +14,7 @@ import pandas as pd
 import nibabel as nib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from utils.motion_qc import compute_custom_fd

@@ -23,13 +23,14 @@ brain regions. (Analysis details to be specified later.)
 
 **Raw BIDS data:**
 har_med_codes/
-├── 00_QC/              # Quality control (motion, DVARS visualization)
-├── 01_denoising/       # Nuisance regression, censoring, bandpass
-├── 02_acw/             # Autocorrelation window calculation
-├── 03_analysis/        # Self vs non-self comparisons
+├── 01_preprocessing/
+│   ├── 01_QC/          # Quality control (motion, DVARS visualization)
+│   └── 02_denoising/   # Nuisance regression, censoring, bandpass
+├── 02_timeseries_extraction/
+├── 03_acw_analysis/
+├── 04_statistics/
 ├── utils/              # Shared helper functions
-├── figures/            # Output figures (gitignored)
-├── results/            # Output data (gitignored)
+├── _old/               # Archived scripts
 └── CLAUDE.md           # This file
 
 ## Software Environment
@@ -79,7 +80,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Standard Power et al. 2012 FD as computed by fMRIPrep
 - 1-TR backward differences
 - 50 mm sphere for rotation conversion
-- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `00_QC/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
+- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `01_preprocessing/01_QC/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
 - Rationale for not using Lynch/Goldberg 4-TR window: no published guidance exists for non-HCP TRs; all major pipelines use 1-TR
 
 ### Frame censoring
@@ -90,7 +91,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Criterion: any run with >50% frames censored at FD > 0.3 mm → entire subject excluded (within-subject design)
 - **Excluded subjects: sub-06, sub-08, sub-12, sub-26, sub-36** (5 subjects)
 - **Final sample: 35 subjects × 2 sessions = 70 runs**
-- See `00_QC/results/excluded_subjects.tsv` for details
+- See `01_preprocessing/01_QC/results/excluded_subjects.tsv` for details
 - Use `utils/subject_filter.py:get_included_subjects()` to filter subject lists in downstream scripts
 
 ### Denoising pipeline (implemented)
@@ -99,16 +100,16 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Two versions: +GSR+censor and -GSR+censor (frame censoring always on)
 - Lomb-Scargle interpolation of censored frames after regression; faithful port of CBIG_preproc_censor.m (Jingwei Li, Yeo Lab)
 - Bandpass 0.01–0.1 Hz via frequency-domain masking inside LS (no Butterworth)
-- Output: `01_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz` and `desc-denoisedNoGSR_bold.nii.gz`
-- Shared core logic: `01_denoising/denoise_core.py` (imported by both scripts below)
-- Single-subject test script: `01_denoising/denoise_single_subject.py` (sub-01 ses-01)
-- Batch script: `01_denoising/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_denoising/results/_batch_log.tsv`
+- Output: `01_preprocessing/02_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz` and `desc-denoisedNoGSR_bold.nii.gz`
+- Shared core logic: `01_preprocessing/02_denoising/denoise_core.py` (imported by both scripts below)
+- Single-subject test script: `01_preprocessing/02_denoising/denoise_single_subject.py` (sub-01 ses-01)
+- Batch script: `01_preprocessing/02_denoising/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_preprocessing/02_denoising/results/_batch_log.tsv`
 
 ### Denoising QC
 - Method: DVARS pre/post comparison + FD-DVARS coupling
-- Script: `01_denoising/qc_dvars_comparison.py`
-- Figures: `01_denoising/figures/sub-XX_ses-YY_dvars_comparison.png/.pdf`
-- Logs: `01_denoising/results/sub-XX_ses-YY_dvars_comparison.txt`
+- Script: `01_preprocessing/02_denoising/qc_dvars_comparison.py`
+- Figures: `01_preprocessing/02_denoising/figures/sub-XX_ses-YY_dvars_comparison.png/.pdf`
+- Logs: `01_preprocessing/02_denoising/results/sub-XX_ses-YY_dvars_comparison.txt`
 - Both sub-01 ses-01 (low motion) and sub-21 ses-01 (high motion) figures retained as evidence
 
 ### Final analysis (planned)
@@ -118,10 +119,10 @@ neural timescales. *Imaging Neuroscience*, 2.
 
 ## Thesis Figure Output
 
-- All thesis-bound figures go to: `00_QC/thesis_figures/supplementary/`
-- Do NOT use `00_QC/figures_thesis/` — that directory was created by mistake and removed
-- Active excluded-subjects panel script: `00_QC/excluded_subjects_panel.py`
-- See `00_QC/thesis_figures/README.md` for the full figure index
+- All thesis-bound figures go to: `01_preprocessing/01_QC/thesis_figures/supplementary/`
+- Do NOT use `01_preprocessing/01_QC/figures_thesis/` — that directory was created by mistake
+- Active excluded-subjects panel script: `01_preprocessing/01_QC/excluded_subjects_panel.py`
+- See `01_preprocessing/01_QC/thesis_figures/README.md` for the full figure index
 
 ## Things NOT to redo
 - Do not reapply respiratory filter (empirically tested, not needed)

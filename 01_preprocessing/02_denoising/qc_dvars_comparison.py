@@ -10,13 +10,13 @@ Panels (shared x-axis, frame index):
 
 Outputs
 -------
-  01_denoising/figures/sub-01_ses-01_dvars_comparison.png  (300 dpi)
-  01_denoising/figures/sub-01_ses-01_dvars_comparison.pdf
-  01_denoising/results/sub-01_ses-01_dvars_comparison.txt
+  01_preprocessing/02_denoising/figures/sub-01_ses-01_dvars_comparison.png  (300 dpi)
+  01_preprocessing/02_denoising/figures/sub-01_ses-01_dvars_comparison.pdf
+  01_preprocessing/02_denoising/results/sub-01_ses-01_dvars_comparison.txt
 
 Run on server (headless):
   conda activate fmri
-  python 01_denoising/qc_dvars_comparison.py
+  python 01_preprocessing/02_denoising/qc_dvars_comparison.py
 """
 
 import sys
@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.stats import pearsonr
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from utils.motion_qc import compute_custom_fd
