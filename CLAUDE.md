@@ -134,6 +134,14 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Requires AFNI (`3dUndump`, `3dAFNItoNIFTI`, `3dresample`) + conda env `fmri` for Python script
 - MNI 1mm template: `/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1mm.nii`
 
+### Self timeseries extraction
+- Script: `02_timeseries_extraction/scripts/05_extract_self_timeseries.py`
+- Same scope as nonself: 35 subjects × 2 sessions × 3 versions = 210 runs
+- Atlas: `self_atlas_native.nii.gz` (37 ROIs, Qin et al. 2020)
+- Output: `02_timeseries_extraction/results/timeseries_self/{version}/sub-XX_ses-YY_self_timeseries.csv`
+- Log: `02_timeseries_extraction/results/timeseries_self/_extraction_log.tsv`
+- Idempotent: skips runs where output CSV already exists
+
 ### Nonself timeseries extraction
 - Script: `02_timeseries_extraction/scripts/04_extract_nonself_timeseries.py`
 - Subjects: 35 included × 2 sessions = 70 runs
