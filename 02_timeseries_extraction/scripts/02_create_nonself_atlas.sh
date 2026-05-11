@@ -5,7 +5,7 @@
 #          Coordinates file excludes ROIs that overlap with the self atlas
 #          (see 03_check_nonself_overlap.py).
 # Inputs:  MNI 1mm template (server path)
-#          Glasser coordinates file (server path, ~327 ROIs)
+#          Glasser coordinates file (overlap-cleaned, 316 ROIs)
 #          sub-01 ses-01 BOLD (native grid reference)
 # Outputs: nonself_atlas_1mm.nii.gz      (1mm MNI, sphere radius = 4mm)
 #          nonself_atlas_native.nii.gz   (native BOLD grid, 1.72x1.72x2.00mm)
@@ -17,8 +17,11 @@ REPO_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 OUTPUT_DIR="$REPO_ROOT/02_timeseries_extraction/results/atlases"
 
 TEMPLATE_1MM=/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1mm.nii
-COORDS_FILE=/home/jkokino/meditation_project/templates/nonself_roi/glasser_coordinates_nonself_327_original.txt
+COORDS_FILE=/BICNAS2/group-northoff/jkokino/codes/har_med_codes/02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean.txt
 BOLD_REF=/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep/sub-01/ses-01/func/sub-01_ses-01_task-rest_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz
+
+echo "Using coordinates: $COORDS_FILE"
+echo "Number of ROIs in coords file: $(tail -n +2 $COORDS_FILE | wc -l)"
 
 mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
