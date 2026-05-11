@@ -125,7 +125,7 @@ neural timescales. *Imaging Neuroscience*, 2.
   - Built at 1mm MNI resolution, resampled to native BOLD grid (1.72×1.72×2.00 mm, MNI152NLin2009cAsym)
 - Nonself atlas: Glasser parcellation (~327 ROIs), 4mm-radius spheres
   - Original coords at `/home/jkokino/meditation_project/templates/nonself_roi/glasser_coordinates_nonself_327_original.txt`
-  - After overlap check, clean coords saved to `02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean_1mm.txt`
+  - After overlap check, clean coords saved to `02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean.txt`
 - Scripts in `02_timeseries_extraction/scripts/`:
   - `01_create_self_atlas.sh` — builds self atlas at 1mm + native BOLD resolution
   - `02_create_nonself_atlas.sh` — builds nonself atlas at 1mm + native BOLD resolution

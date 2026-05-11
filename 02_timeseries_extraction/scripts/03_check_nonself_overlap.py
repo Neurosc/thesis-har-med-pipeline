@@ -6,7 +6,7 @@
 #
 # Inputs:  02_timeseries_extraction/results/atlases/self_atlas_1mm.nii.gz
 #          glasser_coordinates_nonself_327_original.txt (server path)
-# Outputs: 02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean_1mm.txt
+# Outputs: 02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean.txt
 #          02_timeseries_extraction/results/atlases/glasser_overlap_report.txt
 #
 # Run (after 01_create_self_atlas.sh):
@@ -23,7 +23,7 @@ ATLAS_DIR = REPO_ROOT / "02_timeseries_extraction" / "results" / "atlases"
 
 self_atlas_path = ATLAS_DIR / "self_atlas_1mm.nii.gz"
 nonself_coords  = "/home/jkokino/meditation_project/templates/nonself_roi/glasser_coordinates_nonself_327_original.txt"
-out_clean       = ATLAS_DIR / "glasser_coordinates_nonself_clean_1mm.txt"
+out_clean       = ATLAS_DIR / "glasser_coordinates_nonself_clean.txt"
 out_report      = ATLAS_DIR / "glasser_overlap_report.txt"
 
 RADIUS_MM = 4.0
