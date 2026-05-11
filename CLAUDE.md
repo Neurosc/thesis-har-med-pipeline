@@ -104,19 +104,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Single-subject test script: `01_denoising/denoise_single_subject.py` (sub-01 ses-01)
 - Batch script: `01_denoising/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_denoising/results/_batch_log.tsv`
 ### Denoising QC
-- Method: simple DVARS pre/post comparison + FD-DVARS coupling
-- Script: `01_denoising/qc_dvars_comparison.py`
-- Test subject: sub-01 ses-01 only
-- DSE decomposition was tried but discarded as overcomplicated
-
-### QC-FC Analysis (CONN methodology)
-- Script: `01_denoising/qc_fc/qc_fc_compute.py`
-- Two metrics: DV (per-subject distribution shape), DQ (across-subject FC-motion coupling)
-- 5000 random voxel pairs, fixed seed 42 — same pairs for all 70 runs and both pre/post
-- Tested only -GSR version (Lynch standard)
-- DV = 100 * exp(-k * |mode/IQR|); k calibrated from pre-denoising data (median pre-displacement → DV=5%)
-- DQ = 100 * overlap(observed QC-FC KDE, permutation null KDE); combined = min across 3 QC measures
-- Figures in `01_denoising/qc_fc/figures/`; results in `01_denoising/qc_fc/results/`
+- DVARS pre/post comparison script: `01_denoising/qc_dvars_comparison.py` (kept for reference, no figures produced)
 
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
