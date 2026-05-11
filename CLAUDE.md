@@ -21,17 +21,25 @@ brain regions. (Analysis details to be specified later.)
 
 ### Data paths on server
 
-**Raw BIDS data:**
+**Repository structure:**
 har_med_codes/
+├── CLAUDE.md
+├── README.md
+├── utils/                              # subject_filter, motion_qc, thesis_style
 ├── 01_preprocessing/
-│   ├── 01_QC/          # Quality control (motion, DVARS visualization)
-│   └── 02_denoising/   # Nuisance regression, censoring, bandpass
+│   ├── 01_QC/
+│   │   ├── scripts/                    # *.py QC scripts
+│   │   ├── results/                    # TSVs, logs, .npy
+│   │   ├── figures/                    # working figures
+│   │   └── thesis_figures/             # supplementary figures
+│   └── 02_denoising/
+│       ├── scripts/                    # denoise_*.py, qc_dvars_*.py
+│       ├── results/                    # denoised NIfTIs + batch log
+│       └── figures/                    # DVARS comparison figures
 ├── 02_timeseries_extraction/
 ├── 03_acw_analysis/
 ├── 04_statistics/
-├── utils/              # Shared helper functions
-├── _old/               # Archived scripts
-└── CLAUDE.md           # This file
+└── _old/                               # archived material
 
 ## Software Environment
 
@@ -80,7 +88,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Standard Power et al. 2012 FD as computed by fMRIPrep
 - 1-TR backward differences
 - 50 mm sphere for rotation conversion
-- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `01_preprocessing/01_QC/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
+- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `01_preprocessing/01_QC/scripts/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
 - Rationale for not using Lynch/Goldberg 4-TR window: no published guidance exists for non-HCP TRs; all major pipelines use 1-TR
 
 ### Frame censoring
@@ -101,13 +109,13 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Lomb-Scargle interpolation of censored frames after regression; faithful port of CBIG_preproc_censor.m (Jingwei Li, Yeo Lab)
 - Bandpass 0.01–0.1 Hz via frequency-domain masking inside LS (no Butterworth)
 - Output: `01_preprocessing/02_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz` and `desc-denoisedNoGSR_bold.nii.gz`
-- Shared core logic: `01_preprocessing/02_denoising/denoise_core.py` (imported by both scripts below)
-- Single-subject test script: `01_preprocessing/02_denoising/denoise_single_subject.py` (sub-01 ses-01)
-- Batch script: `01_preprocessing/02_denoising/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_preprocessing/02_denoising/results/_batch_log.tsv`
+- Shared core logic: `01_preprocessing/02_denoising/scripts/denoise_core.py` (imported by both scripts below)
+- Single-subject test script: `01_preprocessing/02_denoising/scripts/denoise_single_subject.py` (sub-01 ses-01)
+- Batch script: `01_preprocessing/02_denoising/scripts/denoise_batch.py` — processes all 35 included subjects × 2 sessions = 70 runs; skips existing outputs; appends per-run log to `01_preprocessing/02_denoising/results/_batch_log.tsv`
 
 ### Denoising QC
 - Method: DVARS pre/post comparison + FD-DVARS coupling
-- Script: `01_preprocessing/02_denoising/qc_dvars_comparison.py`
+- Script: `01_preprocessing/02_denoising/scripts/qc_dvars_comparison.py`
 - Figures: `01_preprocessing/02_denoising/figures/sub-XX_ses-YY_dvars_comparison.png/.pdf`
 - Logs: `01_preprocessing/02_denoising/results/sub-XX_ses-YY_dvars_comparison.txt`
 - Both sub-01 ses-01 (low motion) and sub-21 ses-01 (high motion) figures retained as evidence
@@ -121,7 +129,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 
 - All thesis-bound figures go to: `01_preprocessing/01_QC/thesis_figures/supplementary/`
 - Do NOT use `01_preprocessing/01_QC/figures_thesis/` — that directory was created by mistake
-- Active excluded-subjects panel script: `01_preprocessing/01_QC/excluded_subjects_panel.py`
+- Active excluded-subjects panel script: `01_preprocessing/01_QC/scripts/excluded_subjects_panel.py`
 - See `01_preprocessing/01_QC/thesis_figures/README.md` for the full figure index
 
 ## Things NOT to redo

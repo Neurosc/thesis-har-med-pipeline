@@ -23,7 +23,7 @@ from pathlib import Path
 
 # ─── Repo / path setup ────────────────────────────────────────────────────────
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (

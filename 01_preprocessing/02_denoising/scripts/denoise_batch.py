@@ -7,7 +7,7 @@ and both sessions, calling denoise_run() from denoise_core.py for each run.
 
 Usage (on server):
   conda activate fmri
-  python 01_preprocessing/02_denoising/denoise_batch.py
+  python 01_preprocessing/02_denoising/scripts/denoise_batch.py
 
 Outputs
 -------
@@ -24,7 +24,7 @@ import datetime
 import csv
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (

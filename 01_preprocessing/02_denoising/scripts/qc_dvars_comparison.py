@@ -16,7 +16,7 @@ Outputs
 
 Run on server (headless):
   conda activate fmri
-  python 01_preprocessing/02_denoising/qc_dvars_comparison.py
+  python 01_preprocessing/02_denoising/scripts/qc_dvars_comparison.py
 """
 
 import sys
@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.stats import pearsonr
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from utils.motion_qc import compute_custom_fd
