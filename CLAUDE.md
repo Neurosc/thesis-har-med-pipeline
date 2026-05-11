@@ -134,6 +134,16 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Requires AFNI (`3dUndump`, `3dAFNItoNIFTI`, `3dresample`) + conda env `fmri` for Python script
 - MNI 1mm template: `/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1mm.nii`
 
+### Nonself timeseries extraction
+- Script: `02_timeseries_extraction/scripts/04_extract_nonself_timeseries.py`
+- Subjects: 35 included × 2 sessions = 70 runs
+- 3 BOLD versions extracted per run: raw fMRIPrep, denoisedNoGSR, denoisedGSR (210 total)
+- Atlas: `nonself_atlas_native.nii.gz` (Glasser-derived, ~290-310 ROIs after self-overlap removal)
+- Output: CSV per (subject, session, version) — rows=timepoints, cols=ROI numbers
+- Output directory: `02_timeseries_extraction/results/timeseries_nonself/{version}/`
+- Log: `02_timeseries_extraction/results/timeseries_nonself/_extraction_log.tsv`
+- Idempotent: skips runs where output CSV already exists
+
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
