@@ -120,6 +120,20 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Logs: `01_preprocessing/02_denoising/results/sub-XX_ses-YY_dvars_comparison.txt`
 - Both sub-01 ses-01 (low motion) and sub-21 ses-01 (high motion) figures retained as evidence
 
+### ROI Atlas Generation
+- Self-referential atlas: 37 ROIs (Qin et al. 2020, Interoception/Exteroception/Cognition), 4mm-radius spheres
+  - Built at 1mm MNI resolution, resampled to native BOLD grid (1.72×1.72×2.00 mm, MNI152NLin2009cAsym)
+- Nonself atlas: Glasser parcellation (~327 ROIs), 4mm-radius spheres
+  - Original coords at `/home/jkokino/meditation_project/templates/nonself_roi/glasser_coordinates_nonself_327_original.txt`
+  - After overlap check, clean coords saved to `02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean_1mm.txt`
+- Scripts in `02_timeseries_extraction/scripts/`:
+  - `01_create_self_atlas.sh` — builds self atlas at 1mm + native BOLD resolution
+  - `02_create_nonself_atlas.sh` — builds nonself atlas at 1mm + native BOLD resolution
+  - `03_check_nonself_overlap.py` — removes nonself ROIs overlapping with self atlas (radius 4mm)
+- Atlas outputs: `02_timeseries_extraction/results/atlases/`
+- Requires AFNI (`3dUndump`, `3dAFNItoNIFTI`, `3dresample`) + conda env `fmri` for Python script
+- MNI 1mm template: `/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1mm.nii`
+
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
