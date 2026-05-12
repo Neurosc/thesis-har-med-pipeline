@@ -126,41 +126,46 @@ for version in VERSIONS
         box=attr(fillcolor="rgba(255,255,255,0)", line=attr(color="black", width=2))
     )
 
-    all_vals = vcat(ses01.self_tau, ses01.nonself_tau, ses02.self_tau, ses02.nonself_tau)
-    y_max    = maximum(all_vals)
-    bar_y    = y_max * 1.08
-    tick_sz  = y_max * 0.03
+    Δτ_ses01 = mean(ses01.self_tau) - mean(ses01.nonself_tau)
+    Δτ_ses02 = mean(ses02.self_tau) - mean(ses02.nonself_tau)
+
+    bar_y   = 3.35
+    tick_sz = 0.04
 
     layout = PlotlyJS.Layout(
-        font  = attr(family="Times New Roman", size=25),
+        font         = attr(family="Times New Roman", size=25),
+        plot_bgcolor  = "white",
+        paper_bgcolor = "white",
         yaxis = attr(
-            title = "Intrinsic Timescale τ (seconds)",
-            range = [0, y_max * 1.2]
+            title        = "Intrinsic Timescale τ (seconds)",
+            range        = [2.0, 3.5],
+            gridcolor    = "rgba(0,0,0,0.05)",
+            zerolinecolor = "rgba(0,0,0,0.1)",
         ),
         shapes = [
             # ses-01 bar: horizontal line + left tick + right tick
-            attr(type="line", x0="ses01-Self",    x1="ses01-Nonself", y0=bar_y,         y1=bar_y,
+            attr(type="line", x0="ses01-Self",    x1="ses01-Nonself", y0=bar_y,           y1=bar_y,
                  xref="x", yref="y", line=attr(color="black", width=1.5)),
-            attr(type="line", x0="ses01-Self",    x1="ses01-Self",    y0=bar_y,         y1=bar_y - tick_sz,
+            attr(type="line", x0="ses01-Self",    x1="ses01-Self",    y0=bar_y,           y1=bar_y - tick_sz,
                  xref="x", yref="y", line=attr(color="black", width=1.5)),
-            attr(type="line", x0="ses01-Nonself", x1="ses01-Nonself", y0=bar_y,         y1=bar_y - tick_sz,
+            attr(type="line", x0="ses01-Nonself", x1="ses01-Nonself", y0=bar_y,           y1=bar_y - tick_sz,
                  xref="x", yref="y", line=attr(color="black", width=1.5)),
             # ses-02 bar
-            attr(type="line", x0="ses02-Self",    x1="ses02-Nonself", y0=bar_y,         y1=bar_y,
+            attr(type="line", x0="ses02-Self",    x1="ses02-Nonself", y0=bar_y,           y1=bar_y,
                  xref="x", yref="y", line=attr(color="black", width=1.5)),
-            attr(type="line", x0="ses02-Self",    x1="ses02-Self",    y0=bar_y,         y1=bar_y - tick_sz,
+            attr(type="line", x0="ses02-Self",    x1="ses02-Self",    y0=bar_y,           y1=bar_y - tick_sz,
                  xref="x", yref="y", line=attr(color="black", width=1.5)),
-            attr(type="line", x0="ses02-Nonself", x1="ses02-Nonself", y0=bar_y,         y1=bar_y - tick_sz,
+            attr(type="line", x0="ses02-Nonself", x1="ses02-Nonself", y0=bar_y,           y1=bar_y - tick_sz,
                  xref="x", yref="y", line=attr(color="black", width=1.5)),
         ],
-        # Significance labels centered above each bar
+        # Effect size labels centered above each bar
         # x=0.5 = midpoint of traces 0,1 (ses01-Self, ses01-Nonself)
         # x=2.5 = midpoint of traces 2,3 (ses02-Self, ses02-Nonself)
         annotations = [
-            attr(x=0.5, y=bar_y + tick_sz, xref="x", yref="y",
-                 text=sig_label(p01), showarrow=false, font=attr(size=22)),
-            attr(x=2.5, y=bar_y + tick_sz, xref="x", yref="y",
-                 text=sig_label(p02), showarrow=false, font=attr(size=22)),
+            attr(x=0.5, y=3.42, xref="x", yref="y",
+                 text="Δτ = $(round(Δτ_ses01; digits=2)) s", showarrow=false, font=attr(size=16)),
+            attr(x=2.5, y=3.42, xref="x", yref="y",
+                 text="Δτ = $(round(Δτ_ses02; digits=2)) s", showarrow=false, font=attr(size=16)),
         ]
     )
 
