@@ -97,41 +97,42 @@ for version in VERSIONS
     println()
 
     # ── Violin traces: numeric x positions for custom session grouping ──────────
-    # Positions 0,1 = ses-01 pair; 3,4 = ses-02 pair (gap of 2 between sessions)
+    # Positions 0,1.5 = ses-01 pair; 3.5,5 = ses-02 pair
+    # Within-pair gap = 1.5; between-pair gap = 2 → balanced horizontal layout
     n01 = nrow(ses01)
     n02 = nrow(ses02)
 
     trace_s01s = PlotlyJS.violin(
-        y=ses01.self_tau,    x=fill(0, n01), name="ses01-Self",
+        y=ses01.self_tau,    x=fill(0.0, n01), name="ses01-Self",
         box_visible=true, points="all", pointpos=0,
         fillcolor="rgba(61, 90, 108, 0.4)", line_color=COLOR_SELF_PRE,
         marker=attr(color="rgba(61, 90, 108, 0.6)", size=6),
         box=attr(fillcolor="rgba(255,255,255,0)", line=attr(color="black", width=2))
     )
     trace_s01n = PlotlyJS.violin(
-        y=ses01.nonself_tau, x=fill(1, n01), name="ses01-Nonself",
+        y=ses01.nonself_tau, x=fill(1.5, n01), name="ses01-Nonself",
         box_visible=true, points="all", pointpos=0,
         fillcolor="rgba(139, 115, 85, 0.4)", line_color=COLOR_NONSELF_PRE,
         marker=attr(color="rgba(139, 115, 85, 0.6)", size=6),
         box=attr(fillcolor="rgba(255,255,255,0)", line=attr(color="black", width=2))
     )
     trace_s02s = PlotlyJS.violin(
-        y=ses02.self_tau,    x=fill(3, n02), name="ses02-Self",
+        y=ses02.self_tau,    x=fill(3.5, n02), name="ses02-Self",
         box_visible=true, points="all", pointpos=0,
         fillcolor="rgba(122, 149, 166, 0.4)", line_color=COLOR_SELF_POST,
         marker=attr(color="rgba(122, 149, 166, 0.6)", size=6),
         box=attr(fillcolor="rgba(255,255,255,0)", line=attr(color="black", width=2))
     )
     trace_s02n = PlotlyJS.violin(
-        y=ses02.nonself_tau, x=fill(4, n02), name="ses02-Nonself",
+        y=ses02.nonself_tau, x=fill(5.0, n02), name="ses02-Nonself",
         box_visible=true, points="all", pointpos=0,
         fillcolor="rgba(191, 168, 136, 0.4)", line_color=COLOR_NONSELF_POST,
         marker=attr(color="rgba(191, 168, 136, 0.6)", size=6),
         box=attr(fillcolor="rgba(255,255,255,0)", line=attr(color="black", width=2))
     )
 
-    Δτ_ses01 = mean(ses01.self_tau) - mean(ses01.nonself_tau)
-    Δτ_ses02 = mean(ses02.self_tau) - mean(ses02.nonself_tau)
+    bar_y   = 3.30
+    tick_sz = 0.04
 
     layout = PlotlyJS.Layout(
         font          = attr(family="Times New Roman", size=25),
@@ -140,26 +141,41 @@ for version in VERSIONS
         showlegend    = false,
         xaxis = attr(
             tickmode = "array",
-            tickvals = [0, 1, 3, 4],
+            tickvals = [0.0, 1.5, 3.5, 5.0],
             ticktext = ["ses01-Self", "ses01-Nonself", "ses02-Self", "ses02-Nonself"],
-            range    = [-0.6, 4.6],
+            range    = [-0.7, 5.7],
         ),
         yaxis = attr(
             title         = "Intrinsic Timescale τ (seconds)",
             range         = [2.0, 3.5],
             tickmode      = "array",
-            tickvals      = [2.0, 2.5, 3.0, 3.5],
+            tickvals      = [2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4],
             gridcolor     = "rgba(0,0,0,0.05)",
             zerolinecolor = "rgba(0,0,0,0.1)",
         ),
-        # Effect size labels only — no bracket shapes
-        # x=0.5 = midpoint of positions 0,1 (ses01 pair)
-        # x=3.5 = midpoint of positions 3,4 (ses02 pair)
+        shapes = [
+            # ses-01 bracket: horizontal bar + left tick + right tick
+            attr(type="line", x0=0.0, x1=1.5, y0=bar_y,           y1=bar_y,
+                 xref="x", yref="y", line=attr(color="black", width=1.5)),
+            attr(type="line", x0=0.0, x1=0.0, y0=bar_y,           y1=bar_y - tick_sz,
+                 xref="x", yref="y", line=attr(color="black", width=1.5)),
+            attr(type="line", x0=1.5, x1=1.5, y0=bar_y,           y1=bar_y - tick_sz,
+                 xref="x", yref="y", line=attr(color="black", width=1.5)),
+            # ses-02 bracket
+            attr(type="line", x0=3.5, x1=5.0, y0=bar_y,           y1=bar_y,
+                 xref="x", yref="y", line=attr(color="black", width=1.5)),
+            attr(type="line", x0=3.5, x1=3.5, y0=bar_y,           y1=bar_y - tick_sz,
+                 xref="x", yref="y", line=attr(color="black", width=1.5)),
+            attr(type="line", x0=5.0, x1=5.0, y0=bar_y,           y1=bar_y - tick_sz,
+                 xref="x", yref="y", line=attr(color="black", width=1.5)),
+        ],
+        # Significance asterisks above each bracket midpoint
+        # ses01 midpoint x = (0.0+1.5)/2 = 0.75; ses02 midpoint x = (3.5+5.0)/2 = 4.25
         annotations = [
-            attr(x=0.5, y=3.42, xref="x", yref="y",
-                 text="Δτ = $(round(Δτ_ses01; digits=2)) s", showarrow=false, font=attr(size=16)),
-            attr(x=3.5, y=3.42, xref="x", yref="y",
-                 text="Δτ = $(round(Δτ_ses02; digits=2)) s", showarrow=false, font=attr(size=16)),
+            attr(x=0.75, y=bar_y + 0.05, xref="x", yref="y",
+                 text=sig_label(p01), showarrow=false, font=attr(size=22)),
+            attr(x=4.25, y=bar_y + 0.05, xref="x", yref="y",
+                 text=sig_label(p02), showarrow=false, font=attr(size=22)),
         ]
     )
 
