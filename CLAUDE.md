@@ -159,6 +159,14 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Processes self + nonself × raw + denoisedNoGSR = 4 combinations × 70 subject-sessions = 280 JLD2 outputs
 - Output: `03_acw_analysis/results/acw/{atlas}/{version}/{subject}_{session}.jld2`
 
+### ACW Boxplot Analysis
+- Script: `03_acw_analysis/scripts/02_boxplot_session_self_nonself.jl`
+- Compares: ses-01 Self vs ses-01 Nonself, ses-02 Self vs ses-02 Nonself
+- Test: paired Wilcoxon signed-rank
+- Metric: tau (intrinsic timescale)
+- Versions: raw + denoisedNoGSR (separate figures)
+- Aggregation: median ACW across ROIs per (subject, session, atlas)
+
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
