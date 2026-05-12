@@ -1,0 +1,11 @@
+**/*.nii
+**/*.nii.gz
+02_timeseries_extraction/results/timeseries_self/
+02_timeseries_extraction/results/timeseries_nonself/
+02_timeseries_extraction/results/atlases/*.nii*
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+Thumbs.db
+*.log
