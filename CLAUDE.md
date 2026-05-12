@@ -152,6 +152,13 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Log: `02_timeseries_extraction/results/timeseries_nonself/_extraction_log.tsv`
 - Idempotent: skips runs where output CSV already exists
 
+### ACW Computation
+- Script: `03_acw_analysis/scripts/01_compute_acw.jl`
+- TR = 1.8 s, n_lags = 100, dummy volumes discarded = 6
+- ACW types: tau (exponential decay), auc (area under curve)
+- Processes self + nonself × raw + denoisedNoGSR = 4 combinations × 70 subject-sessions = 280 JLD2 outputs
+- Output: `03_acw_analysis/results/acw/{atlas}/{version}/{subject}_{session}.jld2`
+
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
