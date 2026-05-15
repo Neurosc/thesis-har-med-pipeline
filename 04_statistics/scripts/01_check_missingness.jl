@@ -80,6 +80,7 @@ ok_count = 0
 
 for (row_i, subject) in enumerate(SUBJECTS)
     for (col_j, (atlas, session)) in enumerate(COL_KEYS)
+        global file_idx, ok_count
         file_idx += 1
 
         jld_path   = joinpath(ACW_BASE, atlas, VERSION, "$(subject)_$(session).jld2")
