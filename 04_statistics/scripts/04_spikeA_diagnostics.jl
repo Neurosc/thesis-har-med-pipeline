@@ -186,18 +186,18 @@ println()
         "subject", "session", "spike_A_count", "n_censored", "pct_censored",
         "post_std_NoGSR", "excluded")
 println("  " * "-" ^ 80)
-prev_subj = ""
-for r in eachrow(motion_df)
-    if r.subject != prev_subj && prev_subj != ""
-        println()
+for (i, subj) in enumerate(focus)
+    i > 1 && println()
+    for session in ["ses-01", "ses-02"]
+        rows = filter(r -> r.subject == subj && r.session == session, motion_df)
+        r    = rows[1, :]
+        @printf("  %-10s %-8s  %13d  %10s  %11s%%  %14s  %s\n",
+                r.subject, r.session, r.spike_A_nonself_count,
+                ismissing(r.n_censored)     ? "MISSING" : string(r.n_censored),
+                ismissing(r.pct_censored)   ? "MISSING" : @sprintf("%5.2f", r.pct_censored),
+                ismissing(r.post_std_NoGSR) ? "MISSING" : @sprintf("%.4f", r.post_std_NoGSR),
+                r.excluded)
     end
-    prev_subj = r.subject
-    @printf("  %-10s %-8s  %13d  %10s  %11s%%  %14s  %s\n",
-            r.subject, r.session, r.spike_A_nonself_count,
-            ismissing(r.n_censored)   ? "MISSING" : string(r.n_censored),
-            ismissing(r.pct_censored) ? "MISSING" : @sprintf("%5.2f", r.pct_censored),
-            ismissing(r.post_std_NoGSR) ? "MISSING" : @sprintf("%.4f", r.post_std_NoGSR),
-            r.excluded)
 end
 
 # Exclusion check
