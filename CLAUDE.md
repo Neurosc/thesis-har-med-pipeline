@@ -167,6 +167,14 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Versions: raw + denoisedNoGSR (separate figures)
 - Aggregation: median ACW across ROIs per (subject, session, atlas)
 
+### τ spike investigation (τ ≈ 1 s)
+- Hypothesis: 46 nonself Glasser ROIs in temporal poles, OFC, and frontal poles show τ ≈ 1 s due to susceptibility dropout (sinuses, petrous bone)
+- Diagnostic: per-ROI tSNR across 70 runs (raw fMRIPrep BOLD)
+- Script: `03_acw_analysis/scripts/04_tsnr_check.py` (runs on server)
+- Output: `03_acw_analysis/results/tsnr/tsnr_per_roi.tsv`
+- Spike ROI list (Glasser ROI numbers): `03_acw_analysis/results/tsnr/spike_rois.tsv`
+- Action depending on results: if spike ROIs have median tSNR < 30, exclude them from downstream analysis with anatomical justification
+
 ### Final analysis (planned)
 - Autocorrelation Window (ACW) calculation in self vs non-self regions
 - Comparison: pre-retreat (ses-01) vs post-retreat (ses-02)
