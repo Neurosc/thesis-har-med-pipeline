@@ -243,7 +243,7 @@ for (k, c) in enumerate(cases)
     @printf("  [%2d/12] %s %s %s ROI%d  τ_stored=%9.6f  τ_fresh=%9.6f  Δ=%.2e  %s\n",
             k, c.subject, c.session, c.atlas, c.roi_pos_id,
             c.recorded_tau, tau_fresh, delta, ok ? "OK" : "*** MISMATCH ***")
-    ok || (any_mismatch = true)
+    ok || (global any_mismatch = true)
 
     # MSE surface: 200 τ values log-spaced from 0.1 to 30 s
     # Model: ACF(lag) = exp(-lag / τ)  [same as IntrinsicTimescales fit_expdecay]
@@ -408,15 +408,15 @@ for (k, d) in enumerate(case_data)
 end
 
 # Set log-scale x-axis on every MSE panel; add axis labels
-axis_updates = Dict{String,Any}()
+axis_updates = Dict{Symbol,Any}()
 for k in 1:12
     lr      = (k - 1) ÷ NCOLS + 1
     lc      = (k - 1) % NCOLS + 1
     mse_row = (lr - 1) * 2 + 2
     ax_idx  = (mse_row - 1) * NCOLS + lc
     ax_key  = ax_idx == 1 ? "xaxis" : "xaxis$(ax_idx)"
-    axis_updates["$(ax_key).type"]       = "log"
-    axis_updates["$(ax_key).title.text"] = "τ (s)"
+    axis_updates[Symbol("$(ax_key).type")]       = "log"
+    axis_updates[Symbol("$(ax_key).title.text")] = "τ (s)"
 end
 # Y-axis labels on left-column panels
 for lr in 1:NLOG_ROWS
@@ -424,8 +424,8 @@ for lr in 1:NLOG_ROWS
     mse_ax_idx = ((lr - 1) * 2 + 1)   * NCOLS + 1
     acf_y_key  = acf_ax_idx == 1 ? "yaxis" : "yaxis$(acf_ax_idx)"
     mse_y_key  = mse_ax_idx == 1 ? "yaxis" : "yaxis$(mse_ax_idx)"
-    axis_updates["$(acf_y_key).title.text"] = "ACF"
-    axis_updates["$(mse_y_key).title.text"] = "MSE"
+    axis_updates[Symbol("$(acf_y_key).title.text")] = "ACF"
+    axis_updates[Symbol("$(mse_y_key).title.text")] = "MSE"
 end
 relayout!(fig, axis_updates)
 

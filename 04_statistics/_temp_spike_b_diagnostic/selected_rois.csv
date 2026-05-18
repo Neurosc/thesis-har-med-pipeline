@@ -1,0 +1,13 @@
+subject,session,atlas,roi_pos_id,roi_name,recorded_tau,category
+sub-27,ses-02,nonself,9,R_3b_ROI,5.26196653084599,spike_B_high
+sub-28,ses-01,nonself,78,R_10pp_ROI,5.257809435264084,spike_B_high
+sub-03,ses-01,self,30,Cognition_L_Thalamus,5.193702147200268,spike_B_high
+sub-05,ses-01,self,32,Cognition_Cingulate,5.193702147200268,spike_B_high
+sub-34,ses-02,nonself,217,L_10r_ROI,5.01580237194466,spike_B_low
+sub-18,ses-01,nonself,149,R_p10p_ROI,5.0237622673722875,spike_B_low
+sub-03,ses-01,self,30,Cognition_L_Thalamus,5.193702147200268,spike_B_low
+sub-05,ses-01,self,32,Cognition_Cingulate,5.193702147200268,spike_B_low
+sub-31,ses-01,nonself,91,R_52_ROI,2.500048448053369,normal
+sub-23,ses-01,nonself,297,L_VMV2_ROI,2.500091384749285,normal
+sub-39,ses-02,self,37,Cognition_R_Premotor,2.5002967615798393,normal
+sub-16,ses-02,self,24,Exteroception_R_Cingulate,2.500569518628608,normal
