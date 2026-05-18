@@ -349,7 +349,7 @@ end
 fig = make_subplots(
     rows               = NACT_ROWS,
     cols               = NCOLS,
-    subplot_titles     = subplot_titles,
+    subplot_titles     = permutedims(reshape(subplot_titles, NCOLS, NACT_ROWS)),
     vertical_spacing   = 0.04,
     horizontal_spacing = 0.08,
     row_heights        = repeat([2.5, 1.0], NLOG_ROWS),
