@@ -112,11 +112,12 @@ for (k, case_id) in enumerate(case_ids)
 end
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Part 4 — Scrollable HTML figure (one Plotly.js div per case, pairwise layout)
+# Part 4 — Scrollable HTML figure (two separate Plotly divs per case, flex row)
+# Each case occupies one <div class="panel-row"> with two independent newPlot
+# calls — ACF left, MSE right — guaranteeing structural per-case pairing.
 # ══════════════════════════════════════════════════════════════════════════════
 println("\n═══ Part 4: Building figure ═══")
 
-# Serialise a Julia vector to a compact JSON array string
 js(v) = "[" * join(v, ",") * "]"
 
 open(FIG_PATH, "w") do io
@@ -127,17 +128,18 @@ open(FIG_PATH, "w") do io
 <title>Stuck-τ diagnostic (τ ≈ 5.194 s)</title>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
-  body { font-family: "Times New Roman", serif; background: white; margin: 20px; }
-  h2   { font-size: 14px; margin-bottom: 4px; }
-  .case-block { margin-bottom: 32px; border-top: 1px solid #ccc; padding-top: 12px; }
-  .legend-line { font-size: 12px; margin-bottom: 8px; }
+  body         { font-family: "Times New Roman", serif; background: white; margin: 20px; }
+  .global-legend { font-size: 12px; margin-bottom: 14px; }
+  .case-block  { margin-bottom: 40px; border-top: 1px solid #ccc; padding-top: 8px; }
+  .case-header { font-size: 12px; font-weight: bold; margin-bottom: 6px; }
+  .panel-row   { display: flex; flex-direction: row; gap: 10px; }
 </style>
 </head>
 <body>
 <h2 style="font-size:15px;">
   Stuck-τ diagnostic (τ ≈ 5.194 s): ACF curves and MSE surfaces — 10 cases
 </h2>
-<p class="legend-line">
+<p class="global-legend">
   <span style="color:$(COL_ACF_DOTS);">● ACF</span> &nbsp;
   <span style="color:$(COL_REC_FIT);">&#8212; exp(−lag/τ<sub>recorded</sub>)</span> &nbsp;
   <span style="color:$(COL_GRID_FIT);">- - exp(−lag/τ<sub>grid</sub>)</span>
@@ -153,76 +155,72 @@ open(FIG_PATH, "w") do io
         fit_grid = exp.(-(lags ./ tau_grid))
         max_mse  = maximum(d.mse_vals)
 
-        div_id = "plot_$k"
+        acf_id = "acf_$k"
+        mse_id = "mse_$k"
 
-        acf_title  = "$(d.case_id)  τ = $(round(tau_rec; digits=6)) s"
-        mse_title  = "MSE surface — τ_grid = $(round(tau_grid; digits=4)) s"
+        acf_title = "ACF — τ_recorded = $(round(tau_rec; digits=6)) s, τ_grid = $(round(tau_grid; digits=4)) s"
+        mse_title = "MSE surface"
 
         write(io, """<div class="case-block">
-<div id="$(div_id)" style="width:1300px; height:370px;"></div>
+<div class="case-header">$(d.case_id)</div>
+<div class="panel-row">
+  <div id="$(acf_id)" style="width:630px;height:370px;"></div>
+  <div id="$(mse_id)" style="width:630px;height:370px;"></div>
+</div>
 <script>
 (function(){
-  var lags     = $(js(lags));
-  var acf      = $(js(acf));
-  var fit_rec  = $(js(fit_rec));
-  var fit_grid = $(js(fit_grid));
+  var lags         = $(js(lags));
+  var acf          = $(js(acf));
+  var fit_rec      = $(js(fit_rec));
+  var fit_grid     = $(js(fit_grid));
   var tau_grid_arr = $(js(collect(TAU_GRID)));
-  var mse_vals = $(js(d.mse_vals));
-  var tau_rec  = $(tau_rec);
-  var tau_grid = $(tau_grid);
-  var max_mse  = $(max_mse);
+  var mse_vals     = $(js(d.mse_vals));
+  var tau_rec      = $(tau_rec);
+  var tau_grid     = $(tau_grid);
+  var max_mse      = $(max_mse);
 
-  var traces = [
-    // ACF panel (xaxis:'x1', yaxis:'y1')
+  // ── ACF figure (left) ──────────────────────────────────────────────────────
+  Plotly.newPlot('$(acf_id)', [
     { x: lags, y: acf,
-      mode: 'markers', xaxis: 'x1', yaxis: 'y1',
-      marker: { color: '$(COL_ACF_DOTS)', size: 5 },
+      mode: 'markers', marker: { color: '$(COL_ACF_DOTS)', size: 5 },
       name: 'ACF', showlegend: false },
     { x: lags, y: fit_rec,
-      mode: 'lines', xaxis: 'x1', yaxis: 'y1',
-      line: { color: '$(COL_REC_FIT)', width: 2 },
+      mode: 'lines', line: { color: '$(COL_REC_FIT)', width: 2 },
       name: 'exp(−lag/τ_rec)', showlegend: false },
     { x: lags, y: fit_grid,
-      mode: 'lines', xaxis: 'x1', yaxis: 'y1',
-      line: { color: '$(COL_GRID_FIT)', width: 2, dash: 'dash' },
+      mode: 'lines', line: { color: '$(COL_GRID_FIT)', width: 2, dash: 'dash' },
       name: 'exp(−lag/τ_grid)', showlegend: false },
-    // MSE panel (xaxis:'x2', yaxis:'y2')
-    { x: tau_grid_arr, y: mse_vals,
-      mode: 'lines', xaxis: 'x2', yaxis: 'y2',
-      line: { color: '$(COL_MSE_LINE)', width: 2 },
-      name: 'MSE', showlegend: false },
-    { x: [tau_rec, tau_rec], y: [0, max_mse],
-      mode: 'lines', xaxis: 'x2', yaxis: 'y2',
-      line: { color: '$(COL_REC_FIT)', width: 2, dash: 'dash' },
-      name: 'τ_rec', showlegend: false },
-    { x: [tau_grid, tau_grid], y: [0, max_mse],
-      mode: 'lines', xaxis: 'x2', yaxis: 'y2',
-      line: { color: '$(COL_GRID_FIT)', width: 2 },
-      name: 'τ_grid', showlegend: false },
-  ];
-
-  var layout = {
-    grid: { rows: 1, columns: 2, pattern: 'independent' },
-    width: 1300, height: 370,
+  ], {
+    title: { text: '$(acf_title)', font: { size: 11 } },
+    width: 630, height: 370,
     paper_bgcolor: 'white', plot_bgcolor: 'white',
     font: { family: 'Times New Roman', size: 10 },
-    margin: { t: 50, b: 50, l: 60, r: 40 },
-    annotations: [
-      { text: '$(acf_title)', xref: 'x1 domain', yref: 'y1 domain',
-        x: 0.5, y: 1.08, xanchor: 'center', yanchor: 'bottom',
-        showarrow: false, font: { size: 11 } },
-      { text: '$(mse_title)', xref: 'x2 domain', yref: 'y2 domain',
-        x: 0.5, y: 1.08, xanchor: 'center', yanchor: 'bottom',
-        showarrow: false, font: { size: 11 } },
-    ],
-    xaxis:  { title: 'Lag (s)',  range: [0, 180] },
-    yaxis:  { title: 'ACF',     range: [-0.3, 1.05] },
-    xaxis2: { title: 'τ (s)', type: 'log',
-              range: [Math.log10(0.1), Math.log10(30)] },
-    yaxis2: { title: 'MSE' },
-  };
+    margin: { t: 55, b: 50, l: 60, r: 20 },
+    xaxis: { title: 'Lag (s)', range: [0, 180] },
+    yaxis: { title: 'ACF',    range: [-0.3, 1.05] },
+  }, { responsive: false });
 
-  Plotly.newPlot('$(div_id)', traces, layout, {responsive: false});
+  // ── MSE figure (right) ─────────────────────────────────────────────────────
+  Plotly.newPlot('$(mse_id)', [
+    { x: tau_grid_arr, y: mse_vals,
+      mode: 'lines', line: { color: '$(COL_MSE_LINE)', width: 2 },
+      name: 'MSE', showlegend: false },
+    { x: [tau_rec, tau_rec], y: [0, max_mse],
+      mode: 'lines', line: { color: '$(COL_REC_FIT)', width: 2, dash: 'dash' },
+      name: 'τ_rec', showlegend: false },
+    { x: [tau_grid, tau_grid], y: [0, max_mse],
+      mode: 'lines', line: { color: '$(COL_GRID_FIT)', width: 2 },
+      name: 'τ_grid', showlegend: false },
+  ], {
+    title: { text: '$(mse_title)', font: { size: 11 } },
+    width: 630, height: 370,
+    paper_bgcolor: 'white', plot_bgcolor: 'white',
+    font: { family: 'Times New Roman', size: 10 },
+    margin: { t: 55, b: 50, l: 60, r: 20 },
+    xaxis: { title: 'τ (s)', type: 'log',
+             range: [Math.log10(0.1), Math.log10(30)] },
+    yaxis: { title: 'MSE' },
+  }, { responsive: false });
 })();
 </script>
 </div>
