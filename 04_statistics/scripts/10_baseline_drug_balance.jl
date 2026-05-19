@@ -212,7 +212,7 @@ end
 
 # ── Annotations (stats) inside each panel ─────────────────────────────────────
 # With horizontal_spacing=0.10 and 2 cols, panel x-domains are ≈[0, 0.45] and [0.55, 1.0]
-annotations = AbstractPlotlyAttribute[]
+annotations = Any[]
 for (col_idx, atlas_label) in enumerate(["self", "nonself"])
     s    = stats_results[atlas_label]
     text = @sprintf("t=%.3f (df=%.1f), p=%.3f<br>U=%.0f, p=%.3f<br>d=%+.3f (%s)",
