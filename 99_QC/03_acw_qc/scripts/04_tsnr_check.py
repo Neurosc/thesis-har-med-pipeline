@@ -9,12 +9,12 @@ frontal poles — regions affected by sinuses and petrous bone).
 RUN ON SERVER (NIfTIs not on local Windows machine):
   conda activate fmri
   cd /BICNAS2/group-northoff/jkokino/codes/har_med_codes
-  python QC/03_acw_qc/scripts/04_tsnr_check.py
+  python 99_QC/03_acw_qc/scripts/04_tsnr_check.py
 
 After completion, transfer results to local:
   scp jkokino@10.156.156.21:/BICNAS2/group-northoff/jkokino/codes/har_med_codes/
-      QC/03_acw_qc/results/tsnr/tsnr_per_roi.tsv
-      <local>/thesis-har-med-pipeline/QC/03_acw_qc/results/tsnr/
+      99_QC/03_acw_qc/results/tsnr/tsnr_per_roi.tsv
+      <local>/thesis-har-med-pipeline/99_QC/03_acw_qc/results/tsnr/
 """
 
 import sys
@@ -25,7 +25,7 @@ import nibabel as nib
 from pathlib import Path
 from scipy import stats
 
-# ── Repo root (script is at QC/03_acw_qc/scripts/) ─────────────────────────
+# ── Repo root (script is at 99_QC/03_acw_qc/scripts/) ─────────────────────────
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -37,8 +37,8 @@ FMRIPREP_ROOT = Path(
 )
 ATLAS_PATH    = (REPO_ROOT / "02_timeseries_extraction" / "results" / "atlases"
                  / "nonself_atlas_native.nii.gz")
-SPIKE_ROIS_TSV = REPO_ROOT / "QC" / "03_acw_qc" / "results" / "tsnr" / "spike_rois.tsv"
-OUT_DIR       = REPO_ROOT / "QC" / "03_acw_qc" / "results" / "tsnr"
+SPIKE_ROIS_TSV = REPO_ROOT / "99_QC" / "03_acw_qc" / "results" / "tsnr" / "spike_rois.tsv"
+OUT_DIR       = REPO_ROOT / "99_QC" / "03_acw_qc" / "results" / "tsnr"
 OUT_LONG      = OUT_DIR / "tsnr_per_roi.tsv"
 OUT_SUMMARY   = OUT_DIR / "tsnr_summary.tsv"
 

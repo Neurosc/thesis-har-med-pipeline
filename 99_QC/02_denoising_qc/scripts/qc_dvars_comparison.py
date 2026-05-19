@@ -10,13 +10,13 @@ Panels (shared x-axis, frame index):
 
 Outputs
 -------
-  QC/02_denoising_qc/figures/sub-01_ses-01_dvars_comparison.png  (300 dpi)
-  QC/02_denoising_qc/figures/sub-01_ses-01_dvars_comparison.pdf
-  QC/02_denoising_qc/results/sub-01_ses-01_dvars_comparison.txt
+  99_QC/02_denoising_qc/figures/sub-01_ses-01_dvars_comparison.png  (300 dpi)
+  99_QC/02_denoising_qc/figures/sub-01_ses-01_dvars_comparison.pdf
+  99_QC/02_denoising_qc/results/sub-01_ses-01_dvars_comparison.txt
 
 Run on server (headless):
   conda activate fmri
-  python QC/02_denoising_qc/scripts/qc_dvars_comparison.py
+  python 99_QC/02_denoising_qc/scripts/qc_dvars_comparison.py
 """
 
 import sys

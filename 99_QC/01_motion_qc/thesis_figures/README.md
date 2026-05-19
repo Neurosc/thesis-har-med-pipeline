@@ -1,7 +1,7 @@
 # Thesis Figures
 
 This directory holds curated figures formatted for the thesis. Originals
-live in `QC/01_motion_qc/figures/` and are not moved here — these are copies.
+live in `99_QC/01_motion_qc/figures/` and are not moved here — these are copies.
 
 ## supplementary/
 Motion QC and preprocessing figures, all to appear in the supplementary
