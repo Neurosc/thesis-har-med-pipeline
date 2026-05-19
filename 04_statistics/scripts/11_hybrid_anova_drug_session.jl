@@ -18,7 +18,8 @@
 # Run from repo root:
 #   julia 04_statistics/scripts/11_hybrid_anova_drug_session.jl
 
-using CSV, DataFrames, Distributions, HypothesisTests, MultipleTesting, Statistics, Printf
+using CSV, DataFrames, HypothesisTests, MultipleTesting, Statistics, Printf
+import HypothesisTests.Distributions: FDist, ccdf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
@@ -48,7 +49,7 @@ long_df = CSV.read(IN_CSV, DataFrame)
 @printf("  Loaded %d rows × %d columns\n", nrow(long_df), ncol(long_df))
 
 # Per (subject, session, drug_group, atlas)
-agg = combine(
+agg = DataFrames.combine(
     groupby(long_df, [:subject, :session, :drug_group, :atlas]),
     :auc => median => :auc_median,
     :auc => mean   => :auc_mean,
