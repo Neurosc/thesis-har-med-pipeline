@@ -9,15 +9,15 @@
 # match these p0 candidates exactly (within 1e-9), per atlas.
 #
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/02_p0_stuck_diagnostic.jl
+#   julia 99_QC/troubleshooting/scripts/02_p0_stuck_diagnostic.jl
 
 using CSV, DataFrames, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const LONG_CSV   = joinpath(REPO_ROOT, "04_statistics", "results",
                              "analysis_long_format.csv")
-const OUT_DIR    = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic")
+const OUT_DIR    = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const P0_CSV     = joinpath(OUT_DIR, "p0_match_summary.csv")
 const TOP_CSV    = joinpath(OUT_DIR, "top_exact_tau_values.csv")
 

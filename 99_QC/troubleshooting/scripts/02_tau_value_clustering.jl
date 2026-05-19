@@ -5,11 +5,11 @@
 # fit at the ACW-50 initial value rather than a true distribution of timescales.
 #
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/02_tau_value_clustering.jl
+#   julia 99_QC/troubleshooting/scripts/02_tau_value_clustering.jl
 
 using CSV, DataFrames, Printf
 
-const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const LONG_CSV  = joinpath(REPO_ROOT, "04_statistics", "results", "analysis_long_format.csv")
 
 isfile(LONG_CSV) || error("Missing: $LONG_CSV")

@@ -5,21 +5,21 @@
 # The column header of each nonself timeseries CSV gives the actual Glasser ROI number
 # for each position. This script builds that mapping and joins to the atlas coordinates.
 #
-# Run from repo root: julia 04_statistics/scripts/05_spikeA_anatomy.jl
+# Run from repo root: julia 99_QC/troubleshooting/scripts/05_spikeA_anatomy.jl
 
 using CSV, DataFrames, PlotlyJS, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT     = normpath(joinpath(@__DIR__, "..", ".."))
-const FREQ_CSV      = joinpath(REPO_ROOT, "04_statistics", "results", "fig04_spikeA_roi_frequency.csv")
+const REPO_ROOT     = normpath(joinpath(@__DIR__, "..", "..", ".."))
+const FREQ_CSV      = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results", "fig04_spikeA_roi_frequency.csv")
 const ATLAS_TXT     = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                                "glasser_coordinates_nonself_clean_1mm.txt")
 # Any nonself timeseries CSV — we only need the header to get position → Glasser ROI mapping
 const TS_HEADER_CSV = joinpath(REPO_ROOT, "02_timeseries_extraction", "results",
                                "timeseries_nonself", "denoisedNoGSR",
                                "sub-01_ses-01_nonself_timeseries.csv")
-const RES_DIR       = joinpath(REPO_ROOT, "04_statistics", "results")
-const FIG_DIR       = joinpath(REPO_ROOT, "04_statistics", "figures")
+const RES_DIR       = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
+const FIG_DIR       = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "figures")
 const OUT_CSV       = joinpath(RES_DIR, "fig05_spikeA_anatomy.csv")
 const OUT_FIG       = joinpath(FIG_DIR, "fig05_spikeA_anatomy.html")
 
@@ -30,7 +30,7 @@ const COLOR_RIGHT = "#8B7355"   # taupe
 # ── Idempotency ───────────────────────────────────────────────────────────────
 if isfile(OUT_CSV) && isfile(OUT_FIG)
     println("[skip] all outputs already exist; delete to rerun")
-    exit()
+    #exit()
 end
 
 # ── Check required inputs ─────────────────────────────────────────────────────

@@ -3,15 +3,15 @@
 # produces a scrollable 10-panel HTML figure with vivid colors.
 #
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/04_recompute_stuck_scrollable.jl
+#   julia 99_QC/troubleshooting/scripts/04_recompute_stuck_scrollable.jl
 
 using CSV, DataFrames, IntrinsicTimescales, Statistics, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-const WIDE_CSV  = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic",
+const REPO_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
+const WIDE_CSV  = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results",
                             "stuck_5194_timeseries_wide.csv")
-const OUT_DIR   = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic")
+const OUT_DIR   = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "figures")
 const FIG_PATH  = joinpath(OUT_DIR, "fig_stuck_recompute_scrollable.html")
 
 # ── ACW constants (must match 03_acw_analysis/scripts/01_compute_acw.jl) ──────

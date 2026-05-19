@@ -3,24 +3,24 @@
 # Determines whether τ ≈ 5.2 s spike reflects genuine slow dynamics or a
 # local-minimum artifact of the scalar-MSE LevenbergMarquardt fit.
 #
-# Output directory: 04_statistics/_temp_spike_b_diagnostic/   (temp; will move to QC/)
+# Output directory: 99_QC/troubleshooting/
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/01_spike_b_acf_mse_diagnostic.jl
+#   julia 99_QC/troubleshooting/scripts/01_spike_b_acf_mse_diagnostic.jl
 
 using CSV, DataFrames, IntrinsicTimescales, PlotlyJS, Random, Statistics, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const SPIKE_CSV  = joinpath(REPO_ROOT, "04_statistics", "results", "fig03_spike_rois.csv")
 const LONG_CSV   = joinpath(REPO_ROOT, "04_statistics", "results", "analysis_long_format.csv")
 const ATLAS_FILE = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                              "glasser_coordinates_nonself_clean_1mm.txt")
 const SELF_LAB   = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases", "self_labels.txt")
 const TS_BASE    = joinpath(REPO_ROOT, "02_timeseries_extraction", "results")
-const OUT_DIR    = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic")
+const OUT_DIR    = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const SEL_CSV    = joinpath(OUT_DIR, "selected_rois.csv")
 const FIT_CSV    = joinpath(OUT_DIR, "fit_summary.csv")
-const FIG_PATH   = joinpath(OUT_DIR, "fig06_spike_b_acf_mse_grid.html")
+const FIG_PATH   = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "figures", "fig06_spike_b_acf_mse_grid.html")
 
 # ── ACW / data constants (must match 03_acw_analysis/scripts/01_compute_acw.jl) ───
 const FS            = 1.0 / 1.8

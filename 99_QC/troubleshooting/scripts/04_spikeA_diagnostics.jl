@@ -2,16 +2,16 @@
 # Part 1: ROI frequency in Spike A (nonself, 0.95–1.05 s)
 # Part 2: Motion log cross-reference for high- vs low-Spike-A subjects
 #
-# Run from repo root: julia 04_statistics/scripts/04_spikeA_diagnostics.jl
+# Run from repo root: julia 99_QC/troubleshooting/scripts/04_spikeA_diagnostics.jl
 
 using CSV, DataFrames, PlotlyJS, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT    = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT    = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const SPIKE_CSV    = joinpath(REPO_ROOT, "04_statistics", "results", "fig03_spike_rois.csv")
 const BATCH_LOG    = joinpath(REPO_ROOT, "01_preprocessing", "02_denoising", "results", "_batch_log.tsv")
-const RES_DIR      = joinpath(REPO_ROOT, "04_statistics", "results")
-const FIG_DIR      = joinpath(REPO_ROOT, "04_statistics", "figures")
+const RES_DIR      = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
+const FIG_DIR      = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "figures")
 const ROI_FREQ_CSV = joinpath(RES_DIR, "fig04_spikeA_roi_frequency.csv")
 const MOTION_CSV   = joinpath(RES_DIR, "fig04_spikeA_subject_motion.csv")
 const FIG_PATH     = joinpath(FIG_DIR, "fig04_spikeA_roi_frequency.html")
@@ -37,7 +37,7 @@ const COLOR_NONSELF = "#8B7355"  # taupe
 # ── Idempotency ───────────────────────────────────────────────────────────────
 if isfile(ROI_FREQ_CSV) && isfile(MOTION_CSV) && isfile(FIG_PATH)
     println("[skip] all outputs already exist; delete to rerun")
-    exit()
+   # exit()
 end
 
 # ── Check inputs ──────────────────────────────────────────────────────────────

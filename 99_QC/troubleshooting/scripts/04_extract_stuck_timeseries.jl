@@ -7,12 +7,12 @@
 #   stuck_5194_metadata.csv         — 279 rows, one per column, with case details
 #
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/04_extract_stuck_timeseries.jl
+#   julia 99_QC/troubleshooting/scripts/04_extract_stuck_timeseries.jl
 
 using CSV, DataFrames, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const LONG_CSV   = joinpath(REPO_ROOT, "04_statistics", "results",
                              "analysis_long_format.csv")
 const ATLAS_FILE = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
@@ -20,7 +20,7 @@ const ATLAS_FILE = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
 const SELF_LAB   = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                              "self_labels.txt")
 const TS_BASE    = joinpath(REPO_ROOT, "02_timeseries_extraction", "results")
-const OUT_DIR    = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic")
+const OUT_DIR    = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const OUT_WIDE   = joinpath(OUT_DIR, "stuck_5194_timeseries_wide.csv")
 const OUT_META   = joinpath(OUT_DIR, "stuck_5194_metadata.csv")
 

@@ -7,12 +7,12 @@
 # analysis dataset.
 #
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/03_stuck_vs_tsnr_overlap.jl
+#   julia 99_QC/troubleshooting/scripts/03_stuck_vs_tsnr_overlap.jl
 
 using CSV, DataFrames, JLD2, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const LONG_CSV   = joinpath(REPO_ROOT, "04_statistics", "results",
                              "analysis_long_format.csv")
 const EXCL_CSV   = joinpath(REPO_ROOT, "04_statistics", "results",
@@ -22,7 +22,7 @@ const ATLAS_FILE = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
 const SELF_LAB   = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                              "self_labels.txt")
 const ACW_BASE   = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
-const OUT_DIR    = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic")
+const OUT_DIR    = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const OUT_CSV    = joinpath(OUT_DIR, "stuck_remaining_after_tsnr.csv")
 
 # ── Constants (must match 01_compute_acw.jl and Step 7) ──────────────────────
