@@ -156,8 +156,6 @@ println("\n═══ Part 3: Building figure ═══")
 fig = make_subplots(
     rows               = 1,
     cols               = 2,
-    subplot_titles     = permutedims(["Self atlas — baseline (ses-01)",
-                                      "Nonself atlas — baseline (ses-01)"]),
     horizontal_spacing = 0.10,
 )
 
@@ -210,29 +208,49 @@ for (col_idx, (atlas_label, med_col, ptitle)) in enumerate([
         row=1, col=col_idx)
 end
 
-# ── Annotations (stats) inside each panel ─────────────────────────────────────
-# With horizontal_spacing=0.10 and 2 cols, panel x-domains are ≈[0, 0.45] and [0.55, 1.0]
+# ── Annotations: panel titles + stats ─────────────────────────────────────────
+# horizontal_spacing=0.10, 2 cols → x-domains ≈ [0, 0.45] and [0.55, 1.0]
+# Panel x-centres (paper coords): 0.225 and 0.775
+const PANEL_X_CENTRES = [0.225, 0.775]
+const PANEL_TITLES    = ["Self atlas — baseline (ses-01)",
+                         "Nonself atlas — baseline (ses-01)"]
+const STATS_X_RIGHT   = [0.42, 0.98]   # right-edge anchor for stats box
+
 annotations = Any[]
+
 for (col_idx, atlas_label) in enumerate(["self", "nonself"])
+    # ── Panel title (replaces subplot_titles) ─────────────────────────────────
+    push!(annotations, attr(
+        text      = "<b>$(PANEL_TITLES[col_idx])</b>",
+        xref      = "paper",
+        yref      = "paper",
+        x         = PANEL_X_CENTRES[col_idx],
+        y         = 1.01,
+        xanchor   = "center",
+        yanchor   = "bottom",
+        showarrow = false,
+        font      = attr(size=12, family="Times New Roman"),
+    ))
+
+    # ── Stats box (bottom-right of each panel) ────────────────────────────────
     s    = stats_results[atlas_label]
     text = @sprintf("t=%.3f (df=%.1f), p=%.3f<br>U=%.0f, p=%.3f<br>d=%+.3f (%s)",
                     s.t_stat, s.t_df, s.t_p,
                     s.mw_U, s.mw_p,
                     s.d, s.d_lab)
-    x_paper = col_idx == 1 ? 0.42 : 0.98
     push!(annotations, attr(
-        text      = text,
-        xref      = "paper",
-        yref      = "paper",
-        x         = x_paper,
-        y         = 0.04,
-        xanchor   = "right",
-        yanchor   = "bottom",
-        showarrow = false,
-        font      = attr(size=10, family="Times New Roman"),
-        bgcolor   = "rgba(255,255,255,0.85)",
+        text        = text,
+        xref        = "paper",
+        yref        = "paper",
+        x           = STATS_X_RIGHT[col_idx],
+        y           = 0.04,
+        xanchor     = "right",
+        yanchor     = "bottom",
+        showarrow   = false,
+        font        = attr(size=10, family="Times New Roman"),
+        bgcolor     = "rgba(255,255,255,0.85)",
         bordercolor = "#aaaaaa",
-        borderpad = 4,
+        borderpad   = 4,
     ))
 end
 relayout!(fig, annotations=annotations)
@@ -251,7 +269,7 @@ relayout!(fig,
     legend        = attr(x=1.01, y=0.95),
     yaxis         = attr(title="Median AUC (s)"),
     yaxis2        = attr(title="Median AUC (s)"),
-    margin        = attr(t=70, b=60, l=70, r=130),
+    margin        = attr(t=90, b=60, l=70, r=130),
 )
 
 PlotlyJS.savefig(fig, OUT_FIG)
