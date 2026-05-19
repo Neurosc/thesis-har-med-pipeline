@@ -1,16 +1,16 @@
-# 05_auc_nan_vs_tsnr_overlap.jl — Step 8: AUC NaN vs tSNR exclusion overlap
+# 06_auc_nan_vs_tsnr_overlap.jl — Step 8: AUC NaN vs tSNR exclusion overlap
 #
 # Checks whether the AUC=NaN nonself observations (360 expected) are already
 # covered by the tSNR < 30 exclusion set (58 nonself parcels). If any NaN
 # cases fall outside the exclusion set, they are listed and saved as a CSV.
 #
 # Run from repo root:
-#   julia 04_statistics/_temp_spike_b_diagnostic/05_auc_nan_vs_tsnr_overlap.jl
+#   julia 99_QC/troubleshooting/scripts/06_auc_nan_vs_tsnr_overlap.jl
 
 using CSV, DataFrames, JLD2, Statistics, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT   = normpath(joinpath(@__DIR__, "..", ".."))
+const REPO_ROOT   = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const ACW_BASE    = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
 const VERSION     = "denoisedNoGSR"
 const EXCL_CSV    = joinpath(REPO_ROOT, "04_statistics", "results",
@@ -19,7 +19,7 @@ const ATLAS_TXT   = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                              "glasser_coordinates_nonself_clean_1mm.txt")
 const TSNR_TSV    = joinpath(REPO_ROOT, "99_QC", "03_acw_qc", "results",
                              "tsnr", "excluded_rois_low_tsnr.tsv")  # may not exist
-const OUT_DIR     = joinpath(REPO_ROOT, "04_statistics", "_temp_spike_b_diagnostic")
+const OUT_DIR     = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const OUT_CSV     = joinpath(OUT_DIR, "auc_nan_not_in_tsnr_exclusion.csv")
 
 # ── Subjects (40 total; excluded: sub-06, sub-08, sub-12, sub-26, sub-36) ──────
