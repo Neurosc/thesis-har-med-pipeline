@@ -74,7 +74,7 @@ println("Building figure …")
 fig = make_subplots(
     rows               = 2,
     cols               = 2,
-    subplot_titles     = [p.title for p in PANELS],
+    subplot_titles     = permutedims(reshape([p.title for p in PANELS], 2, 2)),
     horizontal_spacing = 0.04,
     vertical_spacing   = 0.14,
 )
