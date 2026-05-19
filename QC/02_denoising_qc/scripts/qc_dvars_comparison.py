@@ -10,13 +10,13 @@ Panels (shared x-axis, frame index):
 
 Outputs
 -------
-  01_preprocessing/02_denoising/figures/sub-01_ses-01_dvars_comparison.png  (300 dpi)
-  01_preprocessing/02_denoising/figures/sub-01_ses-01_dvars_comparison.pdf
-  01_preprocessing/02_denoising/results/sub-01_ses-01_dvars_comparison.txt
+  QC/02_denoising_qc/figures/sub-01_ses-01_dvars_comparison.png  (300 dpi)
+  QC/02_denoising_qc/figures/sub-01_ses-01_dvars_comparison.pdf
+  QC/02_denoising_qc/results/sub-01_ses-01_dvars_comparison.txt
 
 Run on server (headless):
   conda activate fmri
-  python 01_preprocessing/02_denoising/scripts/qc_dvars_comparison.py
+  python QC/02_denoising_qc/scripts/qc_dvars_comparison.py
 """
 
 import sys
@@ -40,7 +40,7 @@ from utils.thesis_style import apply_thesis_style
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-DENOISED_ROOT = Path(__file__).resolve().parents[1] / "results"
+DENOISED_ROOT = REPO_ROOT / "01_preprocessing" / "02_denoising" / "results"
 OUT_DIR       = Path(__file__).resolve().parents[1] / "figures"
 LOG_DIR       = Path(__file__).resolve().parents[1] / "results"
 

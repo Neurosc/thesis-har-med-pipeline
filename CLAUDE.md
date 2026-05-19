@@ -26,16 +26,26 @@ har_med_codes/
 ├── CLAUDE.md
 ├── README.md
 ├── utils/                              # subject_filter, motion_qc, thesis_style
+├── QC/                                 # all quality-control work (see "QC organization" section)
+│   ├── 01_motion_qc/                   # motion QC, FD, subject exclusion, thesis figures
+│   │   ├── scripts/
+│   │   ├── results/
+│   │   ├── figures/
+│   │   └── thesis_figures/
+│   ├── 02_denoising_qc/                # DVARS-based denoising validation
+│   │   ├── scripts/
+│   │   ├── results/
+│   │   └── figures/
+│   ├── 03_acw_qc/                      # tSNR checks, tau distribution, spike investigation
+│   │   ├── scripts/
+│   │   ├── results/
+│   │   └── figures/
+│   └── troubleshooting/                # non-thesis experimental scripts and outputs
 ├── 01_preprocessing/
-│   ├── 01_QC/
-│   │   ├── scripts/                    # *.py QC scripts
-│   │   ├── results/                    # TSVs, logs, .npy
-│   │   ├── figures/                    # working figures
-│   │   └── thesis_figures/             # supplementary figures
 │   └── 02_denoising/
-│       ├── scripts/                    # denoise_*.py, qc_dvars_*.py
+│       ├── scripts/                    # denoise_core.py, denoise_batch.py, denoise_single_subject.py
 │       ├── results/                    # denoised NIfTIs + batch log
-│       └── figures/                    # DVARS comparison figures
+│       └── figures/
 ├── 02_timeseries_extraction/
 ├── 03_acw_analysis/
 ├── 04_statistics/
@@ -88,7 +98,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Standard Power et al. 2012 FD as computed by fMRIPrep
 - 1-TR backward differences
 - 50 mm sphere for rotation conversion
-- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `01_preprocessing/01_QC/scripts/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
+- **No respiratory bandstop filtering** — empirically tested via Power 2019 PSD inspection (see `QC/01_motion_qc/scripts/respiratory_spectrum_check.py`); no respiratory peaks observed in trans_y (phase-encode parameter), so filter is unnecessary
 - Rationale for not using Lynch/Goldberg 4-TR window: no published guidance exists for non-HCP TRs; all major pipelines use 1-TR
 
 ### Frame censoring
@@ -99,7 +109,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Criterion: any run with >50% frames censored at FD > 0.3 mm → entire subject excluded (within-subject design)
 - **Excluded subjects: sub-06, sub-08, sub-12, sub-26, sub-36** (5 subjects)
 - **Final sample: 35 subjects × 2 sessions = 70 runs**
-- See `01_preprocessing/01_QC/results/excluded_subjects.tsv` for details
+- See `QC/01_motion_qc/results/excluded_subjects.tsv` for details
 - Use `utils/subject_filter.py:get_included_subjects()` to filter subject lists in downstream scripts
 
 ### Denoising pipeline (implemented)
@@ -115,9 +125,9 @@ neural timescales. *Imaging Neuroscience*, 2.
 
 ### Denoising QC
 - Method: DVARS pre/post comparison + FD-DVARS coupling
-- Script: `01_preprocessing/02_denoising/scripts/qc_dvars_comparison.py`
-- Figures: `01_preprocessing/02_denoising/figures/sub-XX_ses-YY_dvars_comparison.png/.pdf`
-- Logs: `01_preprocessing/02_denoising/results/sub-XX_ses-YY_dvars_comparison.txt`
+- Script: `QC/02_denoising_qc/scripts/qc_dvars_comparison.py`
+- Figures: `QC/02_denoising_qc/figures/sub-XX_ses-YY_dvars_comparison.png/.pdf`
+- Logs: `QC/02_denoising_qc/results/sub-XX_ses-YY_dvars_comparison.txt`
 - Both sub-01 ses-01 (low motion) and sub-21 ses-01 (high motion) figures retained as evidence
 
 ### ROI Atlas Generation
@@ -170,9 +180,9 @@ neural timescales. *Imaging Neuroscience*, 2.
 ### τ spike investigation (τ ≈ 1 s)
 - Hypothesis: 46 nonself Glasser ROIs in temporal poles, OFC, and frontal poles show τ ≈ 1 s due to susceptibility dropout (sinuses, petrous bone)
 - Diagnostic: per-ROI tSNR across 70 runs (raw fMRIPrep BOLD)
-- Script: `03_acw_analysis/scripts/04_tsnr_check.py` (runs on server)
-- Output: `03_acw_analysis/results/tsnr/tsnr_per_roi.tsv`
-- Spike ROI list (Glasser ROI numbers): `03_acw_analysis/results/tsnr/spike_rois.tsv`
+- Script: `QC/03_acw_qc/scripts/04_tsnr_check.py` (runs on server)
+- Output: `QC/03_acw_qc/results/tsnr/tsnr_per_roi.tsv`
+- Spike ROI list (Glasser ROI numbers): `QC/03_acw_qc/results/tsnr/spike_rois.tsv`
 - Action depending on results: if spike ROIs have median tSNR < 30, exclude them from downstream analysis with anatomical justification
 
 ### Final analysis (planned)
@@ -182,10 +192,16 @@ neural timescales. *Imaging Neuroscience*, 2.
 
 ## Thesis Figure Output
 
-- All thesis-bound figures go to: `01_preprocessing/01_QC/thesis_figures/supplementary/`
-- Do NOT use `01_preprocessing/01_QC/figures_thesis/` — that directory was created by mistake
-- Active excluded-subjects panel script: `01_preprocessing/01_QC/scripts/excluded_subjects_panel.py`
-- See `01_preprocessing/01_QC/thesis_figures/README.md` for the full figure index
+- All thesis-bound figures go to: `QC/01_motion_qc/thesis_figures/supplementary/`
+- Do NOT use `QC/01_motion_qc/figures_thesis/` — that directory was created by mistake
+- Active excluded-subjects panel script: `QC/01_motion_qc/scripts/excluded_subjects_panel.py`
+- See `QC/01_motion_qc/thesis_figures/README.md` for the full figure index
+
+### QC organization
+- `QC/01_motion_qc/` — motion QC, framewise displacement, subject exclusion, thesis figures
+- `QC/02_denoising_qc/` — DVARS-based denoising validation
+- `QC/03_acw_qc/` — tau distribution checks, tSNR-based ROI filtering, dropout investigation
+- `QC/troubleshooting/` — non-thesis experimental scripts and outputs
 
 ## Things NOT to redo
 - Do not reapply respiratory filter (empirically tested, not needed)
