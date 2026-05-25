@@ -32,6 +32,7 @@ import matplotlib.backends.backend_pdf as mpdf
 import numpy as np
 import pandas as pd
 import nibabel as nib
+import plotly.graph_objects as go
 from pathlib import Path
 from nilearn import plotting, datasets
 
@@ -164,20 +165,36 @@ def flag_anomalous(summary_df, atlas_name):
 # ── Interactive marker HTML ───────────────────────────────────────────────────
 def make_marker_html(coords_df, html_path, title):
     """
-    Build a nilearn view_markers HTML — each sphere is labelled 'ROI N: name'
-    and shows on hover/click.  Coordinates come from the atlas construction
-    files (sphere centres fed to 3dUndump), not computed centroids.
+    Self-contained plotly HTML — sphere per ROI, hover shows 'ROI N: name'.
+    include_plotlyjs=True embeds the JS so the file opens via file:// without
+    needing a CDN (nilearn's view_markers requires CDN and fails offline).
     """
-    coords = coords_df[["X", "Y", "Z"]].values.tolist()
     labels = [f"ROI {int(r.roi_id)}: {r.roi_name}"
               for _, r in coords_df.iterrows()]
-    view = plotting.view_markers(
-        marker_coords=coords,
-        marker_labels=labels,
-        marker_size=6,
+    fig = go.Figure()
+    fig.add_trace(go.Scatter3d(
+        x=coords_df["X"].tolist(),
+        y=coords_df["Y"].tolist(),
+        z=coords_df["Z"].tolist(),
+        mode="markers",
+        text=labels,
+        hovertemplate="%{text}<extra></extra>",
+        marker=dict(
+            size=6,
+            color=list(range(len(coords_df))),
+            colorscale="Viridis",
+            opacity=0.8,
+        ),
+    ))
+    fig.update_layout(
         title=title,
+        scene=dict(
+            xaxis_title="X (MNI)",
+            yaxis_title="Y (MNI)",
+            zaxis_title="Z (MNI)",
+        ),
     )
-    view.save_as_html(str(html_path))
+    fig.write_html(str(html_path), include_plotlyjs=True)
     print(f"  Marker HTML → {html_path}")
 
 
