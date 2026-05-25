@@ -176,7 +176,6 @@ def make_marker_html(coords_df, html_path, title):
         marker_labels=labels,
         marker_size=6,
         title=title,
-        bg_img=mni_img,
     )
     view.save_as_html(str(html_path))
     print(f"  Marker HTML → {html_path}")
