@@ -10,3 +10,7 @@ __pycache__/
 Thumbs.db
 *.log
 01_preprocessing/02_denoising/results/_batch_log.tsv
+_old/
+*.zip
+*.mat
+HCP_MMP1_atlas/
