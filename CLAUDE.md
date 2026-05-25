@@ -201,6 +201,8 @@ neural timescales. *Imaging Neuroscience*, 2.
 - `99_QC/01_motion_qc/` — motion QC, framewise displacement, subject exclusion, thesis figures
 - `99_QC/02_denoising_qc/` — DVARS-based denoising validation
 - `99_QC/03_acw_qc/` — tau distribution checks, tSNR-based ROI filtering, dropout investigation
+  - `99_QC/03_acw_qc/scripts/05_roi_placement_viewer.py` — interactive 3D HTML viewer for self/nonself atlas inspection (open in browser)
+  - Atlas voxel-count summary TSVs identify any ROIs with anomalous voxel counts (placement out of brain, etc.)
 - `99_QC/troubleshooting/` — non-thesis experimental scripts and outputs
 
 ## Things NOT to redo
