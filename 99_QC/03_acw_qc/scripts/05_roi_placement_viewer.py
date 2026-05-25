@@ -49,11 +49,13 @@ NONSELF_HTML = FIG_DIR / "nonself_atlas_viewer.html"
 SELF_TSV     = RESULTS_DIR / "self_atlas_summary.tsv"
 NONSELF_TSV  = RESULTS_DIR / "nonself_atlas_summary.tsv"
 
-# ── Sanity thresholds (4mm-radius sphere at 1mm resolution ≈ 268 voxels for a
-#    perfect sphere; after NN resampling to atlas grid ~200-350 is normal) ────
-# Tighter range catches out-of-brain placements and atlas construction errors.
-VOXEL_MIN = 20
-VOXEL_MAX = 50
+# ── Sanity thresholds (4mm-radius sphere at 1mm resolution) ──────────────────
+# Perfect sphere volume = (4/3)π(4)³ ≈ 268 voxels; after voxel discretization
+# the typical count is ~257. ROIs near brain boundaries (e.g. V1, temporal
+# poles) can be as low as ~150. Out-of-brain or severely clipped ROIs drop
+# below ~100; overlapping ROIs would show as 0.
+VOXEL_MIN = 100   # below this → likely out-of-brain or badly clipped
+VOXEL_MAX = 300   # above this → impossible for a 4mm sphere, suggests atlas bug
 
 # ── Check required inputs ─────────────────────────────────────────────────────
 missing = [f for f in [SELF_ATLAS, NONSELF_ATLAS, SELF_LABELS, NONSELF_LABELS]
