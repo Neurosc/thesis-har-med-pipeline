@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
 """
-05_roi_placement_viewer.py — Interactive 3D HTML viewer for self/nonself atlas QC
+05_roi_placement_viewer.py — Interactive marker viewer + PDF montage for atlas QC
 
-Visually verifies that each ROI in the self atlas (37 ROIs, Qin et al. 2020)
-and nonself atlas (~316 ROIs, Glasser parcellation) is anatomically placed
-correctly. Also produces TSV tables with centroid coordinates and voxel counts,
-and flags any ROIs outside the expected voxel-count range.
+Outputs per atlas (self: 37 ROIs, nonself: ~316 ROIs):
+  *_markers.html   — interactive 3-D viewer; hover/click each sphere for ROI name
+  *_montage.pdf    — one page per ROI, ortho slice centred on the sphere
+  *_atlas_summary.tsv — centroid MNI coords and voxel counts (placement sanity)
 
 RUN ON SERVER:
   conda activate fmri
   cd /BICNAS2/group-northoff/jkokino/codes/har_med_codes
   python 99_QC/03_acw_qc/scripts/05_roi_placement_viewer.py
 
-After completion, transfer outputs to local machine:
-  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/figures/self_atlas_viewer.html    <local>/
-  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/figures/nonself_atlas_viewer.html <local>/
-  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/results/self_atlas_summary.tsv    <local>/
-  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/results/nonself_atlas_summary.tsv <local>/
+Transfer outputs to local machine (scp from repo root on server):
+  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/figures/self_atlas_markers.html    <local>/
+  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/figures/nonself_atlas_markers.html <local>/
+  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/figures/self_atlas_montage.pdf     <local>/
+  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/figures/nonself_atlas_montage.pdf  <local>/
+  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/results/self_atlas_summary.tsv     <local>/
+  scp jkokino@10.156.156.21:.../99_QC/03_acw_qc/results/nonself_atlas_summary.tsv  <local>/
 """
 
 import sys
+
+# Must be set before any matplotlib/nilearn import — server is headless
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.backends.backend_pdf as mpdf
+
 import numpy as np
 import pandas as pd
 import nibabel as nib
@@ -32,10 +41,12 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # ── Input paths ───────────────────────────────────────────────────────────────
 ATLAS_DIR = REPO_ROOT / "02_timeseries_extraction" / "results" / "atlases"
 
-SELF_ATLAS      = ATLAS_DIR / "self_atlas_1mm.nii.gz"
-NONSELF_ATLAS   = ATLAS_DIR / "nonself_atlas_1mm.nii.gz"
-SELF_LABELS     = ATLAS_DIR / "self_labels.txt"
-NONSELF_LABELS  = ATLAS_DIR / "glasser_coordinates_nonself_clean.txt"
+SELF_ATLAS     = ATLAS_DIR / "self_atlas_1mm.nii.gz"
+NONSELF_ATLAS  = ATLAS_DIR / "nonself_atlas_1mm.nii.gz"
+# self_coordinates.txt: TSV, columns ROI_Number ROI_Name X Y Z Layer
+SELF_COORDS    = ATLAS_DIR / "self_coordinates.txt"
+# glasser_coordinates_nonself_clean.txt: TSV, columns ROI_Number ROI_Name X Y Z
+NONSELF_COORDS = ATLAS_DIR / "glasser_coordinates_nonself_clean.txt"
 
 # MNI 1mm template: server path preferred; nilearn built-in as fallback
 MNI_SERVER = Path("/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1mm.nii")
@@ -44,21 +55,22 @@ MNI_SERVER = Path("/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1m
 FIG_DIR     = REPO_ROOT / "99_QC" / "03_acw_qc" / "figures"
 RESULTS_DIR = REPO_ROOT / "99_QC" / "03_acw_qc" / "results"
 
-SELF_HTML    = FIG_DIR / "self_atlas_viewer.html"
-NONSELF_HTML = FIG_DIR / "nonself_atlas_viewer.html"
+SELF_HTML    = FIG_DIR     / "self_atlas_markers.html"
+NONSELF_HTML = FIG_DIR     / "nonself_atlas_markers.html"
+SELF_PDF     = FIG_DIR     / "self_atlas_montage.pdf"
+NONSELF_PDF  = FIG_DIR     / "nonself_atlas_montage.pdf"
 SELF_TSV     = RESULTS_DIR / "self_atlas_summary.tsv"
 NONSELF_TSV  = RESULTS_DIR / "nonself_atlas_summary.tsv"
 
 # ── Sanity thresholds (4mm-radius sphere at 1mm resolution) ──────────────────
-# Perfect sphere volume = (4/3)π(4)³ ≈ 268 voxels; after voxel discretization
-# the typical count is ~257. ROIs near brain boundaries (e.g. V1, temporal
-# poles) can be as low as ~150. Out-of-brain or severely clipped ROIs drop
-# below ~100; overlapping ROIs would show as 0.
-VOXEL_MIN = 100   # below this → likely out-of-brain or badly clipped
-VOXEL_MAX = 300   # above this → impossible for a 4mm sphere, suggests atlas bug
+# Perfect sphere ≈ 268 voxels; after discretisation typical count is ~257.
+# Boundary ROIs (V1, temporal poles) can reach ~150. Below 100 → likely
+# out-of-brain; above 300 → impossible for this sphere size.
+VOXEL_MIN = 100
+VOXEL_MAX = 300
 
 # ── Check required inputs ─────────────────────────────────────────────────────
-missing = [f for f in [SELF_ATLAS, NONSELF_ATLAS, SELF_LABELS, NONSELF_LABELS]
+missing = [f for f in [SELF_ATLAS, NONSELF_ATLAS, SELF_COORDS, NONSELF_COORDS]
            if not f.exists()]
 if missing:
     for m in missing:
@@ -78,43 +90,37 @@ else:
     print("MNI template: nilearn built-in (1mm)")
 
 
-# ── Label loaders ─────────────────────────────────────────────────────────────
-def load_self_labels():
+# ── Coordinate loaders ────────────────────────────────────────────────────────
+def load_self_coords():
     """
-    self_labels.txt: space-separated 'roi_num roi_name', no header.
-    Generated by 01_create_self_atlas.sh via awk '{print $1, $2}'.
+    self_coordinates.txt: tab-separated with header ROI_Number/ROI_Name/X/Y/Z/Layer.
+    Created by 01_create_self_atlas.sh.
     """
-    rows = []
-    with open(SELF_LABELS) as fh:
-        for line in fh:
-            parts = line.strip().split()
-            if len(parts) >= 2:
-                rows.append({"roi_id": int(parts[0]), "roi_name": parts[1]})
-    return pd.DataFrame(rows)
+    df = pd.read_csv(SELF_COORDS, sep="\t")
+    return df.rename(columns={"ROI_Number": "roi_id", "ROI_Name": "roi_name"})
 
 
-def load_nonself_labels():
+def load_nonself_coords():
     """
-    glasser_coordinates_nonself_clean.txt: TSV with header ROI_Number/ROI_Name/X/Y/Z.
-    ROI_Number values are the original Glasser parcel numbers (used as voxel
-    values in nonself_atlas_1mm.nii.gz by 3dUndump).
+    glasser_coordinates_nonself_clean.txt: tab-separated with header
+    ROI_Number/ROI_Name/X/Y/Z.  ROI_Number values are original Glasser parcel
+    IDs (used as voxel values in nonself_atlas_1mm.nii.gz by 3dUndump).
     """
-    df = pd.read_csv(NONSELF_LABELS, sep="\t")
-    df = df.rename(columns={"ROI_Number": "roi_id", "ROI_Name": "roi_name"})
-    return df[["roi_id", "roi_name"]]
+    df = pd.read_csv(NONSELF_COORDS, sep="\t")
+    return df.rename(columns={"ROI_Number": "roi_id", "ROI_Name": "roi_name"})
 
 
-# ── Core computation ──────────────────────────────────────────────────────────
-def compute_roi_summary(atlas_img, labels_df):
+# ── TSV summary ───────────────────────────────────────────────────────────────
+def compute_roi_summary(atlas_img, coords_df):
     """
-    For each ROI, compute centroid (MNI mm) and voxel count from atlas_img.
+    For each ROI in coords_df, compute atlas centroid (MNI mm) and voxel count.
     Returns DataFrame: roi_id, roi_name, x, y, z, n_voxels.
     """
     data   = atlas_img.get_fdata()
     affine = atlas_img.affine
     rows   = []
 
-    for _, row in labels_df.iterrows():
+    for _, row in coords_df.iterrows():
         roi_id = int(row["roi_id"])
         name   = str(row["roi_name"])
         mask   = data == roi_id
@@ -126,17 +132,14 @@ def compute_roi_summary(atlas_img, labels_df):
                          "x": np.nan, "y": np.nan, "z": np.nan, "n_voxels": 0})
             continue
 
-        # Centroid in voxel space → MNI mm via affine
-        vox_ijk      = np.array(np.where(mask), dtype=float)  # (3, n_vox)
-        centroid_vox = vox_ijk.mean(axis=1)                   # (3,)
-        centroid_mni = affine @ np.append(centroid_vox, 1.0)
-
+        vox_ijk  = np.array(np.where(mask), dtype=float)
+        centroid = affine @ np.append(vox_ijk.mean(axis=1), 1.0)
         rows.append({
             "roi_id":   roi_id,
             "roi_name": name,
-            "x":        round(float(centroid_mni[0]), 1),
-            "y":        round(float(centroid_mni[1]), 1),
-            "z":        round(float(centroid_mni[2]), 1),
+            "x":        round(float(centroid[0]), 1),
+            "y":        round(float(centroid[1]), 1),
+            "z":        round(float(centroid[2]), 1),
             "n_voxels": n_vox,
         })
 
@@ -144,7 +147,6 @@ def compute_roi_summary(atlas_img, labels_df):
 
 
 def flag_anomalous(summary_df, atlas_name):
-    """Print ROIs with voxel count outside [VOXEL_MIN, VOXEL_MAX]."""
     flagged = summary_df[
         (summary_df["n_voxels"] < VOXEL_MIN) | (summary_df["n_voxels"] > VOXEL_MAX)
     ]
@@ -152,82 +154,155 @@ def flag_anomalous(summary_df, atlas_name):
         print(f"  All {len(summary_df)} {atlas_name} ROIs within expected range "
               f"[{VOXEL_MIN}, {VOXEL_MAX}] voxels.")
     else:
-        print(f"\n  !!! {atlas_name}: {len(flagged)} ROIs with anomalous voxel counts "
-              f"(possible out-of-brain placement or atlas overlap):")
+        print(f"  !!! {atlas_name}: {len(flagged)} ROIs with anomalous voxel counts:")
         for _, r in flagged.iterrows():
             tag = "TOO FEW" if r["n_voxels"] < VOXEL_MIN else "TOO MANY"
             print(f"    [{tag}]  ROI {int(r['roi_id']):4d}  "
                   f"{r['roi_name']:<40}  {int(r['n_voxels'])} voxels")
 
 
-# ── Self atlas ────────────────────────────────────────────────────────────────
+# ── Interactive marker HTML ───────────────────────────────────────────────────
+def make_marker_html(coords_df, html_path, title):
+    """
+    Build a nilearn view_markers HTML — each sphere is labelled 'ROI N: name'
+    and shows on hover/click.  Coordinates come from the atlas construction
+    files (sphere centres fed to 3dUndump), not computed centroids.
+    """
+    coords = coords_df[["X", "Y", "Z"]].values.tolist()
+    labels = [f"ROI {int(r.roi_id)}: {r.roi_name}"
+              for _, r in coords_df.iterrows()]
+    view = plotting.view_markers(
+        marker_coords=coords,
+        marker_labels=labels,
+        marker_size=6,
+        title=title,
+        bg_img=mni_img,
+    )
+    view.save_as_html(str(html_path))
+    print(f"  Marker HTML → {html_path}")
+
+
+# ── PDF montage ───────────────────────────────────────────────────────────────
+def make_montage_pdf(atlas_img, coords_df, summary_df, pdf_path, atlas_label):
+    """
+    One page per ROI: ortho slice centred on the sphere, title with ROI number,
+    name, MNI coords, and voxel count.  Prints progress every 50 ROIs.
+    """
+    atlas_data = atlas_img.get_fdata()
+    merged     = coords_df.merge(
+        summary_df[["roi_id", "n_voxels"]], on="roi_id", how="left"
+    )
+    n_rois = len(merged)
+
+    print(f"  Generating {atlas_label} PDF montage ({n_rois} pages)...")
+
+    with mpdf.PdfPages(str(pdf_path)) as pdf_out:
+        for i, row in enumerate(merged.itertuples(index=False), 1):
+            roi_id = int(row.roi_id)
+            mask   = (atlas_data == roi_id).astype(np.float32)
+            roi_nii = nib.Nifti1Image(mask, atlas_img.affine)
+
+            n_vox      = int(row.n_voxels) if not np.isnan(row.n_voxels) else 0
+            cut_coords = (float(row.X), float(row.Y), float(row.Z))
+            title = (f"ROI {roi_id}: {row.roi_name}  |  "
+                     f"MNI ({row.X:.0f}, {row.Y:.0f}, {row.Z:.0f})  |  "
+                     f"{n_vox} voxels")
+
+            display = plotting.plot_roi(
+                roi_nii,
+                bg_img=mni_img,
+                cut_coords=cut_coords,
+                display_mode="ortho",
+                title=title,
+                colorbar=False,
+            )
+            fig = display.frame_axes.get_figure()
+            pdf_out.savefig(fig)
+            plt.close(fig)
+
+            if i % 50 == 0 or i == n_rois:
+                print(f"  [{i}/{n_rois}] {row.roi_name}")
+
+    print(f"  Montage PDF → {pdf_path}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Self atlas
+# ═══════════════════════════════════════════════════════════════════════════════
 print("\n=== Self atlas ===")
+self_coords = load_self_coords()
 self_img    = nib.load(str(SELF_ATLAS))
-self_labels = load_self_labels()
 print(f"  Atlas:  {SELF_ATLAS.name}  shape={self_img.shape}")
-print(f"  Labels: {len(self_labels)} ROIs")
+print(f"  Coords: {len(self_coords)} ROIs")
 
-self_summary = compute_roi_summary(self_img, self_labels)
-flag_anomalous(self_summary, "self")
-self_summary.to_csv(SELF_TSV, sep="\t", index=False, float_format="%.1f")
-print(f"  Summary TSV → {SELF_TSV}")
+# TSV summary
+if SELF_TSV.exists():
+    self_summary = pd.read_csv(SELF_TSV, sep="\t")
+    print(f"  [skip] TSV already exists: {SELF_TSV.name}")
+else:
+    self_summary = compute_roi_summary(self_img, self_coords)
+    flag_anomalous(self_summary, "self")
+    self_summary.to_csv(SELF_TSV, sep="\t", index=False, float_format="%.1f")
+    print(f"  Summary TSV → {SELF_TSV}")
 
-self_view = plotting.view_img(
-    self_img,
-    bg_img=mni_img,
-    cmap="tab20",
-    symmetric_cmap=False,
-    vmin=0.5,
-    vmax=float(len(self_labels)) + 0.5,
-    threshold=0.5,
-    title="Self atlas — 37 ROIs (Qin et al. 2020)",
-    colorbar=True,
-)
-self_view.save_as_html(str(SELF_HTML))
-print(f"  Interactive viewer → {SELF_HTML}")
+# Marker HTML
+if SELF_HTML.exists():
+    print(f"  [skip] HTML already exists: {SELF_HTML.name}")
+else:
+    make_marker_html(self_coords, SELF_HTML,
+                     "Self atlas — 37 ROIs (Qin et al. 2020)")
+
+# PDF montage
+if SELF_PDF.exists():
+    print(f"  [skip] PDF already exists: {SELF_PDF.name}")
+else:
+    make_montage_pdf(self_img, self_coords, self_summary, SELF_PDF, "Self")
 
 
-# ── Nonself atlas ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# Nonself atlas
+# ═══════════════════════════════════════════════════════════════════════════════
 print("\n=== Nonself atlas ===")
+nonself_coords = load_nonself_coords()
 nonself_img    = nib.load(str(NONSELF_ATLAS))
-nonself_labels = load_nonself_labels()
 print(f"  Atlas:  {NONSELF_ATLAS.name}  shape={nonself_img.shape}")
-print(f"  Labels: {len(nonself_labels)} ROIs")
+print(f"  Coords: {len(nonself_coords)} ROIs")
 
-nonself_summary = compute_roi_summary(nonself_img, nonself_labels)
-flag_anomalous(nonself_summary, "nonself")
-nonself_summary.to_csv(NONSELF_TSV, sep="\t", index=False, float_format="%.1f")
-print(f"  Summary TSV → {NONSELF_TSV}")
+# TSV summary
+if NONSELF_TSV.exists():
+    nonself_summary = pd.read_csv(NONSELF_TSV, sep="\t")
+    print(f"  [skip] TSV already exists: {NONSELF_TSV.name}")
+else:
+    nonself_summary = compute_roi_summary(nonself_img, nonself_coords)
+    flag_anomalous(nonself_summary, "nonself")
+    nonself_summary.to_csv(NONSELF_TSV, sep="\t", index=False, float_format="%.1f")
+    print(f"  Summary TSV → {NONSELF_TSV}")
 
-# vmax from atlas image because nonself ROI numbers are original Glasser
-# parcel IDs (not sequential 1-N), so the max value may exceed len(labels)
-nonself_vmax = float(nonself_img.get_fdata().max()) + 0.5
+# Marker HTML
+if NONSELF_HTML.exists():
+    print(f"  [skip] HTML already exists: {NONSELF_HTML.name}")
+else:
+    make_marker_html(nonself_coords, NONSELF_HTML,
+                     f"Nonself atlas — {len(nonself_coords)} ROIs (Glasser parcellation)")
 
-nonself_view = plotting.view_img(
-    nonself_img,
-    bg_img=mni_img,
-    cmap="tab20",
-    symmetric_cmap=False,
-    vmin=0.5,
-    vmax=nonself_vmax,
-    threshold=0.5,
-    title=f"Nonself atlas — {len(nonself_labels)} ROIs (Glasser parcellation)",
-    colorbar=True,
-)
-nonself_view.save_as_html(str(NONSELF_HTML))
-print(f"  Interactive viewer → {NONSELF_HTML}")
+# PDF montage  (~5-10 min for 316 ROIs)
+if NONSELF_PDF.exists():
+    print(f"  [skip] PDF already exists: {NONSELF_PDF.name}")
+else:
+    make_montage_pdf(nonself_img, nonself_coords, nonself_summary,
+                     NONSELF_PDF, "Nonself")
 
 
 # ── Final summary ─────────────────────────────────────────────────────────────
-print("\n=== Summary ===")
-for name, df in [("Self   ", self_summary), ("Nonself", nonself_summary)]:
+print("\n=== Done ===")
+for label, df in [("Self   ", self_summary), ("Nonself", nonself_summary)]:
     valid = df[df["n_voxels"] > 0]
-    print(f"  {name}: {len(df)} ROIs — "
-          f"voxels/ROI mean={valid['n_voxels'].mean():.1f}, "
+    print(f"  {label}: {len(df)} ROIs — "
+          f"mean={valid['n_voxels'].mean():.1f}, "
           f"min={valid['n_voxels'].min()}, "
-          f"max={valid['n_voxels'].max()}")
+          f"max={valid['n_voxels'].max()} voxels/ROI")
 
 print()
 print("Outputs:")
-for p in [SELF_HTML, NONSELF_HTML, SELF_TSV, NONSELF_TSV]:
+for p in [SELF_HTML, NONSELF_HTML, SELF_PDF, NONSELF_PDF, SELF_TSV, NONSELF_TSV]:
     print(f"  {p}")
