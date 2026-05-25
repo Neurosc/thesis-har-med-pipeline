@@ -215,9 +215,9 @@ def make_montage_pdf(atlas_img, coords_df, summary_df, pdf_path, atlas_label):
                 title=title,
                 colorbar=False,
             )
-            fig = display.frame_axes.get_figure()
+            fig = plt.gcf()
             pdf_out.savefig(fig)
-            plt.close(fig)
+            display.close()
 
             if i % 50 == 0 or i == n_rois:
                 print(f"  [{i}/{n_rois}] {row.roi_name}")
