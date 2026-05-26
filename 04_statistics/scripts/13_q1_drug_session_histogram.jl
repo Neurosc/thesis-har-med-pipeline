@@ -215,14 +215,12 @@ nonself_bin_size = 2 * x_abs_max / 27.0   # ~27 bins (within 25-30)
 N_self    = nrow(self_df)
 N_nonself = nrow(nonself_df)
 
+# subplot_titles not used here — this version of PlotlyBase requires
+# Vector{Union{Missing,String}}; panel titles are added via annotations instead.
 fig = make_subplots(
     rows               = 1,
     cols               = 2,
     horizontal_spacing = 0.12,
-    subplot_titles     = [
-        "Self atlas — drug × session by layer (N=$N_self)",
-        "Nonself atlas — drug × session by CAB-NP network (N=$N_nonself)",
-    ],
 )
 
 # Left panel: self atlas layers
@@ -270,12 +268,34 @@ shapes = [
     ),
 ]
 
+# Panel centres: horizontal_spacing=0.12, 2 cols → panel_width=0.44
+# left centre = 0.22, right centre = 0.78
+panel_annotations = [
+    attr(
+        text      = "<b>Self atlas — drug × session by layer (N=$N_self)</b>",
+        xref      = "paper", yref = "paper",
+        x         = 0.22,    y    = 1.04,
+        xanchor   = "center", yanchor = "bottom",
+        showarrow = false,
+        font      = attr(size=12, family="Times New Roman"),
+    ),
+    attr(
+        text      = "<b>Nonself atlas — drug × session by CAB-NP network (N=$N_nonself)</b>",
+        xref      = "paper", yref = "paper",
+        x         = 0.78,    y    = 1.04,
+        xanchor   = "center", yanchor = "bottom",
+        showarrow = false,
+        font      = attr(size=12, family="Times New Roman"),
+    ),
+]
+
 relayout!(fig,
     title         = attr(
         text = "Question 1: Drug × Session interaction value per ROI",
         font = attr(size=15, family="Times New Roman"),
         x    = 0.5,
     ),
+    annotations   = panel_annotations,
     barmode       = "stack",
     height        = 560,
     width         = 1500,
