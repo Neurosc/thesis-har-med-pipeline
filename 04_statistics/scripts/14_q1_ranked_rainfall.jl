@@ -138,7 +138,7 @@ nrow(nonself_df) == 258 || @warn "Expected 258 nonself ROIs, got $(nrow(nonself_
 # ── Nonself network order: sorted by mean effect ────────────────────────────────
 network_means = combine(groupby(nonself_df, :NETWORK), :effect => mean => :net_mean)
 sort!(network_means, :net_mean)
-NETWORK_ORDER = String.(network_means.NETWORK)   # most negative → most positive
+sorted_networks = String.(network_means.NETWORK)   # most negative → most positive
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Part 3 — Console summary
@@ -218,7 +218,7 @@ function print_atlas_summary(label, df, cluster_col, cluster_order)
 end
 
 print_atlas_summary("Self",    self_df,    "Layer",   LAYER_ORDER)
-print_atlas_summary("Nonself", nonself_df, "NETWORK", NETWORK_ORDER)
+print_atlas_summary("Nonself", nonself_df, "NETWORK", sorted_networks)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Part 4 — Build figure
@@ -313,7 +313,7 @@ nonself_dot_positions = Tuple{String, Float64, Float64}[]
 net_tick_vals         = Float64[]
 net_tick_texts        = String[]
 
-for (i, net) in enumerate(NETWORK_ORDER)
+for (i, net) in enumerate(sorted_networks)
     sub   = filter(r -> r.NETWORK == net, nonself_df)
     n     = nrow(sub)
     n == 0 && continue
