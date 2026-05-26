@@ -208,12 +208,8 @@ function print_atlas_summary(label, df, cluster_col, cluster_order)
         most_pos_cl  = non_empty[argmax(sub_means)]
 
         println()
-        @printf("  Interpretation: %s subgroups range from %s (mean=%+.4f) to %s " *
-                "(mean=%+.4f); within-subgroup spread is %s between-subgroup differences.\n",
-                label,
-                most_neg_cl, minimum(sub_means),
-                most_pos_cl, maximum(sub_means),
-                spread_desc)
+        @printf("  Interpretation: %s subgroups range from %s (mean=%+.4f) to %s (mean=%+.4f); within-subgroup spread is %s between-subgroup differences.\n",
+                label, most_neg_cl, minimum(sub_means), most_pos_cl, maximum(sub_means), spread_desc)
     end
 end
 
