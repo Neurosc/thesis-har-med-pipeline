@@ -220,7 +220,7 @@ fig13 <- subplot(p_qq, p_rvf, p_hist, nrows = 1, titleX = TRUE, titleY = TRUE,
   layout(title = list(text = "LMM Residual Diagnostics (Step 12)", x = 0.5),
          showlegend = FALSE)
 
-saveWidget(fig13, OUT_FIG13, selfcontained = TRUE, title = "LMM Residual Diagnostics")
+saveWidget(fig13, OUT_FIG13, selfcontained = FALSE, title = "LMM Residual Diagnostics")
 cat(sprintf("Saved: %s\n", OUT_FIG13))
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -308,7 +308,7 @@ if (length(missing) > 0) {
       legend = list(x = 0.02, y = 0.98)
     )
 
-  saveWidget(fig14, OUT_FIG14, selfcontained = TRUE, title = "G1 Drug x Session Scatter")
+  saveWidget(fig14, OUT_FIG14, selfcontained = FALSE, title = "G1 Drug x Session Scatter")
   cat(sprintf("Saved: %s\n", OUT_FIG14))
 }
 
