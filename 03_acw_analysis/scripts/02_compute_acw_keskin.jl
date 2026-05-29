@@ -38,7 +38,7 @@ const SESSIONS = ["ses-01","ses-02"]
 
 const REPO_ROOT   = normpath(joinpath(@__DIR__, "..", ".."))
 const TS_BASE     = joinpath(REPO_ROOT, "02_timeseries_extraction", "results",
-                             "timeseries_keskin", VERSION)
+                             "timeseries_self_glasser")
 const OUTPUT_BASE = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw",
                              ATLAS, VERSION)
 
