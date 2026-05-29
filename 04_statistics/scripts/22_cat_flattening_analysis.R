@@ -314,12 +314,17 @@ cat(sprintf(
 # ─────────────────────────────────────────────────────────────────────────────
 cat("\n", SEP, "\nPART 7 — Estimated marginal means and contrasts\n", SEP, "\n", sep = "")
 
+# Enable Satterthwaite df for emmeans (disabled by default when n > 3000)
+emm_options(lmerTest.limit = nrow(df), pbkrtest.limit = nrow(df))
+
 emm_main <- emmeans(m_cat, ~ group * session * layer)
 
 cat("\n--- 7a: Cell means (16 cells: 2 groups × 2 sessions × 4 layers) ---\n")
-emm_df <- as.data.frame(emm_main)
-print(emm_df[, c("group", "session", "layer", "emmean", "SE", "df",
-                  "lower.CL", "upper.CL")], row.names = FALSE)
+emm_df  <- as.data.frame(emm_main)
+ci_cols <- intersect(c("lower.CL", "upper.CL", "asymp.LCL", "asymp.UCL"), names(emm_df))
+df_col  <- intersect("df", names(emm_df))
+print(emm_df[, c("group", "session", "layer", "emmean", "SE", df_col, ci_cols)],
+      row.names = FALSE)
 
 # 7b: Self–nonself gap per group × session
 cat("\n--- 7b: Self–nonself gap per group × session ---\n")
@@ -339,27 +344,42 @@ print(gaps_df[, c("contrast", "group", "session",
                    "t.ratio", "p.value")], row.names = FALSE)
 
 # 7c: Flattening = Δgap_verum − Δgap_placebo
+# Step 1: (ses-02 - ses-01) change in gap, within each (layer_contrast, group)
 cat("\n--- 7c: Flattening contrasts (Δgap_verum − Δgap_placebo) ---\n")
-flat <- contrast(gaps,
-  interaction = list(group = "consec", session = "consec"),
-  adjust = "none"
-)
-flat_df <- as.data.frame(summary(flat, infer = TRUE))
-# Rename interaction columns for clarity
-names(flat_df)[names(flat_df) == "group_consec"]   <- "group_contrast"
-names(flat_df)[names(flat_df) == "session_consec"] <- "session_contrast"
+gap_ses <- contrast(gaps, "consec", by = c("contrast", "group"), adjust = "none")
 
-cat("(positive = gap widens under DMT; negative = gap narrows = flattening)\n\n")
-print(flat_df[, c("contrast", "group_contrast", "session_contrast",
-                   "estimate", "SE", "df", "lower.CL", "upper.CL",
-                   "t.ratio", "p.value")], row.names = FALSE)
+# Step 2: (verum - placebo) difference in that session change, within each layer_contrast
+flat    <- contrast(gap_ses, "consec", by = "contrast", adjust = "none")
+flat_df <- as.data.frame(summary(flat, infer = TRUE))
+# Ensure CI columns exist
+if (!"lower.CL" %in% names(flat_df))
+  flat_df$lower.CL <- flat_df$estimate - 1.96 * flat_df$SE
+if (!"upper.CL" %in% names(flat_df))
+  flat_df$upper.CL <- flat_df$estimate + 1.96 * flat_df$SE
+
+cat("(negative = gap narrows under DMT = flattening)\n\n")
+print(flat_df, row.names = FALSE)
 
 # Average flattening across all 3 self layers
-flat_avg <- contrast(flat, method = list("avg_3layers" = c(1/3, 1/3, 1/3)))
+# Applied directly to emm_main (16 cells) to avoid emmGrid structure issues.
+# Row order from 7a: (pl,s1,ns)(ve,s1,ns)(pl,s2,ns)(ve,s2,ns)
+#                   (pl,s1,Int)...(ve,s2,Int) (pl,s1,Ext)...(ve,s2,Ext) (pl,s1,Cog)...(ve,s2,Cog)
+# avg_flat = (1/3)*sum_L [ EMM(ve,s2,L)-EMM(ve,s1,L)-EMM(pl,s2,L)+EMM(pl,s1,L)
+#                         -EMM(ve,s2,ns)+EMM(ve,s1,ns)+EMM(pl,s2,ns)-EMM(pl,s1,ns) ]
+flat_avg_vec <- c(
+  -1,    1,    1,   -1,   # nonself: pl_s1, ve_s1, pl_s2, ve_s2
+   1/3, -1/3, -1/3,  1/3, # Interoception
+   1/3, -1/3, -1/3,  1/3, # Exteroception
+   1/3, -1/3, -1/3,  1/3  # Cognition
+)
+flat_avg    <- contrast(emm_main, method = list("avg_flattening" = flat_avg_vec))
 flat_avg_df <- as.data.frame(summary(flat_avg, infer = TRUE))
+if (!"lower.CL" %in% names(flat_avg_df))
+  flat_avg_df$lower.CL <- flat_avg_df$estimate - 1.96 * flat_avg_df$SE
+if (!"upper.CL" %in% names(flat_avg_df))
+  flat_avg_df$upper.CL <- flat_avg_df$estimate + 1.96 * flat_avg_df$SE
 cat("\nAverage flattening across 3 self layers:\n")
-print(flat_avg_df[, c("estimate", "SE", "df", "lower.CL", "upper.CL",
-                       "t.ratio", "p.value")], row.names = FALSE)
+print(flat_avg_df, row.names = FALSE)
 avg_flat_p <- flat_avg_df$p.value[1]
 avg_flat_b <- flat_avg_df$estimate[1]
 
@@ -477,11 +497,20 @@ LAYER_COLORS  <- c(Interoception = "#1f77b4",
                    Exteroception = "#ff7f0e",
                    Cognition     = "#2ca02c")
 
-# Extract per-layer flattening from flat_df
-# The 'contrast' column in flat_df contains the layer contrast label
+# flat_df has 3 rows in the same order as the layer contrasts: Int, Ext, Cog
+# Assign self_layer by row index (interaction contrasts don't preserve label cleanly)
 flat_plot <- flat_df
-# Clean contrast column name (may contain layer name)
-flat_plot$self_layer <- sub(" - nonself.*", "", flat_plot$contrast)
+if (nrow(flat_plot) == length(SELF_LAYERS)) {
+  flat_plot$self_layer <- SELF_LAYERS
+} else if ("contrast" %in% names(flat_plot)) {
+  flat_plot$self_layer <- sub(" - nonself.*", "", flat_plot$contrast)
+} else {
+  flat_plot$self_layer <- SELF_LAYERS[seq_len(nrow(flat_plot))]
+}
+
+# Ensure CI columns exist (fall back to NA if absent)
+if (!"lower.CL" %in% names(flat_plot)) flat_plot$lower.CL <- flat_plot$estimate - 1.96 * flat_plot$SE
+if (!"upper.CL" %in% names(flat_plot)) flat_plot$upper.CL <- flat_plot$estimate + 1.96 * flat_plot$SE
 
 fig21 <- plot_ly() %>%
   add_trace(x = c(0.5, 3.5), y = c(0, 0),
@@ -560,30 +589,34 @@ m_src <- tryCatch(
 )
 
 if (!is.null(m_src)) {
-  s_src   <- summary(m_src)
-  fe_src  <- coef(s_src)
-  src_b   <- fe_src["atlas_sourcesphere", "Estimate"]
-  src_p   <- fe_src["atlas_sourcesphere", "Pr(>|t|)"]
-  orig_3b <- fe_tbl$estimate[grepl("group.*session.*layer", fe_tbl$term) |
-                              grepl("layer.*session.*group", fe_tbl$term)]
+  s_src  <- summary(m_src)
+  fe_src <- coef(s_src)
 
-  cat(sprintf("atlas_source (sphere): beta = %.5f, p = %.4g\n", src_b, src_p))
-  cat(sprintf("atlas_source %s significant.\n",
-              if (src_p < 0.05) "IS" else "is NOT"))
+  if ("atlas_sourcesphere" %in% rownames(fe_src)) {
+    src_b <- fe_src["atlas_sourcesphere", "Estimate"]
+    src_p <- fe_src["atlas_sourcesphere", "Pr(>|t|)"]
+    cat(sprintf("atlas_source (sphere): beta = %.5f, p = %.4g\n", src_b, src_p))
+    cat(sprintf("atlas_source %s significant.\n",
+                if (src_p < 0.05) "IS" else "is NOT"))
 
-  fe_src_df <- as.data.frame(fe_src)
-  twi_orig <- fe_tbl[fe_tbl$term == "groupverum:sessionses-02:layerInteroception" |
-                     grepl("groupverum:sessionses-02:layer", fe_tbl$term), ]
-  twi_src  <- fe_src_df[grepl("groupverum:sessionses-02:layer", rownames(fe_src_df)), ]
-
-  cat("\n3-way interaction terms before/after adding atlas_source:\n")
-  for (tm in rownames(twi_src)) {
-    b_orig <- fe_tbl$estimate[fe_tbl$term == tm]
-    b_new  <- twi_src[tm, "Estimate"]
-    if (length(b_orig) == 0) next
-    cat(sprintf("  %s: original β=%.5f → with atlas_source β=%.5f (Δ=%.5f)\n",
-                gsub("groupverum:sessionses-02:", "", tm),
-                b_orig, b_new, b_new - b_orig))
+    fe_src_df <- as.data.frame(fe_src)
+    twi_src   <- fe_src_df[grepl("groupverum:sessionses-02:layer", rownames(fe_src_df)), ]
+    cat("\n3-way interaction terms before/after adding atlas_source:\n")
+    for (tm in rownames(twi_src)) {
+      b_orig <- fe_tbl$estimate[fe_tbl$term == tm]
+      b_new  <- twi_src[tm, "Estimate"]
+      if (length(b_orig) == 0) next
+      cat(sprintf("  %s: original β=%.5f → with atlas_source β=%.5f (Δ=%.5f)\n",
+                  gsub("groupverum:sessionses-02:", "", tm),
+                  b_orig, b_new, b_new - b_orig))
+    }
+  } else {
+    cat("atlas_source was dropped (rank-deficient model matrix).\n")
+    cat("REASON: atlas_source is perfectly collinear with layer — all 'parcel' rows\n")
+    cat("belong to layer='nonself' and all 'sphere' rows to the 3 self layers.\n")
+    cat("The confound CANNOT be estimated independently. This is a design constraint,\n")
+    cat("not a model failure. Interpret 'layer' coefficients as combining both\n")
+    cat("region type (self/nonself) and atlas type (sphere/parcel).\n")
   }
 } else {
   cat("Could not fit atlas_source model — skipping 9a.\n")
@@ -600,8 +633,8 @@ cat(sprintf("Step 12 (G1 continuous): group:session:G1_z β = %.5f, p = %.4g\n",
 cat(sprintf("Step 15 (categorical LRT): group:session:layer p = %.4g\n", lrt_p_display))
 
 if ((g1_p < 0.05) == (lrt_p_display < 0.05)) {
-  cat("AGREEMENT: both analyses %s a significant group:session interaction across cortical space.\n",
-      if (g1_p < 0.05) "SHOW" else "do NOT show")
+  cat(sprintf("AGREEMENT: both analyses %s a significant group:session interaction across cortical space.\n",
+              if (g1_p < 0.05) "SHOW" else "do NOT show"))
 } else {
   cat("DISCREPANCY: G1 analysis and categorical analysis give different significance conclusions.\n")
 }
