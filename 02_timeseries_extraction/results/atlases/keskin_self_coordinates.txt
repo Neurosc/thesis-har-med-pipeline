@@ -1,0 +1,34 @@
+ROI_Number	ROI_Name	X	Y	Z	Layer
+20	R_Area_Lateral_Occipital_1	38.0000	-80.0000	-2.0000	Exteroception
+48	R_Area_Lateral_IntraParietal_ventral	36.0000	-50.0000	56.0000	Exteroception
+57	R_Area_Posterior_24_prime	4.0000	8.0000	38.0000	Exteroception
+63	R_Area_8BM	4.0000	24.0000	48.0000	Interoception
+78	R_Rostral_Area_6	50.0000	8.0000	26.0000	Cognition + Exteroception
+82	R_Area_IFSa	48.0000	40.0000	8.0000	Exteroception
+107	R_Area_TA2	52.0000	10.0000	-6.0000	Cognition
+108	R_Frontal_Opercular_area_4	34.0000	14.0000	12.0000	Interoception
+109	R_Middle_Insular_Area	40.0000	8.0000	0.0000	Exteroception
+116	R_Area_Pft	58.0000	-22.0000	38.0000	Exteroception
+120	R_Hippocampus	30.0000	-4.0000	-24.0000	Interoception
+138	R_Area_PH	48.0000	-58.0000	-12.0000	Exteroception
+145	R_IntraParietal_Sulcus_Area_1	26.0000	-72.0000	44.0000	Exteroception
+148	R_Area_PF_Complex	56.0000	-26.0000	26.0000	Interoception
+150	R_Area_PGi	54.0000	-60.0000	24.0000	Cognition
+189	L_Primary_Sensory_Cortex	-48.0000	-16.0000	32.0000	Interoception
+212	L_Area_23d	0.0000	-18.0000	40.0000	Cognition
+214	L_Area_dorsal_23_a+b	-4.0000	-54.0000	28.0000	Cognition
+220	L_Dorsal_Area_24d	0.0000	4.0000	48.0000	Interoception
+230	L_Medial_IntraParietal_Area	-22.0000	-64.0000	50.0000	Exteroception
+241	L_Area_a24	-6.0000	48.0000	0.0000	Cognition
+248	L_Area_8Ad	-20.0000	36.0000	46.0000	Cognition
+249	L_Area_9_Middle	-6.0000	60.0000	22.0000	Exteroception
+258	L_Rostral_Area_6	-56.0000	6.0000	6.0000	Interoception
+267	L_Area_9_anterior	-24.0000	50.0000	22.0000	Cognition
+286	L_Posterior_Insular_Area_2	-40.0000	-2.0000	2.0000	Interoception
+291	L_Area_Frontal_Opercular	-36.0000	24.0000	4.0000	Cognition + Interoception
+292	L_Anterior_Agranular_Insula_Complex	-36.0000	18.0000	-4.0000	Exteroception
+297	L_Anterior_IntraParietal_Area	-46.0000	-34.0000	40.0000	Exteroception
+302	L_Perihirnal_Ectohinal_Cortex	-20.0000	-4.0000	-20.0000	Interoception
+312	L_Area_TE1_anterior	-62.0000	-6.0000	-18.0000	Cognition
+318	L_Area_PH	-44.0000	-68.0000	-6.0000	Exteroception
+330	L_Area_Pgi	-48.0000	-66.0000	28.0000	Cognition
