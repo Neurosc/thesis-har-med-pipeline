@@ -221,8 +221,6 @@ CAT_COLORS <- c(
   "Exteroception" = "#ff7f0e",
   "Cognition"     = "#2ca02c"
 )
-CAT_X <- setNames(seq_along(CAT_ORDER), CAT_ORDER)  # numeric positions 1-4
-
 cat_summary <- roi_effects %>%
   group_by(region_category) %>%
   summarise(
@@ -231,8 +229,10 @@ cat_summary <- roi_effects %>%
     ci      = ci95(drug_ses_effect),
     .groups = "drop"
   ) %>%
-  mutate(region_category = factor(region_category, levels = CAT_ORDER)) %>%
-  arrange(region_category)
+  arrange(mean_fx)  # data-driven: most negative left, most positive right
+
+CAT_ORDER_SORTED <- as.character(cat_summary$region_category)
+CAT_X <- setNames(seq_along(CAT_ORDER_SORTED), CAT_ORDER_SORTED)
 
 fig <- plot_ly()
 
@@ -245,7 +245,7 @@ fig <- fig %>%
 
 # Individual ROI dots (jittered)
 set.seed(42)
-for (cat in CAT_ORDER) {
+for (cat in CAT_ORDER_SORTED) {
   sub  <- roi_effects[roi_effects$region_category == cat & !is.na(roi_effects$drug_ses_effect), ]
   jit  <- runif(nrow(sub), -0.18, 0.18)
   xpos <- CAT_X[[cat]] + jit
@@ -293,28 +293,16 @@ for (i in seq_len(nrow(cat_summary))) {
   }
 }
 
-# Dashed trend line connecting category means (left to right)
-trend_x <- vapply(CAT_ORDER, function(c) CAT_X[[c]], numeric(1))
-trend_y <- vapply(CAT_ORDER, function(c) {
-  cat_summary$mean_fx[as.character(cat_summary$region_category) == c]
-}, numeric(1))
-
-fig <- fig %>%
-  add_trace(x = trend_x, y = trend_y,
-            type = "scatter", mode = "lines",
-            line = list(color = "grey30", dash = "dash", width = 1.5),
-            showlegend = FALSE, hoverinfo = "skip")
-
-# X-axis tick labels with N
-tick_labels <- vapply(CAT_ORDER, function(c) {
-  n_i <- cat_summary$n[as.character(cat_summary$region_category) == c]
+# X-axis tick labels with N (in sorted order)
+tick_labels <- vapply(CAT_ORDER_SORTED, function(c) {
+  n_i <- cat_summary$n[cat_summary$region_category == c]
   sprintf("%s<br>(N=%d)", c, n_i)
 }, character(1))
 
 fig <- fig %>%
   layout(
     title = list(
-      text = "Drug × Session effect: sensory-motor nonself vs self layers",
+      text = "Drug × Session effect by region category (sorted by mean effect)",
       x = 0.5
     ),
     xaxis = list(
@@ -340,28 +328,18 @@ cat(sprintf("Saved: %s\n", OUT_FIG18))
 # ─────────────────────────────────────────────────────────────────────────────
 cat("\n", SEP, "\nPART 5 — Console summary\n", SEP, "\n", sep = "")
 
+cat("Categories sorted by mean effect (data-driven, no theoretical ordering imposed).\n")
 cat("\nCategory means (left → right in fig18):\n")
-for (cat in CAT_ORDER) {
-  m <- cat_summary$mean_fx[as.character(cat_summary$region_category) == cat]
-  cat(sprintf("  %-15s : %.5f\n", cat, m))
+for (cat in CAT_ORDER_SORTED) {
+  m <- cat_summary$mean_fx[cat_summary$region_category == cat]
+  cat(sprintf("  %-15s : %+.5f\n", cat, m))
 }
 
-means_ordered <- vapply(CAT_ORDER, function(c)
-  cat_summary$mean_fx[as.character(cat_summary$region_category) == c], numeric(1))
-
-monotone_inc <- all(diff(means_ordered) > 0)
-monotone_dec <- all(diff(means_ordered) < 0)
+range_fx <- range(cat_summary$mean_fx)
 cat(sprintf(
-  "\nMonotonic trend (Sensory-Motor → Interoception → Exteroception → Cognition)? %s\n",
-  if (monotone_inc) "YES (increasing)" else if (monotone_dec) "YES (decreasing)" else "NO"
-))
-
-# One-line interpretation
-range_fx <- range(means_ordered)
-dominant_dir <- if (means_ordered[4] > means_ordered[1]) "larger" else "smaller"
-cat(sprintf(
-  "\nInterpretation: Drug × session effect ranges from %.4f to %.4f s across the\n4 region categories (sensory-motor nonself → self-cognitive hierarchy).\nEffects are %s at the Cognition end than at the Sensory-Motor end.\n",
-  range_fx[1], range_fx[2], dominant_dir
+  "\nInterpretation: Drug × session effect ranges from %.4f to %.4f s.\nMost negative: %s  |  Most positive: %s\n",
+  range_fx[1], range_fx[2],
+  CAT_ORDER_SORTED[1], CAT_ORDER_SORTED[length(CAT_ORDER_SORTED)]
 ))
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
