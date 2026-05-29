@@ -487,8 +487,9 @@ for (i in seq_along(roi_ids)) {
   } else {
     raw_i  <- coef(summary(m_i))
     r_i    <- raw_i[rownames(raw_i) == TARGET_TERM, , drop = FALSE]
-    b_i    <- if (nrow(r_i) > 0) r_i[1, "Estimate"]     else NA_real_
-    p_i    <- if (nrow(r_i) > 0) r_i[1, "Pr(>|t|)"]     else NA_real_
+    b_i    <- if (nrow(r_i) > 0) r_i[1, "Estimate"] else NA_real_
+    t_i    <- if (nrow(r_i) > 0) r_i[1, "t value"]  else NA_real_
+    p_i    <- if (!is.na(t_i))   2 * pnorm(-abs(t_i)) else NA_real_
     conv_i <- is.null(m_i@optinfo$conv$lme4$messages)
   }
 
@@ -552,8 +553,9 @@ for (i in seq_along(subj_ids)) {
   } else {
     raw_i  <- coef(summary(m_i))
     r_i    <- raw_i[rownames(raw_i) == TARGET_TERM, , drop = FALSE]
-    b_i    <- if (nrow(r_i) > 0) r_i[1, "Estimate"]     else NA_real_
-    p_i    <- if (nrow(r_i) > 0) r_i[1, "Pr(>|t|)"]     else NA_real_
+    b_i    <- if (nrow(r_i) > 0) r_i[1, "Estimate"] else NA_real_
+    t_i    <- if (nrow(r_i) > 0) r_i[1, "t value"]  else NA_real_
+    p_i    <- if (!is.na(t_i))   2 * pnorm(-abs(t_i)) else NA_real_
     conv_i <- is.null(m_i@optinfo$conv$lme4$messages)
   }
 
