@@ -304,10 +304,10 @@ LAYER_COLORS <- c(
 roi_means <- df %>%
   group_by(roi_pos_id, group, session) %>%
   summarise(mean_auc = mean(auc, na.rm = TRUE), .groups = "drop") %>%
-  left_join(LAYER_MAP[, c("roi_pos_id", "layer", "roi_name")],
-            by = "roi_pos_id") %>%
   mutate(roi_pos_id = as.integer(as.character(roi_pos_id)),
-         ses_lbl = ifelse(session == "ses-01", "pre", "post"))
+         ses_lbl    = ifelse(session == "ses-01", "pre", "post")) %>%
+  left_join(LAYER_MAP[, c("roi_pos_id", "layer", "roi_name")],
+            by = "roi_pos_id")
 
 roi_wide <- roi_means %>%
   pivot_wider(id_cols = c(roi_pos_id, layer, roi_name),
