@@ -163,8 +163,9 @@ if (is.null(m_self)) {
 if (is.null(m_self)) stop("All model-fitting attempts failed. Investigate data.")
 
 FORMULA_USED <- if (random_slope_used) FORMULA_FULL else FORMULA_SIMP
-re_str       <- if (random_slope_used) "(1 + session | subject) + (1 | roi_pos_id)" \
-                                     else "(1 | subject) + (1 | roi_pos_id)"
+re_str       <- ifelse(random_slope_used,
+                       "(1 + session | subject) + (1 | roi_pos_id)",
+                       "(1 | subject) + (1 | roi_pos_id)")
 cat(sprintf("\nRandom effects used: %s\n", re_str))
 
 conv_msgs <- m_self@optinfo$conv$lme4$messages
