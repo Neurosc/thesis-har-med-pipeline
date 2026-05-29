@@ -111,6 +111,7 @@ n_nan_drop   = 0
 n_total_obs  = 0
 
 for subject in SUBJECTS, session in SESSIONS
+    global n_files, n_nan_drop, n_total_obs
     jld_path = joinpath(ACW_BASE, "nonself", VERSION, "$(subject)_$(session).jld2")
     if !isfile(jld_path)
         println("  MISSING: $jld_path")
