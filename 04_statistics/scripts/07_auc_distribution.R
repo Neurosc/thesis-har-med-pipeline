@@ -156,6 +156,10 @@ cat(sprintf("Saved: %s\n\n", OUT2))
 # ══════════════════════════════════════════════════════════════════════════════
 # Plot 3 — Per-subject AUC boxplots (2×2: atlas × session)
 # ══════════════════════════════════════════════════════════════════════════════
+if (!requireNamespace("patchwork", quietly = TRUE))
+  install.packages("patchwork", repos = "https://cloud.r-project.org", quiet = TRUE)
+suppressPackageStartupMessages(library(patchwork))
+
 cat(SEP, "\nPLOT 3 — Per-subject AUC distribution\n", SEP, "\n", sep = "")
 
 OUT3 <- file.path(FIG_DIR, "fig_auc_per_subject_distribution.png")
