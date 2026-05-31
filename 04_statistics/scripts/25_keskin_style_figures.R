@@ -224,14 +224,18 @@ make_panel <- function(cat_label) {
   irow <- int_tbl[int_tbl$category == cat_label, ]
   p_val <- if (nrow(irow) > 0) irow$p_val[1] else NA
 
-  # Pre-compute jittered x positions for dots (left of box, consistent per panel)
+  # x spacing: multiply by 1.5 so conditions are 1.5 units apart
+  # Resulting positions: 1.5 (PlacPre), 3.0 (VerPre), 4.5 (PlacPost), 6.0 (VerPost)
   set.seed(42)
   d <- d %>%
     group_by(condition) %>%
-    mutate(x_dot = as.numeric(condition) - 0.22 + runif(n(), -0.05, 0.05)) %>%
+    mutate(
+      x_cond = as.numeric(condition) * 1.5,
+      x_dot  = x_cond - 0.22 + runif(n(), -0.05, 0.05)
+    ) %>%
     ungroup()
 
-  p <- ggplot(d, aes(x = as.numeric(condition), y = mean_auc,
+  p <- ggplot(d, aes(x = x_cond, y = mean_auc,
                      fill = condition, color = condition,
                      group = condition)) +
     # 1. Subject dots to the LEFT of the box
@@ -246,31 +250,26 @@ make_panel <- function(cat_label) {
       outlier.shape = NA,
       linewidth = 0.70
     ) +
-    # 3. Mean diamond (black) on top of the box
-    stat_summary(
-      fun = mean, geom = "point",
-      shape = 18, size = 3.5, color = "black"
-    ) +
-    # 4. Half-violin to the RIGHT, with gap from box
+    # 3. Half-violin to the RIGHT, with clear gap from box
     stat_halfeye(
-      adjust = 0.7, width = 0.50,
-      justification = -0.25,
+      adjust = 0.7, width = 0.55,
+      justification = -0.38,
       .width = 0, point_colour = NA,
       slab_alpha = 0.65
     ) +
     scale_fill_manual(values = COND_COLORS, guide = "none") +
     scale_color_manual(values = COND_COLORS, guide = "none") +
     scale_x_continuous(
-      breaks = 1:4,
+      breaks = (1:4) * 1.5,
       labels = COND_LABELS,
-      expand = expansion(add = c(0.55, 0.80))
+      expand = expansion(add = c(0.65, 1.00))
     ) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
     theme_minimal(base_size = 11) +
     theme(
-      panel.background   = element_rect(fill = "#F0F0F0", color = NA),
-      plot.background    = element_rect(fill = "white",   color = NA),
-      panel.grid.major.y = element_line(color = "white", linewidth = 0.4),
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
       panel.grid.major.x = element_blank(),
       panel.grid.minor   = element_blank(),
       plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
@@ -279,7 +278,7 @@ make_panel <- function(cat_label) {
       legend.position = "none"
     )
 
-  # Significance bracket between Placebo Post (x=3) and Verum Post (x=4)
+  # Significance bracket: Placebo Post (x=4.5) vs Verum Post (x=6.0)
   if (!is.na(p_val) && p_val < 0.05) {
     y_max  <- max(d$mean_auc, na.rm = TRUE)
     y_span <- diff(range(d$mean_auc, na.rm = TRUE))
@@ -288,13 +287,13 @@ make_panel <- function(cat_label) {
     p_str  <- if (p_val < 0.001) "p<0.001" else sprintf("p=%.3f", p_val)
 
     p <- p +
-      annotate("segment", x = 3, xend = 4, y = y_br,   yend = y_br,
+      annotate("segment", x = 4.5, xend = 6.0, y = y_br,   yend = y_br,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 3, xend = 3, y = y_br,   yend = y_tick,
+      annotate("segment", x = 4.5, xend = 4.5, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 4, xend = 4, y = y_br,   yend = y_tick,
+      annotate("segment", x = 6.0, xend = 6.0, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("text", x = 3.5, y = y_br + y_span * 0.03,
+      annotate("text", x = 5.25, y = y_br + y_span * 0.03,
                label = p_str, size = 3.5, hjust = 0.5, color = "black") +
       coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
   }
