@@ -153,4 +153,99 @@ p2 <- ggplot(data.frame(auc = auc2), aes(x = auc)) +
 ggsave(OUT2, p2, width = 8, height = 6, dpi = 300, bg = "white")
 cat(sprintf("Saved: %s\n\n", OUT2))
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Plot 3 — Per-subject AUC boxplots (2×2: atlas × session)
+# ══════════════════════════════════════════════════════════════════════════════
+cat(SEP, "\nPLOT 3 — Per-subject AUC distribution\n", SEP, "\n", sep = "")
+
+OUT3 <- file.path(FIG_DIR, "fig_auc_per_subject_distribution.png")
+
+PANELS <- list(
+  list(atlas = "self",    session = "ses-01", title = "Self — Pre (ses-01)"),
+  list(atlas = "self",    session = "ses-02", title = "Self — Post (ses-02)"),
+  list(atlas = "nonself", session = "ses-01", title = "Nonself — Pre (ses-01)"),
+  list(atlas = "nonself", session = "ses-02", title = "Nonself — Post (ses-02)")
+)
+
+GROUP_COLORS3 <- c(placebo = "#CD5C5C", verum = "#4682B4")
+
+# ── Console summary ────────────────────────────────────────────────────────────
+for (pan in PANELS) {
+  d <- df1[df1$atlas == pan$atlas & df1$session == pan$session &
+             is.finite(df1$auc), ]
+
+  subj_med   <- tapply(d$auc, d$subject, median, na.rm = TRUE)
+  grand_med  <- median(d$auc, na.rm = TRUE)
+  grand_sd   <- sd(subj_med)
+  lo         <- grand_med - 2 * grand_sd
+  hi         <- grand_med + 2 * grand_sd
+  outliers   <- names(subj_med)[subj_med < lo | subj_med > hi]
+
+  cat(sprintf("  [%s]\n", pan$title))
+  cat(sprintf("    Grand median: %.4f\n", grand_med))
+  cat(sprintf("    Subject median range: %.4f – %.4f\n",
+              min(subj_med), max(subj_med)))
+  if (length(outliers) > 0) {
+    cat(sprintf("    Outliers (>2 SD from grand median): %s\n",
+                paste(outliers, collapse = ", ")))
+  } else {
+    cat("    Outliers (>2 SD): none\n")
+  }
+  cat("\n")
+}
+
+# ── Panel function ─────────────────────────────────────────────────────────────
+make_subject_panel <- function(atlas_val, session_val, panel_title,
+                               show_legend = FALSE) {
+  d <- df1[df1$atlas == atlas_val & df1$session == session_val &
+             is.finite(df1$auc), ]
+
+  # Order subjects by median AUC (ascending)
+  subj_med   <- tapply(d$auc, d$subject, median, na.rm = TRUE)
+  subj_order <- names(sort(subj_med))
+  d$subject_f  <- factor(d$subject,    levels = subj_order)
+  d$drug_group <- factor(d$drug_group, levels = c("placebo", "verum"))
+  grand_med    <- median(d$auc, na.rm = TRUE)
+
+  ggplot(d, aes(x = subject_f, y = auc, fill = drug_group)) +
+    geom_hline(yintercept = grand_med, linetype = "dashed",
+               color = "gray50", linewidth = 0.5) +
+    geom_boxplot(outlier.size = 0.6, outlier.alpha = 0.4,
+                 linewidth = 0.35, width = 0.75) +
+    scale_fill_manual(values = GROUP_COLORS3, name = NULL,
+                      labels = c(placebo = "Placebo", verum = "Verum")) +
+    scale_x_discrete(labels = function(x) sub("sub-0?", "", x)) +
+    labs(title = panel_title, y = "AUC (s)", x = NULL) +
+    theme_minimal(base_size = 9, base_family = "serif") +
+    theme(
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.x = element_blank(),
+      axis.text.x  = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7),
+      axis.title.y = element_text(size = 9),
+      plot.title   = element_text(face = "plain", hjust = 0.5, size = 10,
+                                  family = "serif"),
+      legend.position = if (show_legend) "bottom" else "none"
+    )
+}
+
+subj_panels <- list(
+  make_subject_panel("self",    "ses-01", "Self — Pre (ses-01)"),
+  make_subject_panel("self",    "ses-02", "Self — Post (ses-02)", show_legend = TRUE),
+  make_subject_panel("nonself", "ses-01", "Nonself — Pre (ses-01)"),
+  make_subject_panel("nonself", "ses-02", "Nonself — Post (ses-02)")
+)
+
+fig3 <- (subj_panels[[1]] | subj_panels[[2]]) /
+         (subj_panels[[3]] | subj_panels[[4]]) +
+  plot_annotation(
+    title = "Per-subject AUC distribution by atlas × session",
+    theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
+                                            size = 12, family = "serif"))
+  )
+
+ggsave(OUT3, fig3, width = 12, height = 8, dpi = 300, bg = "white")
+cat(sprintf("Saved: %s\n\n", OUT3))
+
 cat(SEP, "\nDONE\n", SEP, "\n", sep = "")
