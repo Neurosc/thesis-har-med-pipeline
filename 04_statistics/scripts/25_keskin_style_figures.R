@@ -36,12 +36,6 @@ DATA_CSV      <- file.path(REPO_ROOT, "04_statistics", "results",
                             "glasser_self_nonself_model_ready.csv")
 OUT_FIG25_PNG  <- file.path(REPO_ROOT, "04_statistics", "figures",
                              "fig25_raincloud_per_category.png")
-OUT_FIG25_HTML <- file.path(REPO_ROOT, "04_statistics", "figures",
-                             "fig25_raincloud_per_category.html")
-OUT_FIG26_PNG  <- file.path(REPO_ROOT, "04_statistics", "figures",
-                             "fig26_drug_session_interaction_fixed.png")
-OUT_FIG26_HTML <- file.path(REPO_ROOT, "04_statistics", "figures",
-                             "fig26_drug_session_interaction_fixed.html")
 
 SEP <- paste(rep("=", 70), collapse = "")
 cat(SEP, "\n25_keskin_style_figures.R — Step 17 (Redesigned)\n", SEP, "\n\n", sep = "")
@@ -300,17 +294,6 @@ fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
 
 ggsave(OUT_FIG25_PNG, fig25_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG25_PNG))
-
-# HTML: attempt ggplotly (ggdist slabs may render partially)
-tryCatch({
-  fig25_pl <- ggplotly(fig25_gg) %>%
-    layout(legend = list(orientation = "h", y = -0.08, x = 0.3))
-  saveWidget(fig25_pl, OUT_FIG25_HTML, selfcontained = FALSE,
-             title = "Raincloud per Category")
-  cat(sprintf("Saved HTML: %s\n", OUT_FIG25_HTML))
-}, error = function(e) {
-  cat(sprintf("  HTML fig25 skipped (ggplotly conversion error): %s\n", e$message))
-})
 
 
 cat("\n", SEP, "\nFIGURE 3 — Delta plot (fig27)\n", SEP, "\n", sep = "")
