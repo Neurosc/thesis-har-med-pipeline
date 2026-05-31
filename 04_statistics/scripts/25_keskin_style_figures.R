@@ -600,4 +600,139 @@ fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
 ggsave(OUT_FIG28_PNG, fig28_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG28_PNG))
 
+cat("\n", SEP, "\nFIGURE 5 — Baseline balance plot (fig29)\n", SEP, "\n", sep = "")
+
+OUT_FIG29_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
+                            "fig29_baseline_balance.png")
+
+# Load pre-computed per-subject baseline medians
+baseline_df <- read.csv(
+  file.path(REPO_ROOT, "04_statistics", "results", "baseline_summary.csv"),
+  stringsAsFactors = FALSE
+)
+baseline_df$drug_group <- factor(baseline_df$drug_group,
+                                  levels = c("placebo", "verum"))
+
+# Cohen's d helper
+cohens_d <- function(x, y) {
+  sp <- sqrt(((length(x)-1)*var(x) + (length(y)-1)*var(y)) /
+               (length(x)+length(y)-2))
+  if (sp == 0) return(0)
+  (mean(x) - mean(y)) / sp
+}
+d_label <- function(d) {
+  a <- abs(d)
+  if (a < 0.2) "negligible" else if (a < 0.5) "small" else
+  if (a < 0.8) "medium"     else "large"
+}
+
+cat("=== Figure 5 source: baseline medians by group ===\n")
+for (col in c("self_baseline_median", "nonself_baseline_median")) {
+  plac <- baseline_df[[col]][baseline_df$drug_group == "placebo"]
+  verm <- baseline_df[[col]][baseline_df$drug_group == "verum"]
+  t_r  <- t.test(plac, verm, var.equal = FALSE)
+  mw_r <- wilcox.test(plac, verm, exact = FALSE)
+  d    <- cohens_d(plac, verm)
+  cat(sprintf("  %s\n", col))
+  cat(sprintf("    Welch t=%.3f (df=%.1f), p=%.4f\n",
+              t_r$statistic, t_r$parameter, t_r$p.value))
+  cat(sprintf("    Mann-Whitney U=%.0f, p=%.4f\n",
+              mw_r$statistic, mw_r$p.value))
+  cat(sprintf("    Cohen's d=%+.4f (%s)\n\n", d, d_label(d)))
+}
+
+BASE_COLORS <- c(placebo = "#CD5C5C", verum = "#4682B4")
+BASE_LABELS <- c("Placebo", "Verum")
+
+make_baseline_panel <- function(y_col, panel_title) {
+  d <- data.frame(
+    group = baseline_df$drug_group,
+    value = baseline_df[[y_col]],
+    stringsAsFactors = FALSE
+  )
+  d$group <- factor(d$group, levels = c("placebo", "verum"))
+
+  # Compute stats for annotation
+  plac <- d$value[d$group == "placebo"]
+  verm <- d$value[d$group == "verum"]
+  t_r  <- t.test(plac, verm, var.equal = FALSE)
+  mw_r <- wilcox.test(plac, verm, exact = FALSE)
+  dv   <- cohens_d(plac, verm)
+  stats_txt <- sprintf(
+    "t=%.3f (df=%.1f), p=%.3f\nU=%.0f, p=%.3f\nd=%+.3f (%s)",
+    t_r$statistic, t_r$parameter, t_r$p.value,
+    mw_r$statistic, mw_r$p.value, dv, d_label(dv)
+  )
+
+  set.seed(42)
+  d <- d %>%
+    mutate(
+      x_cond   = as.numeric(group) * 2,
+      x_jitter = x_cond - 0.40 + runif(n(), -0.10, 0.10)
+    )
+
+  ggplot(d, aes(x = x_cond, y = value,
+                fill = group, color = group, group = group)) +
+    geom_point(
+      aes(x = x_jitter, color = group),
+      size = 1.5, alpha = 0.60, shape = 16
+    ) +
+    geom_boxplot(
+      fill = NA, width = 0.90,
+      outlier.shape = NA, linewidth = 0.70,
+      position = position_nudge(x = -0.4)
+    ) +
+    stat_halfeye(
+      adjust = 0.7, width = 0.55,
+      justification = -0.38,
+      .width = 0, point_colour = NA,
+      slab_alpha = 0.65
+    ) +
+    # Stats annotation box pinned to bottom-right corner
+    annotate("label",
+             x = Inf, y = -Inf, label = stats_txt,
+             hjust = 1.05, vjust = -0.08,
+             size = 2.8, family = "serif",
+             fill = "white", color = "gray30",
+             label.size = 0.3,
+             label.padding = unit(0.15, "cm")) +
+    scale_fill_manual(values = BASE_COLORS, guide = "none") +
+    scale_color_manual(values = BASE_COLORS, guide = "none") +
+    scale_x_continuous(
+      breaks = (1:2) * 2,
+      labels = BASE_LABELS,
+      expand = expansion(add = c(0.65, 1.00))
+    ) +
+    labs(title = panel_title, y = "Median AUC (s)", x = NULL) +
+    theme_minimal(base_size = 11, base_family = "serif") +
+    theme(
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor   = element_blank(),
+      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
+      axis.text.x  = element_text(size = 9, lineheight = 0.85),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none"
+    )
+}
+
+p_self    <- make_baseline_panel("self_baseline_median",
+                                  "Self atlas — baseline (ses-01)")
+p_nonself <- make_baseline_panel("nonself_baseline_median",
+                                  "Nonself atlas — baseline (ses-01)")
+
+fig29_gg <- (p_self | p_nonself) +
+  plot_annotation(
+    title = "Per-subject AUC at baseline (ses-01) by drug group",
+    theme = theme(
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 14,
+                                family = "serif")
+    )
+  )
+
+ggsave(OUT_FIG29_PNG, fig29_gg, width = 10, height = 5, dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG29_PNG))
+
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
