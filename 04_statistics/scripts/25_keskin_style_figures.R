@@ -271,7 +271,7 @@ make_panel <- function(cat_label) {
       expand = expansion(add = c(0.65, 1.00))
     ) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
-    theme_minimal(base_size = 11, base_family = "Times New Roman") +
+    theme_minimal(base_size = 11, base_family = "serif") +
     theme(
       panel.background   = element_rect(fill = "white", color = NA),
       plot.background    = element_rect(fill = "white", color = NA),
@@ -398,7 +398,7 @@ make_delta_panel <- function(cat_label) {
       expand = expansion(add = c(0.65, 1.00))
     ) +
     labs(title = cat_label, y = "ΔAUC (post − pre, s)", x = NULL) +
-    theme_minimal(base_size = 11, base_family = "Times New Roman") +
+    theme_minimal(base_size = 11, base_family = "serif") +
     theme(
       panel.background   = element_rect(fill = "white", color = NA),
       plot.background    = element_rect(fill = "white", color = NA),
@@ -546,7 +546,7 @@ make_retreat_panel <- function(cat_label) {
       expand = expansion(add = c(0.65, 1.00))
     ) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
-    theme_minimal(base_size = 11, base_family = "Times New Roman") +
+    theme_minimal(base_size = 11, base_family = "serif") +
     theme(
       panel.background   = element_rect(fill = "white", color = NA),
       plot.background    = element_rect(fill = "white", color = NA),
@@ -593,7 +593,7 @@ fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
     title = "Meditation retreat effect (placebo group, n=18)",
     theme = theme(
       plot.title = element_text(face = "plain", hjust = 0.5, size = 14,
-                                family = "Times New Roman")
+                                family = "serif")
     )
   )
 
