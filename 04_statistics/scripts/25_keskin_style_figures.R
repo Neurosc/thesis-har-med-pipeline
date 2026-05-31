@@ -313,4 +313,138 @@ tryCatch({
 })
 
 
+cat("\n", SEP, "\nFIGURE 3 — Delta plot (fig27)\n", SEP, "\n", sep = "")
+
+OUT_FIG27_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
+                            "fig27_delta_plot_per_category.png")
+
+# Load drug × session p-values per category
+pval_csv <- file.path(REPO_ROOT, "04_statistics", "results",
+                       "per_category_drug_session.csv")
+pval_tbl <- read.csv(pval_csv, stringsAsFactors = FALSE)
+PVAL_CAT_MAP <- c(
+  "Sensory-Motor" = "Sensory-Motor",
+  "Interoception" = "Interoceptive Self",
+  "Exteroception" = "Exteroceptive Self",
+  "Cognition"     = "Mental Self"
+)
+pval_tbl$cat_display <- PVAL_CAT_MAP[pval_tbl$category]
+
+# Compute delta = post − pre per subject × category
+pre_df  <- subj_means[as.character(subj_means$session) == "ses-01",
+                       c("category", "subject", "group", "mean_auc")]
+post_df <- subj_means[as.character(subj_means$session) == "ses-02",
+                       c("category", "subject", "group", "mean_auc")]
+names(pre_df)[4]  <- "pre_auc"
+names(post_df)[4] <- "post_auc"
+delta_df <- merge(pre_df, post_df, by = c("category", "subject", "group"))
+delta_df$delta <- delta_df$post_auc - delta_df$pre_auc
+delta_df$group <- factor(delta_df$group, levels = c("placebo", "verum"))
+
+cat("=== Figure 3 source: delta (post − pre) per category × group ===\n")
+delta_summ <- delta_df %>%
+  group_by(category, group) %>%
+  summarise(n = n(), mean_d = mean(delta), sd_d = sd(delta), .groups = "drop")
+cat(sprintf("  %-22s %-8s %4s %9s %9s\n", "Category", "Group", "n", "mean_Δ", "sd_Δ"))
+cat(strrep("-", 58), "\n")
+for (i in seq_len(nrow(delta_summ))) {
+  r <- delta_summ[i, ]
+  cat(sprintf("  %-22s %-8s %4d %9.4f %9.4f\n",
+              r$category, as.character(r$group), r$n, r$mean_d, r$sd_d))
+}
+cat("\n")
+
+DELTA_COLORS <- c(placebo = "#CD5C5C", verum = "#4682B4")
+GROUP_LABELS <- c("Placebo", "Verum")
+
+make_delta_panel <- function(cat_label) {
+  d    <- delta_df[delta_df$category == cat_label, ]
+  prow <- pval_tbl[!is.na(pval_tbl$cat_display) &
+                     pval_tbl$cat_display == cat_label, ]
+  p_val <- if (nrow(prow) > 0) prow$drug_session_p[1] else NA
+
+  set.seed(42)
+  d <- d %>%
+    mutate(
+      x_cond   = as.numeric(group) * 2,
+      x_jitter = x_cond - 0.40 + runif(n(), -0.10, 0.10)
+    )
+
+  p <- ggplot(d, aes(x = x_cond, y = delta,
+                     fill = group, color = group,
+                     group = group)) +
+    geom_hline(yintercept = 0, linetype = "dashed",
+               color = "gray50", linewidth = 0.5) +
+    geom_point(
+      aes(x = x_jitter, color = group),
+      size = 1.5, alpha = 0.60, shape = 16
+    ) +
+    geom_boxplot(
+      fill = NA, width = 0.90,
+      outlier.shape = NA, linewidth = 0.70,
+      position = position_nudge(x = -0.4)
+    ) +
+    stat_halfeye(
+      adjust = 0.7, width = 0.55,
+      justification = -0.38,
+      .width = 0, point_colour = NA,
+      slab_alpha = 0.65
+    ) +
+    scale_fill_manual(values = DELTA_COLORS, guide = "none") +
+    scale_color_manual(values = DELTA_COLORS, guide = "none") +
+    scale_x_continuous(
+      breaks = (1:2) * 2,
+      labels = GROUP_LABELS,
+      expand = expansion(add = c(0.65, 1.00))
+    ) +
+    labs(title = cat_label, y = "ΔAUC (post − pre, s)", x = NULL) +
+    theme_minimal(base_size = 11, base_family = "Times New Roman") +
+    theme(
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor   = element_blank(),
+      plot.title   = element_text(face = "plain", hjust = 0.5, size = 12),
+      axis.text.x  = element_text(size = 9, lineheight = 0.85),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none"
+    )
+
+  if (!is.na(p_val) && p_val < 0.05) {
+    y_max  <- max(d$delta, na.rm = TRUE)
+    y_span <- diff(range(d$delta, na.rm = TRUE))
+    y_br   <- y_max + y_span * 0.06
+    y_tick <- y_br  - y_span * 0.025
+    ast    <- if (p_val < 0.01) "**" else "*"
+    p_str  <- sprintf("%s p=%.3f", ast, p_val)
+
+    p <- p +
+      annotate("segment", x = 1.6, xend = 3.6, y = y_br, yend = y_br,
+               color = "black", linewidth = 0.5) +
+      annotate("segment", x = 1.6, xend = 1.6, y = y_br, yend = y_tick,
+               color = "black", linewidth = 0.5) +
+      annotate("segment", x = 3.6, xend = 3.6, y = y_br, yend = y_tick,
+               color = "black", linewidth = 0.5) +
+      annotate("text", x = 2.6, y = y_br + y_span * 0.04,
+               label = p_str, size = 3.5, hjust = 0.5, color = "black") +
+      coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
+  }
+  p
+}
+
+delta_panels <- lapply(CAT_ORDER, make_delta_panel)
+
+fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
+            (delta_panels[[3]] | delta_panels[[4]]) +
+  plot_annotation(
+    title = "Post − Pre AUC change per region category (Glasser self ROIs)",
+    theme = theme(
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 14)
+    )
+  )
+
+ggsave(OUT_FIG27_PNG, fig27_gg, width = 10, height = 8, dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG27_PNG))
+
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
