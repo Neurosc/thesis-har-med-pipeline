@@ -224,14 +224,13 @@ make_panel <- function(cat_label) {
   irow <- int_tbl[int_tbl$category == cat_label, ]
   p_val <- if (nrow(irow) > 0) irow$p_val[1] else NA
 
-  # x spacing: multiply by 1.5 so conditions are 1.5 units apart
-  # Resulting positions: 1.5 (PlacPre), 3.0 (VerPre), 4.5 (PlacPost), 6.0 (VerPost)
+  # x spacing: multiply by 2 so conditions are 2 units apart
   set.seed(42)
   d <- d %>%
     group_by(condition) %>%
     mutate(
-      x_cond  = as.numeric(condition) * 1.5,
-      x_jitter = x_cond - 0.10 + runif(n(), -0.06, 0.06)
+      x_cond  = as.numeric(condition) * 2,
+      x_jitter = x_cond - 0.40 + runif(n(), -0.06, 0.06)
     ) %>%
     ungroup()
 
@@ -246,16 +245,16 @@ make_panel <- function(cat_label) {
     # 2. Box plot: transparent fill, condition-colored outline (on top of dots)
     geom_boxplot(
       fill = NA,
-      width = 0.35,
+      width = 0.9, # size of the boxplot
       outlier.shape = NA,
       linewidth = 0.70,
-      position = position_nudge(x = -0.1) # boxplotla violin arasindaki bosluk
+      position = position_nudge(x = -0.4) # boxplotla violin arasindaki bosluk
     ) +
     # 3. Mean diamond (black) at the mean of each condition
     stat_summary(
       fun = mean, geom = "point",
       shape = 18, size = 2, color = "black",
-      position = position_nudge(x = -0.1) # boxplotla violin arasindaki bosluk - diamond
+      position = position_nudge(x = -0.4) # boxplotla violin arasindaki bosluk - diamond
     ) +
     # 4. Half-violin to the RIGHT, with clear gap from box
     stat_halfeye(
@@ -267,26 +266,26 @@ make_panel <- function(cat_label) {
     scale_fill_manual(values = COND_COLORS, guide = "none") +
     scale_color_manual(values = COND_COLORS, guide = "none") +
     scale_x_continuous(
-      breaks = (1:4) * 1.5,
+      breaks = (1:4) * 2,
       labels = COND_LABELS,
       expand = expansion(add = c(0.65, 1.00))
     ) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
-    theme_minimal(base_size = 11) +
+    theme_minimal(base_size = 11, base_family = "Times New Roman") +
     theme(
       panel.background   = element_rect(fill = "white", color = NA),
       plot.background    = element_rect(fill = "white", color = NA),
       panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
       panel.grid.major.x = element_blank(),
       panel.grid.minor   = element_blank(),
-      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
+      plot.title   = element_text(face = "plain", hjust = 0.5, size = 12),
       axis.text.x  = element_text(size = 9, lineheight = 0.85),
       
       axis.title.y = element_text(size = 10),
       legend.position = "none"
     )
 
-  # Significance bracket: Placebo Post (x=4.5) vs Verum Post (x=6.0)
+  # Significance bracket: Placebo Post (box at 5.6) vs Verum Post (box at 7.6)
   if (!is.na(p_val) && p_val < 0.05) {
     y_max  <- max(d$mean_auc, na.rm = TRUE)
     y_span <- diff(range(d$mean_auc, na.rm = TRUE))
@@ -295,13 +294,13 @@ make_panel <- function(cat_label) {
     p_str  <- if (p_val < 0.001) "p<0.001" else sprintf("p=%.3f", p_val)
 
     p <- p +
-      annotate("segment", x = 4.5, xend = 6.0, y = y_br,   yend = y_br,
+      annotate("segment", x = 5.6, xend = 7.6, y = y_br,   yend = y_br,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 4.5, xend = 4.5, y = y_br,   yend = y_tick,
+      annotate("segment", x = 5.6, xend = 5.6, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 6.0, xend = 6.0, y = y_br,   yend = y_tick,
+      annotate("segment", x = 7.6, xend = 7.6, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("text", x = 5.25, y = y_br + y_span * 0.03,
+      annotate("text", x = 6.6, y = y_br + y_span * 0.03,
                label = p_str, size = 3.5, hjust = 0.5, color = "black") +
       coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
   }
@@ -314,7 +313,7 @@ fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
   plot_annotation(
     title = "Drug × Session effect per region category (Glasser self ROIs)",
     theme = theme(
-      plot.title = element_text(face = "bold", hjust = 0.5, size = 14)
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 14)
     )
   )
 
@@ -381,8 +380,8 @@ fig26_gg <- ggplot(int_sorted, aes(x = category, y = beta, color = category)) +
     panel.grid.major.y = element_line(color = "#eeeeee"),
     panel.grid.major.x = element_blank(),
     panel.grid.minor   = element_blank(),
-    plot.title   = element_text(face = "bold", hjust = 0.5, size = 13),
-    axis.text.x  = element_text(size = 11, face = "bold"),
+    plot.title   = element_text(face = "plain", hjust = 0.5, size = 13),
+    axis.text.x  = element_text(size = 11, face = "plain"),
     axis.title.y = element_text(size = 11)
   )
 
