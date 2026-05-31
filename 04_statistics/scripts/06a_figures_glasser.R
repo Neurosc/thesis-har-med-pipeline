@@ -713,4 +713,164 @@ ggsave(OUT_FIG29B_PNG, fig29b_gg, width = 10, height = 8,
        dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG29B_PNG))
 
+cat("\n", SEP, "\nFIGURE 6 — Paired pre→post plot (significant categories)\n",
+    SEP, "\n", sep = "")
+
+OUT_FIG_PAIRED <- file.path(REPO_ROOT, "04_statistics", "figures",
+                             "fig_glasser_paired_prepost.png")
+
+# x positions: Placebo pair on left, Verum pair on right, gap between
+XPOS_PAIRED <- c("Placebo Pre"  = 1.0, "Placebo Post" = 2.0,
+                 "Verum Pre"    = 3.2, "Verum Post"   = 4.2)
+
+fmt_p_paired <- function(p) {
+  if (is.na(p))     return("n.s.")
+  if (p < 0.001)    return("p<0.001")
+  sprintf("p=%.3f", p)
+}
+
+make_paired_panel <- function(cat_label) {
+  d <- subj_means[subj_means$category == cat_label, ]
+  d$x_pos <- XPOS_PAIRED[as.character(d$condition)]
+
+  # Paired line segments: one per subject × group
+  make_lines <- function(grp) {
+    pre  <- d[d$group == grp & d$session == "ses-01",
+              c("subject", "mean_auc", "x_pos")]
+    post <- d[d$group == grp & d$session == "ses-02",
+              c("subject", "mean_auc", "x_pos")]
+    merge(pre, post, by = "subject", suffixes = c("_pre", "_post"))
+  }
+  plac_segs <- make_lines("placebo")
+  verm_segs <- make_lines("verum")
+
+  # Paired t-tests (Post − Pre, matched by subject)
+  paired_t <- function(grp) {
+    pre_d  <- d[d$group == grp & d$session == "ses-01", c("subject","mean_auc")]
+    post_d <- d[d$group == grp & d$session == "ses-02", c("subject","mean_auc")]
+    both   <- merge(pre_d, post_d, by = "subject", suffixes = c("_pre","_post"))
+    if (nrow(both) < 3) return(list(p.value = NA))
+    t.test(both$mean_auc_post, both$mean_auc_pre, paired = TRUE)
+  }
+  t_plac <- paired_t("placebo")
+  t_verm <- paired_t("verum")
+
+  # Drug × session p-value for this category
+  ds_p <- {
+    r <- pval_tbl[!is.na(pval_tbl$cat_display) & pval_tbl$cat_display == cat_label, ]
+    if (nrow(r) > 0) r$drug_session_p[1] else NA
+  }
+
+  y_max  <- max(d$x_pos, d$mean_auc, na.rm = TRUE)   # just to trigger; recalc below
+  y_max  <- max(d$mean_auc, na.rm = TRUE)
+  y_span <- diff(range(d$mean_auc, na.rm = TRUE))
+
+  p <- ggplot() +
+    # 1. Paired lines
+    geom_segment(data = plac_segs,
+                 aes(x = x_pos_pre, xend = x_pos_post,
+                     y = mean_auc_pre, yend = mean_auc_post),
+                 color = "#CD5C5C", alpha = 0.30, linewidth = 0.5) +
+    geom_segment(data = verm_segs,
+                 aes(x = x_pos_pre, xend = x_pos_post,
+                     y = mean_auc_pre, yend = mean_auc_post),
+                 color = "#4682B4", alpha = 0.30, linewidth = 0.5) +
+    # 2. Individual dots
+    geom_point(data = d[d$group == "placebo", ],
+               aes(x = x_pos, y = mean_auc),
+               color = "#CD5C5C", alpha = 0.60, size = 2, shape = 16) +
+    geom_point(data = d[d$group == "verum", ],
+               aes(x = x_pos, y = mean_auc),
+               color = "#4682B4", alpha = 0.60, size = 2, shape = 16) +
+    # 3. Boxplots (transparent fill, colored outline)
+    geom_boxplot(data = d[d$group == "placebo", ],
+                 aes(x = x_pos, y = mean_auc, group = condition),
+                 fill = NA, color = "#CD5C5C",
+                 width = 0.22, outlier.shape = NA, linewidth = 0.60) +
+    geom_boxplot(data = d[d$group == "verum", ],
+                 aes(x = x_pos, y = mean_auc, group = condition),
+                 fill = NA, color = "#4682B4",
+                 width = 0.22, outlier.shape = NA, linewidth = 0.60) +
+    scale_x_continuous(
+      breaks = unname(XPOS_PAIRED),
+      labels = c("Placebo\nPre", "Placebo\nPost", "Verum\nPre", "Verum\nPost"),
+      expand = expansion(add = c(0.5, 0.5))
+    ) +
+    labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
+    theme_minimal(base_size = 11, base_family = "serif") +
+    theme(
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
+      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12,
+                                  family = "serif"),
+      axis.text.x  = element_text(size = 9, lineheight = 0.85),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none"
+    )
+
+  # 4. Significance brackets
+  y_br1 <- y_max + y_span * 0.05
+  y_t1  <- y_br1 - y_span * 0.02
+  y_br2 <- y_br1 + y_span * 0.05    # verum bracket slightly higher
+  y_t2  <- y_br2 - y_span * 0.02
+
+  # Placebo Pre → Post
+  p <- p +
+    annotate("segment", x = 1.0, xend = 2.0, y = y_br1, yend = y_br1,
+             color = "#CD5C5C", linewidth = 0.5) +
+    annotate("segment", x = 1.0, xend = 1.0, y = y_br1, yend = y_t1,
+             color = "#CD5C5C", linewidth = 0.5) +
+    annotate("segment", x = 2.0, xend = 2.0, y = y_br1, yend = y_t1,
+             color = "#CD5C5C", linewidth = 0.5) +
+    annotate("text", x = 1.5, y = y_br1 + y_span * 0.02,
+             label = fmt_p_paired(t_plac$p.value),
+             size = 3, hjust = 0.5, color = "#CD5C5C")
+
+  # Verum Pre → Post
+  p <- p +
+    annotate("segment", x = 3.2, xend = 4.2, y = y_br2, yend = y_br2,
+             color = "#4682B4", linewidth = 0.5) +
+    annotate("segment", x = 3.2, xend = 3.2, y = y_br2, yend = y_t2,
+             color = "#4682B4", linewidth = 0.5) +
+    annotate("segment", x = 4.2, xend = 4.2, y = y_br2, yend = y_t2,
+             color = "#4682B4", linewidth = 0.5) +
+    annotate("text", x = 3.7, y = y_br2 + y_span * 0.02,
+             label = fmt_p_paired(t_verm$p.value),
+             size = 3, hjust = 0.5, color = "#4682B4")
+
+  # Drug × session bracket: Placebo Post (x=2) → Verum Post (x=4.2)
+  y_br3 <- max(y_br1, y_br2) + y_span * 0.08
+  y_t3  <- y_br3 - y_span * 0.02
+  p <- p +
+    annotate("segment", x = 2.0, xend = 4.2, y = y_br3, yend = y_br3,
+             color = "black", linewidth = 0.5) +
+    annotate("segment", x = 2.0, xend = 2.0, y = y_br3, yend = y_t3,
+             color = "black", linewidth = 0.5) +
+    annotate("segment", x = 4.2, xend = 4.2, y = y_br3, yend = y_t3,
+             color = "black", linewidth = 0.5) +
+    annotate("text", x = 3.1, y = y_br3 + y_span * 0.02,
+             label = fmt_p_paired(ds_p),
+             size = 3, hjust = 0.5, color = "black") +
+    coord_cartesian(ylim = c(NA, y_br3 + y_span * 0.08))
+
+  p
+}
+
+PAIRED_CATS <- c("Exteroceptive Self", "Sensory-Motor")
+paired_panels <- lapply(PAIRED_CATS, make_paired_panel)
+
+fig_paired <- (paired_panels[[1]] | paired_panels[[2]]) +
+  plot_annotation(
+    title = "Pre → Post AUC change by drug group (significant categories)",
+    theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
+                                            size = 12, family = "serif"))
+  )
+
+ggsave(OUT_FIG_PAIRED, fig_paired, width = 10, height = 5,
+       dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG_PAIRED))
+
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
