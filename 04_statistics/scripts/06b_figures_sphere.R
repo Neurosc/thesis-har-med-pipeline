@@ -1,15 +1,15 @@
 ﻿# 06b_figures_sphere.R
 # Keskin-style figures for sphere-based analysis
 #
-# Figure 1: 2Ã—2 raincloud panels per category (ggdist)
-# Figure 2: delta plot (postâˆ’pre per drug group)
+# Figure 1: 2×2 raincloud panels per category (ggdist)
+# Figure 2: delta plot (post−pre per drug group)
 # Figure 3: retreat effect (placebo pre vs post)
 # Figure 4: baseline balance
 #
 # Run from repo root:
 #   Rscript 04_statistics/scripts/06b_figures_sphere.R
 
-# â”€â”€ Packages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Packages ───────────────────────────────────────────────────────────────────
 required_pkgs <- c("ggplot2", "ggdist", "patchwork", "dplyr",
                    "lme4", "lmerTest", "emmeans", "plotly", "htmlwidgets")
 for (pkg in required_pkgs) {
@@ -24,7 +24,7 @@ suppressPackageStartupMessages({
   library(plotly); library(htmlwidgets)
 })
 
-# â”€â”€ Paths â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Paths ──────────────────────────────────────────────────────────────────────
 args     <- commandArgs(trailingOnly = FALSE)
 file_arg <- args[grep("--file=", args)]
 if (length(file_arg) > 0) {
@@ -42,7 +42,7 @@ OUT_FIG25_PNG  <- file.path(REPO_ROOT, "04_statistics", "figures",
 SEP <- paste(rep("=", 70), collapse = "")
 cat(SEP, "\n06b_figures_sphere.R\n", SEP, "\n\n", sep = "")
 
-# â”€â”€ Load & prepare data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Load & prepare data ────────────────────────────────────────────────────────
 df_raw <- read.csv(DATA_CSV, stringsAsFactors = FALSE)
 cat(sprintf("Loaded: %d rows\n\n", nrow(df_raw)))
 
@@ -93,13 +93,13 @@ df_raw$condition <- paste0(
 )
 df_raw$condition <- factor(df_raw$condition, levels = COND_LEVELS)
 
-# Subject-level means per (category Ã— condition)
+# Subject-level means per (category × condition)
 subj_means <- df_raw %>%
   group_by(category, subject, group, session, condition) %>%
   summarise(mean_auc = mean(auc, na.rm = TRUE), .groups = "drop")
 subj_means$condition <- factor(subj_means$condition, levels = COND_LEVELS)
 
-cat("=== Figure 1 source: subject-level means per category Ã— condition ===\n")
+cat("=== Figure 1 source: subject-level means per category × condition ===\n")
 summary_tbl <- subj_means %>%
   group_by(category, condition) %>%
   summarise(n = n(), mean = mean(mean_auc), sd = sd(mean_auc), .groups = "drop")
@@ -112,7 +112,7 @@ for (i in seq_len(nrow(summary_tbl))) {
 }
 cat("\n")
 
-# â”€â”€ Per-category LMMs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Per-category LMMs ──────────────────────────────────────────────────────────
 ctrl <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5),
                     check.conv.grad = .makeCC("warning", tol = 0.002))
 
@@ -152,9 +152,9 @@ for (cat in CAT_ORDER) {
 int_tbl <- do.call(rbind, int_rows)
 rownames(int_tbl) <- NULL
 
-cat("=== Figure 2 source: Drug Ã— Session interaction Î² per category ===\n")
+cat("=== Figure 2 source: Drug × Session interaction β per category ===\n")
 cat(sprintf("  %-22s %10s %8s %7s %10s %10s %8s\n",
-            "Category", "Î²", "SE", "t", "CI_lo", "CI_hi", "p"))
+            "Category", "β", "SE", "t", "CI_lo", "CI_hi", "p"))
 cat(strrep("-", 78), "\n")
 for (i in seq_len(nrow(int_tbl))) {
   r <- int_tbl[i, ]
@@ -164,7 +164,7 @@ for (i in seq_len(nrow(int_tbl))) {
 }
 cat("\n")
 
-# â”€â”€ Exteroception vs Sensory-Motor formal contrast (full model) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Exteroception vs Sensory-Motor formal contrast (full model) ────────────────
 cat(SEP, "\nExteroceptive Self vs Sensory-Motor formal contrast\n", SEP, "\n", sep = "")
 
 emm_options(lmerTest.limit = nrow(df_raw), pbkrtest.limit = nrow(df_raw))
@@ -184,7 +184,7 @@ m_full <- tryCatch(
   }
 )
 if (!is.null(m_full) && isSingular(m_full)) {
-  cat("  Singular â€” refitting with (1|subject)+(1|roi_uid)...\n")
+  cat("  Singular — refitting with (1|subject)+(1|roi_uid)...\n")
   m_full <- suppressWarnings(
     lmer(auc ~ group * session * self_layer + (1 | subject) + (1 | roi_uid),
          data = df_raw, REML = TRUE, control = ctrl))
@@ -208,12 +208,12 @@ if (!"lower.CL" %in% names(flat_df)) {
 }
 ext_p <- flat_df$p.value[1]
 ext_b <- flat_df$estimate[1]
-cat(sprintf("  Exteroception vs Sensory-Motor: Î²=%.6f, p=%.4g%s\n\n",
+cat(sprintf("  Exteroception vs Sensory-Motor: β=%.6f, p=%.4g%s\n\n",
             ext_b, ext_p,
             if (!is.na(ext_p) && ext_p < 0.05) " *" else ""))
 
-# â”€â”€ Figure 1: Keskin-style raincloud â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-cat(SEP, "\nFIGURE 1 â€” Keskin-style raincloud (fig25)\n", SEP, "\n", sep = "")
+# ── Figure 1: Keskin-style raincloud ──────────────────────────────────────────
+cat(SEP, "\nFIGURE 1 — Keskin-style raincloud (fig25)\n", SEP, "\n", sep = "")
 
 make_panel <- function(cat_label) {
   d <- subj_means[subj_means$category == cat_label, ]
@@ -288,7 +288,7 @@ panels <- lapply(CAT_ORDER, make_panel)
 
 fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
   plot_annotation(
-    title = "Drug Ã— Session effect per region category (Glasser self ROIs)",
+    title = "Drug × Session effect per region category (sphere self ROIs)",
     theme = theme(
       plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
                                 family = "serif")
@@ -299,12 +299,12 @@ ggsave(OUT_FIG25_PNG, fig25_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG25_PNG))
 
 
-cat("\n", SEP, "\nFIGURE 3 â€” Delta plot (fig27)\n", SEP, "\n", sep = "")
+cat("\n", SEP, "\nFIGURE 3 — Delta plot (fig27)\n", SEP, "\n", sep = "")
 
 OUT_FIG27_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
                             "fig_sphere_delta_plot.png")
 
-# Load drug Ã— session p-values per category
+# Load drug × session p-values per category
 pval_csv <- file.path(REPO_ROOT, "04_statistics", "results",
                        "sphere_per_category_drug_session.csv")
 pval_tbl <- read.csv(pval_csv, stringsAsFactors = FALSE)
@@ -316,7 +316,7 @@ PVAL_CAT_MAP <- c(
 )
 pval_tbl$cat_display <- PVAL_CAT_MAP[pval_tbl$category]
 
-# Compute delta = post âˆ’ pre per subject Ã— category
+# Compute delta = post − pre per subject × category
 pre_df  <- subj_means[as.character(subj_means$session) == "ses-01",
                        c("category", "subject", "group", "mean_auc")]
 post_df <- subj_means[as.character(subj_means$session) == "ses-02",
@@ -327,11 +327,11 @@ delta_df <- merge(pre_df, post_df, by = c("category", "subject", "group"))
 delta_df$delta <- delta_df$post_auc - delta_df$pre_auc
 delta_df$group <- factor(delta_df$group, levels = c("placebo", "verum"))
 
-cat("=== Figure 3 source: delta (post âˆ’ pre) per category Ã— group ===\n")
+cat("=== Figure 3 source: delta (post − pre) per category × group ===\n")
 delta_summ <- delta_df %>%
   group_by(category, group) %>%
   summarise(n = n(), mean_d = mean(delta), sd_d = sd(delta), .groups = "drop")
-cat(sprintf("  %-22s %-8s %4s %9s %9s\n", "Category", "Group", "n", "mean_Î”", "sd_Î”"))
+cat(sprintf("  %-22s %-8s %4s %9s %9s\n", "Category", "Group", "n", "mean_Δ", "sd_Δ"))
 cat(strrep("-", 58), "\n")
 for (i in seq_len(nrow(delta_summ))) {
   r <- delta_summ[i, ]
@@ -383,7 +383,7 @@ make_delta_panel <- function(cat_label) {
       labels = GROUP_LABELS,
       expand = expansion(add = c(0.65, 1.00))
     ) +
-    labs(title = cat_label, y = "Î”AUC (post âˆ’ pre, s)", x = NULL) +
+    labs(title = cat_label, y = "ΔAUC (post − pre, s)", x = NULL) +
     theme_minimal(base_size = 11, base_family = "serif") +
     theme(
       panel.background   = element_rect(fill = "white", color = NA),
@@ -424,7 +424,7 @@ delta_panels <- lapply(CAT_ORDER, make_delta_panel)
 fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
             (delta_panels[[3]] | delta_panels[[4]]) +
   plot_annotation(
-    title = "Post âˆ’ Pre AUC change per region category (Glasser self ROIs)",
+    title = "Post − Pre AUC change per region category (Glasser self ROIs)",
     theme = theme(
       plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
                                 family = "serif")
@@ -434,7 +434,7 @@ fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
 ggsave(OUT_FIG27_PNG, fig27_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG27_PNG))
 
-cat("\n", SEP, "\nFIGURE 4 â€” Retreat effect plot (fig28)\n", SEP, "\n", sep = "")
+cat("\n", SEP, "\nFIGURE 4 — Retreat effect plot (fig28)\n", SEP, "\n", sep = "")
 
 OUT_FIG28_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
                             "fig_sphere_retreat_effect.png")
@@ -445,7 +445,7 @@ df_plac <- df_raw[df_raw$group == "placebo", ]
 # Subject-level means for placebo only (reuse session column from subj_means)
 plac_means <- subj_means[subj_means$group == "placebo", ]
 
-# â”€â”€ Per-category LMMs (placebo only): auc ~ session + RE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Per-category LMMs (placebo only): auc ~ session + RE ──────────────────────
 retreat_rows <- list()
 for (cat in CAT_ORDER) {
   sub <- df_plac[df_plac$category == cat, ]
@@ -476,8 +476,8 @@ for (cat in CAT_ORDER) {
 retreat_tbl <- do.call(rbind, retreat_rows)
 rownames(retreat_tbl) <- NULL
 
-cat("=== Figure 4 source: session Î² (placebo only) per category ===\n")
-cat(sprintf("  %-22s %10s %8s %7s %8s\n", "Category", "Î²", "SE", "t", "p"))
+cat("=== Figure 4 source: session β (placebo only) per category ===\n")
+cat(sprintf("  %-22s %10s %8s %7s %8s\n", "Category", "β", "SE", "t", "p"))
 cat(strrep("-", 60), "\n")
 for (i in seq_len(nrow(retreat_tbl))) {
   r <- retreat_tbl[i, ]
@@ -489,7 +489,7 @@ for (i in seq_len(nrow(retreat_tbl))) {
 }
 cat("\n")
 
-# â”€â”€ Panel function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Panel function ─────────────────────────────────────────────────────────────
 SESSION_COLORS <- c("ses-01" = "#CD5C5C", "ses-02" = "#E8963E")
 SESSION_LABELS <- c("Pre", "Post")
 
@@ -587,7 +587,7 @@ fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
 ggsave(OUT_FIG28_PNG, fig28_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG28_PNG))
 
-# â”€â”€ Shared helpers for baseline figures â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Shared helpers for baseline figures ───────────────────────────────────────
 cohens_d <- function(x, y) {
   sp <- sqrt(((length(x) - 1) * var(x) + (length(y) - 1) * var(y)) /
                (length(x) + length(y) - 2))
@@ -659,8 +659,8 @@ make_base_panel <- function(d_in, panel_title) {
     )
 }
 
-# â”€â”€ Figure 5A â€” Pooled baseline (fig29a) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-cat("\n", SEP, "\nFIGURE 5A â€” Pooled baseline balance (fig29a)\n",
+# ── Figure 5A — Pooled baseline (fig29a) ──────────────────────────────────────
+cat("\n", SEP, "\nFIGURE 5A — Pooled baseline balance (fig29a)\n",
     SEP, "\n", sep = "")
 
 OUT_FIG29A_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
@@ -676,7 +676,7 @@ cat(sprintf("  n_placebo=%d  n_verum=%d\n",
             sum(pooled_means$group == "verum")))
 
 fig29a_gg <- make_base_panel(pooled_means,
-                              "Baseline balance â€” all regions pooled (ses-01)") +
+                              "Baseline balance — all regions pooled (ses-01)") +
   theme(plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
                                    family = "serif"))
 
@@ -684,8 +684,8 @@ ggsave(OUT_FIG29A_PNG, fig29a_gg, width = 5, height = 6,
        dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG29A_PNG))
 
-# â”€â”€ Figure 5B â€” Per-category baseline (fig29b) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-cat("\n", SEP, "\nFIGURE 5B â€” Per-category baseline balance (fig29b)\n",
+# ── Figure 5B — Per-category baseline (fig29b) ────────────────────────────────
+cat("\n", SEP, "\nFIGURE 5B — Per-category baseline balance (fig29b)\n",
     SEP, "\n", sep = "")
 
 OUT_FIG29B_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
@@ -713,5 +713,164 @@ ggsave(OUT_FIG29B_PNG, fig29b_gg, width = 10, height = 8,
        dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG29B_PNG))
 
-cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
+cat("\n", SEP, "\nFIGURE 6 — Paired pre→post plot (significant categories)\n",
+    SEP, "\n", sep = "")
 
+OUT_FIG_PAIRED <- file.path(REPO_ROOT, "04_statistics", "figures",
+                             "fig_glasser_paired_prepost.png")
+
+# x positions: Placebo pair on left, Verum pair on right, gap between
+XPOS_PAIRED <- c("Placebo Pre"  = 1.0, "Placebo Post" = 2.0,
+                 "Verum Pre"    = 3.2, "Verum Post"   = 4.2)
+
+fmt_p_paired <- function(p) {
+  if (is.na(p))     return("n.s.")
+  if (p < 0.001)    return("p<0.001")
+  sprintf("p=%.3f", p)
+}
+
+make_paired_panel <- function(cat_label) {
+  d <- subj_means[subj_means$category == cat_label, ]
+  d$x_pos <- XPOS_PAIRED[as.character(d$condition)]
+
+  # Paired line segments: one per subject × group
+  make_lines <- function(grp) {
+    pre  <- d[d$group == grp & d$session == "ses-01",
+              c("subject", "mean_auc", "x_pos")]
+    post <- d[d$group == grp & d$session == "ses-02",
+              c("subject", "mean_auc", "x_pos")]
+    merge(pre, post, by = "subject", suffixes = c("_pre", "_post"))
+  }
+  plac_segs <- make_lines("placebo")
+  verm_segs <- make_lines("verum")
+
+  # Paired t-tests (Post − Pre, matched by subject)
+  paired_t <- function(grp) {
+    pre_d  <- d[d$group == grp & d$session == "ses-01", c("subject","mean_auc")]
+    post_d <- d[d$group == grp & d$session == "ses-02", c("subject","mean_auc")]
+    both   <- merge(pre_d, post_d, by = "subject", suffixes = c("_pre","_post"))
+    if (nrow(both) < 3) return(list(p.value = NA))
+    t.test(both$mean_auc_post, both$mean_auc_pre, paired = TRUE)
+  }
+  t_plac <- paired_t("placebo")
+  t_verm <- paired_t("verum")
+
+  # Drug × session p-value for this category
+  ds_p <- {
+    r <- pval_tbl[!is.na(pval_tbl$cat_display) & pval_tbl$cat_display == cat_label, ]
+    if (nrow(r) > 0) r$drug_session_p[1] else NA
+  }
+
+  y_max  <- max(d$x_pos, d$mean_auc, na.rm = TRUE)   # just to trigger; recalc below
+  y_max  <- max(d$mean_auc, na.rm = TRUE)
+  y_span <- diff(range(d$mean_auc, na.rm = TRUE))
+
+  p <- ggplot() +
+    # 1. Paired lines
+    geom_segment(data = plac_segs,
+                 aes(x = x_pos_pre, xend = x_pos_post,
+                     y = mean_auc_pre, yend = mean_auc_post),
+                 color = "#CD5C5C", alpha = 0.30, linewidth = 0.5) +
+    geom_segment(data = verm_segs,
+                 aes(x = x_pos_pre, xend = x_pos_post,
+                     y = mean_auc_pre, yend = mean_auc_post),
+                 color = "#4682B4", alpha = 0.30, linewidth = 0.5) +
+    # 2. Individual dots
+    geom_point(data = d[d$group == "placebo", ],
+               aes(x = x_pos, y = mean_auc),
+               color = "#CD5C5C", alpha = 0.60, size = 2, shape = 16) +
+    geom_point(data = d[d$group == "verum", ],
+               aes(x = x_pos, y = mean_auc),
+               color = "#4682B4", alpha = 0.60, size = 2, shape = 16) +
+    # 3. Boxplots (transparent fill, colored outline)
+    geom_boxplot(data = d[d$group == "placebo", ],
+                 aes(x = x_pos, y = mean_auc, group = condition),
+                 fill = NA, color = "#CD5C5C",
+                 width = 0.22, outlier.shape = NA, linewidth = 0.60) +
+    geom_boxplot(data = d[d$group == "verum", ],
+                 aes(x = x_pos, y = mean_auc, group = condition),
+                 fill = NA, color = "#4682B4",
+                 width = 0.22, outlier.shape = NA, linewidth = 0.60) +
+    scale_x_continuous(
+      breaks = unname(XPOS_PAIRED),
+      labels = c("Placebo\nPre", "Placebo\nPost", "Verum\nPre", "Verum\nPost"),
+      expand = expansion(add = c(0.5, 0.5))
+    ) +
+    labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
+    theme_minimal(base_size = 11, base_family = "serif") +
+    theme(
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
+      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12,
+                                  family = "serif"),
+      axis.text.x  = element_text(size = 9, lineheight = 0.85),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none"
+    )
+
+  # 4. Significance brackets
+  y_br1 <- y_max + y_span * 0.05
+  y_t1  <- y_br1 - y_span * 0.02
+  y_br2 <- y_br1 + y_span * 0.05    # verum bracket slightly higher
+  y_t2  <- y_br2 - y_span * 0.02
+
+  # Placebo Pre → Post
+  p <- p +
+    annotate("segment", x = 1.0, xend = 2.0, y = y_br1, yend = y_br1,
+             color = "#CD5C5C", linewidth = 0.5) +
+    annotate("segment", x = 1.0, xend = 1.0, y = y_br1, yend = y_t1,
+             color = "#CD5C5C", linewidth = 0.5) +
+    annotate("segment", x = 2.0, xend = 2.0, y = y_br1, yend = y_t1,
+             color = "#CD5C5C", linewidth = 0.5) +
+    annotate("text", x = 1.5, y = y_br1 + y_span * 0.02,
+             label = fmt_p_paired(t_plac$p.value),
+             size = 3, hjust = 0.5, color = "#CD5C5C")
+
+  # Verum Pre → Post
+  p <- p +
+    annotate("segment", x = 3.2, xend = 4.2, y = y_br2, yend = y_br2,
+             color = "#4682B4", linewidth = 0.5) +
+    annotate("segment", x = 3.2, xend = 3.2, y = y_br2, yend = y_t2,
+             color = "#4682B4", linewidth = 0.5) +
+    annotate("segment", x = 4.2, xend = 4.2, y = y_br2, yend = y_t2,
+             color = "#4682B4", linewidth = 0.5) +
+    annotate("text", x = 3.7, y = y_br2 + y_span * 0.02,
+             label = fmt_p_paired(t_verm$p.value),
+             size = 3, hjust = 0.5, color = "#4682B4")
+
+  # Drug × session bracket: Placebo Post (x=2) → Verum Post (x=4.2)
+  y_br3 <- max(y_br1, y_br2) + y_span * 0.08
+  y_t3  <- y_br3 - y_span * 0.02
+  p <- p +
+    annotate("segment", x = 2.0, xend = 4.2, y = y_br3, yend = y_br3,
+             color = "black", linewidth = 0.5) +
+    annotate("segment", x = 2.0, xend = 2.0, y = y_br3, yend = y_t3,
+             color = "black", linewidth = 0.5) +
+    annotate("segment", x = 4.2, xend = 4.2, y = y_br3, yend = y_t3,
+             color = "black", linewidth = 0.5) +
+    annotate("text", x = 3.1, y = y_br3 + y_span * 0.02,
+             label = fmt_p_paired(ds_p),
+             size = 3, hjust = 0.5, color = "black") +
+    coord_cartesian(ylim = c(NA, y_br3 + y_span * 0.08))
+
+  p
+}
+
+PAIRED_CATS <- c("Exteroceptive Self", "Sensory-Motor")
+paired_panels <- lapply(PAIRED_CATS, make_paired_panel)
+
+fig_paired <- (paired_panels[[1]] | paired_panels[[2]]) +
+  plot_annotation(
+    title = "Pre → Post AUC change by drug group (significant categories)",
+    theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
+                                            size = 12, family = "serif"))
+  )
+
+ggsave(OUT_FIG_PAIRED, fig_paired, width = 10, height = 5,
+       dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG_PAIRED))
+
+cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
