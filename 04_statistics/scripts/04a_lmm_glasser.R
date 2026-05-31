@@ -322,4 +322,156 @@ cat("\n", SEP, "\nSUMMARY\n", SEP, "\n", sep = "")
 cat(sprintf(
   "Average flattening (self-nonself gap change under DMT): β=%.5f, p=%.4g.\n",
   avg_flat_b, avg_flat_p))
+cat("\n", SEP, "\nSENSITIVITY — Residual trimming (|resid| > 2.5 SD)\n",
+    SEP, "\n", sep = "")
+
+OUT_FIG_TRIM <- file.path(REPO_ROOT, "04_statistics", "figures",
+                           "fig_glasser_lmm_diagnostics_trimmed.png")
+
+# ── Flag and trim ──────────────────────────────────────────────────────────────
+resid_sd  <- sd(resids)
+resid_thr <- 2.5 * resid_sd
+flagged   <- abs(resids) > resid_thr
+n_flagged <- sum(flagged)
+n_total   <- length(resids)
+pct       <- 100 * n_flagged / n_total
+
+cat(sprintf("Residual SD = %.4f   Threshold = ±%.4f (2.5 × SD)\n",
+            resid_sd, resid_thr))
+cat(sprintf("Flagged: %d / %d observations (%.2f%%)\n\n",
+            n_flagged, n_total, pct))
+
+df_trim <- df[!flagged, ]
+cat(sprintf("Refitting on trimmed data (%d rows)...\n", nrow(df_trim)))
+
+# ── Refit ──────────────────────────────────────────────────────────────────────
+try_fit_trim <- function(formula, label) {
+  tryCatch(
+    withCallingHandlers(
+      lmer(formula, data = df_trim, REML = TRUE, control = ctrl),
+      warning = function(w) {
+        cat(sprintf("  [%s] warning: %s\n", label, conditionMessage(w)))
+        invokeRestart("muffleWarning")
+      }
+    ),
+    error = function(e) { cat(sprintf("  [%s] ERROR: %s\n", label, e$message)); NULL }
+  )
+}
+
+m_trim <- try_fit_trim(FORMULA_FULL, "trim/full-RE")
+if (!is.null(m_trim) && isSingular(m_trim)) {
+  cat("  Singular — retrying with (1|subject)+(1|roi_uid)...\n")
+  m_trim <- try_fit_trim(FORMULA_SIMP, "trim/simple-RE")
+}
+if (is.null(m_trim)) stop("Trimmed model fit failed.")
+
+conv_trim <- m_trim@optinfo$conv$lme4$messages
+cat(if (!is.null(conv_trim))
+      sprintf("  Convergence: %s\n", paste(conv_trim, collapse = "; "))
+    else "  Convergence: OK\n")
+
+# ── Extract key 3-way interaction terms ───────────────────────────────────────
+fe_trim <- coef(summary(m_trim))
+
+get_fe <- function(fe_mat, term) {
+  if (term %in% rownames(fe_mat))
+    fe_mat[term, c("Estimate","Pr(>|t|)")]
+  else c(Estimate = NA, `Pr(>|t|)` = NA)
+}
+
+TERMS <- c(
+  "Exteroception" = "groupverum:sessionses-02:self_layerExteroception",
+  "Interoception" = "groupverum:sessionses-02:self_layerInteroception",
+  "Cognition"     = "groupverum:sessionses-02:self_layerCognition"
+)
+
+# Average flattening for trimmed model (same EMM approach as Part 5)
+emm_options(lmerTest.limit = nrow(df_trim), pbkrtest.limit = nrow(df_trim))
+emm_trim      <- emmeans(m_trim, ~ group * session * self_layer)
+flat_avg_trim <- contrast(emm_trim,
+                           method = list("avg_flattening" = flat_avg_vec))
+flat_avg_trim_df <- as.data.frame(summary(flat_avg_trim, infer = TRUE))
+avg_flat_b_trim  <- flat_avg_trim_df$estimate[1]
+avg_flat_p_trim  <- flat_avg_trim_df$p.value[1]
+
+# ── Side-by-side table ────────────────────────────────────────────────────────
+cat(sprintf("\n%-30s  %-22s  %-22s\n",
+            "", "Full data", sprintf("Trimmed (|e| < 2.5 SD)")))
+cat(sprintf("%-30s  %-22s  %-22s\n",
+            "", sprintf("N = %d", n_total), sprintf("N = %d", nrow(df_trim))))
+cat(strrep("-", 78), "\n")
+
+for (nm in names(TERMS)) {
+  full_v  <- get_fe(as.matrix(coef(summary(m))),      TERMS[[nm]])
+  trim_v  <- get_fe(as.matrix(fe_trim),               TERMS[[nm]])
+  cat(sprintf("%-30s  β=%8.5f  p=%7.4g    β=%8.5f  p=%7.4g%s\n",
+              paste0("group:session:", nm),
+              full_v["Estimate"], full_v["Pr(>|t|)"],
+              trim_v["Estimate"], trim_v["Pr(>|t|)"],
+              if (!is.na(trim_v["Pr(>|t|)"]) && trim_v["Pr(>|t|)"] < 0.05) " *" else ""))
+}
+cat(sprintf("%-30s  β=%8.5f  p=%7.4g    β=%8.5f  p=%7.4g%s\n",
+            "Average flattening",
+            avg_flat_b, avg_flat_p,
+            avg_flat_b_trim, avg_flat_p_trim,
+            if (!is.na(avg_flat_p_trim) && avg_flat_p_trim < 0.05) " *" else ""))
+cat(strrep("-", 78), "\n")
+
+# ── Interpretation ────────────────────────────────────────────────────────────
+ext_p_full <- get_fe(as.matrix(coef(summary(m))), TERMS[["Exteroception"]])[["Pr(>|t|)"]]
+ext_p_trim <- get_fe(as.matrix(fe_trim),           TERMS[["Exteroception"]])[["Pr(>|t|)"]]
+
+ext_robust <- !is.na(ext_p_full) && !is.na(ext_p_trim) &&
+              (ext_p_full < 0.05) == (ext_p_trim < 0.05)
+flat_robust <- !is.na(avg_flat_p) && !is.na(avg_flat_p_trim) &&
+               (avg_flat_p < 0.05) == (avg_flat_p_trim < 0.05)
+
+cat(sprintf(
+  "\nInterpretation: After removing %d observations (%.2f%%) with extreme residuals,\n",
+  n_flagged, pct))
+cat(sprintf(
+  "  the Exteroception effect %s (full p=%.4g, trimmed p=%.4g).\n",
+  if (ext_robust) "remains consistent" else "changes significance",
+  ext_p_full, ext_p_trim))
+cat(sprintf(
+  "  Average flattening %s (full p=%.4g, trimmed p=%.4g).\n",
+  if (flat_robust) "remains consistent" else "changes significance",
+  avg_flat_p, avg_flat_p_trim))
+cat(sprintf(
+  "  Findings are %s to outlier observations.\n",
+  if (ext_robust && flat_robust) "ROBUST" else "SENSITIVE"))
+
+# ── Trimmed diagnostics ───────────────────────────────────────────────────────
+resids_trim  <- resid(m_trim)
+fitted_trim  <- fitted(m_trim)
+
+qq_n   <- min(5000L, length(resids_trim))
+qq_smp <- sort(sample(resids_trim, qq_n))
+qq_teo <- qnorm(ppoints(qq_n))
+
+p_qq_t <- ggplot(data.frame(theoretical = qq_teo, sample = qq_smp),
+                 aes(x = theoretical, y = sample)) +
+  geom_point(size = 0.8, alpha = 0.35, color = "steelblue") +
+  geom_abline(color = "red", linetype = "dashed") +
+  labs(title = "QQ Plot (trimmed)", x = "Theoretical", y = "Sample") +
+  diag_theme
+
+rvf_idx_t <- sample(length(resids_trim), min(5000L, length(resids_trim)))
+p_rvf_t <- ggplot(data.frame(fitted = fitted_trim[rvf_idx_t],
+                              resid  = resids_trim[rvf_idx_t]),
+                  aes(x = fitted, y = resid)) +
+  geom_point(size = 0.8, alpha = 0.25, color = "steelblue") +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Resid vs Fitted (trimmed)", x = "Fitted", y = "Residuals") +
+  diag_theme
+
+p_hist_t <- ggplot(data.frame(resid = resids_trim), aes(x = resid)) +
+  geom_histogram(bins = 80, fill = "steelblue", color = "white", linewidth = 0.2) +
+  labs(title = "Histogram (trimmed)", x = "Residual", y = "Count") +
+  diag_theme
+
+fig_trim <- p_qq_t | p_rvf_t | p_hist_t
+ggsave(OUT_FIG_TRIM, fig_trim, width = 12, height = 4, dpi = 300, bg = "white")
+cat(sprintf("\nSaved: %s\n", OUT_FIG_TRIM))
+
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
