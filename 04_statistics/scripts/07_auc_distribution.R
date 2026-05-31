@@ -74,7 +74,7 @@ base_theme <- function() {
       panel.background = element_rect(fill = "white", color = NA),
       plot.background  = element_rect(fill = "white", color = NA),
       panel.grid.minor = element_blank(),
-      plot.title = element_text(face = "bold", size = 13, hjust = 0.5)
+      plot.title = element_text(face = "plain", size = 13, hjust = 0.5)
     )
 }
 
@@ -108,7 +108,7 @@ LABELS1 <- c(
 )
 
 p1 <- ggplot(plot_df1, aes(x = auc, fill = atlas, color = atlas)) +
-  geom_density(alpha = 0.50, adjust = 0.8, linewidth = 0.7) +
+  geom_density(alpha = 0.20, adjust = 0.8, linewidth = 1.0) +
   scale_fill_manual(values = COLORS1, labels = LABELS1, name = NULL) +
   scale_color_manual(values = COLORS1, labels = LABELS1, name = NULL) +
   labs(
