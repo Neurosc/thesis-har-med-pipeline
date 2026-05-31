@@ -8,7 +8,7 @@
 #   Rscript 04_statistics/scripts/25_keskin_style_figures.R
 
 # ── Packages ───────────────────────────────────────────────────────────────────
-required_pkgs <- c("ggplot2", "ggdist", "gghalves", "patchwork", "dplyr",
+required_pkgs <- c("ggplot2", "ggdist", "patchwork", "dplyr",
                    "lme4", "lmerTest", "emmeans", "plotly", "htmlwidgets")
 for (pkg in required_pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE))
@@ -20,7 +20,6 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(lme4); library(lmerTest); library(emmeans)
   library(plotly); library(htmlwidgets)
-  if (requireNamespace("gghalves", quietly = TRUE)) library(gghalves)
 })
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -227,32 +226,34 @@ make_panel <- function(cat_label, show_legend = FALSE) {
 
   p <- ggplot(d, aes(x = condition, y = mean_auc,
                      fill = condition, color = condition)) +
-    # 1. Subject dots inside the box area (drawn first, behind box)
+    # 1. Subject dots drawn first (behind box), jittered inside box area
     geom_jitter(
       width = 0.08, height = 0,
       size = 1.5, alpha = 0.65, shape = 16
     ) +
-    # 2. Box plot transparent on top of dots (median, IQR, whiskers, no outlier pts)
+    # 2. Transparent box plot overlaid on top of dots
     geom_boxplot(
       width = 0.25,
       outlier.shape = NA,
       alpha = 0.30,
-      linewidth = 0.55,
-      color = "gray20"
+      color = "gray20",
+      linewidth = 0.55
     ) +
-    # 3. Half-violin density immediately to the right of the box
+    # 3. Half-violin density curve to the right of the box
     stat_halfeye(
       adjust = 0.7, width = 0.45,
       justification = -0.15,
       .width = 0, point_colour = NA,
-      slab_alpha = 0.65,
-      normalize = "groups"
+      slab_alpha = 0.65
     ) +
     scale_fill_manual(
       values = COND_COLORS, name = "Condition",
       labels = COND_LABELS
     ) +
-    scale_color_manual(values = COND_COLORS, guide = "none") +
+    scale_color_manual(
+      values = COND_COLORS,
+      guide = "none"
+    ) +
     scale_x_discrete(labels = COND_LABELS) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
     theme_minimal(base_size = 11) +
@@ -280,13 +281,13 @@ make_panel <- function(cat_label, show_legend = FALSE) {
     p_str  <- if (p_val < 0.001) "p<0.001" else sprintf("p=%.3f", p_val)
 
     p <- p +
-      annotate("segment", x = 3, xend = 4, y = y_br,   yend = y_br,
+      annotate("segment", x = 3, xend = 4,     y = y_br,   yend = y_br,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 3, xend = 3, y = y_br,   yend = y_tick,
+      annotate("segment", x = 3, xend = 3,     y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 4, xend = 4, y = y_br,   yend = y_tick,
+      annotate("segment", x = 4, xend = 4,     y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("text", x = 3.5, y = y_br + y_span * 0.03,
+      annotate("text",    x = 3.5, y = y_br + y_span * 0.03,
                label = p_str, size = 3.5, hjust = 0.5, color = "black") +
       coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
   }

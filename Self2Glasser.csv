@@ -1,0 +1,42 @@
+,,,,,,,,,,
+#,Hemi,Label,Brodmann Area,Volume (mm^3),Peak Z Value,x,y,z,Focus Point,parcel index
+Interoceptive-processing,,,,,,,,,,
+1,R,Insula,BA13,9656,5.79,34,14,12,R_Frontal_Opercular_area_4,108
+2,L,Dorsal anterior cingulate cortex,BA24,5768,5.63,0,4,48,L_Dorsal_Area_24d,220
+3,R,thalamus,,5408,6.12,12,−14,4,,
+4,R,Parahippocampal Gyrus,,1416,4.33,30,−4,−24,R_Hippocampus,120
+5,L,Parahippocampal Gyrus,,1216,5.71,−20,−4,−20,L_Perihirnal_Ectohinal_Cortex L_Entorhinal_Cortex L_Hippocampus L_Piriform_Cortex,302
+6,L,Insula,BA13,1000,4.63,−40,−2,2,L_Posterior_Insular_Area_2,286
+7,L,Insula,BA13,976,4.3,−36,24,4,L_Area_Frontal_Opercular L_Anterior_Ventral_Insular_Area,291
+8,R,Inferior parietal lobule,BA40,728,4.37,56,−26,26,R_Area_PF_Complex,148
+9,R,Superior frontal gyrus,BA8,376,4.29,4,24,48,R_Area_8BM,63
+10,L,Superior temporal gyrus,BA22,352,3.86,−56,6,6,L_Rostral_Area_6,258
+11,L,Postcentral gyrus,BA2,232,3.91,−48,−16,32,L_Primary_Sensory_Cortex,189
+Exteroceptive-processing,,,,,,,,,,
+1,R,Fusiform gyrus,BA37,2544,6.25,48,−58,−12,R_Area_PH,138
+2,R,Inferior frontal gyrus,BA46,2520,6.72,48,40,8,R_Area_IFSa,82
+3,R,Premotor cortex,BA9,2336,7.41,50,8,26,R_Rostral_Area_6,78
+4,R,Insula,BA13,2216,5.48,40,8,0,R_Middle_Insular_Area,109
+5,L,Fusiform gyrus,BA19,1720,6.46,−44,−68,−6,L_Area_PH,318
+6,R,Superior parietal lobule,BA7,1712,5.39,26,−72,44,R_IntraParietal_Sulcus_Area_1,145
+7,R,Postcentral gyrus,BA3,1328,5.95,58,−22,38,R_Area_Pft,116
+8,R,Inferior parietal lobule,BA40,1320,4.67,36,−50,56,R_Area_Lateral_IntraParietal_ventral R_Area_7PC,48
+9,L,Insula,BA13,856,4.28,−36,18,−4,L_Anterior_Agranular_Insula_Complex L_Middle_Insular_Area,292
+10,R,Inferior occipital gyrus,BA19,456,4.59,38,−80,−2,R_Area_Lateral_Occipital_1,20
+11,L,Inferior parietal lobule,BA40,360,3.88,−46,−34,40,L_Anterior_IntraParietal_Area,297
+12,L,Superior parietal lobule,BA7,248,3.79,−22,−64,50,L_Medial_IntraParietal_Area,230
+13,R,Cingulate gyrus,BA32,240,4.01,4,8,38,R_Area_Posterior_24_prime,57
+14,L,Medial prefrontal cortex,BA10,216,4.18,−6,60,22,L_Area_9_Middle,249
+Mental-self-processing,,,,,,,,,,
+1,L,Anterior Cingulate cortex / medial prefrontal cortex,BA32/BA10,17616,8.31,−6,48,0,L_Area_a24,241
+2,L,Posterior cingulate cortex,BA31,4704,6.05,−4,−54,28,L_Area_dorsal_23_a+b,214
+3,L,Insula,BA13,2584,4.89,−36,22,−2,L_Anterior_Ventral_Insular_Area,291
+4,L,Middle temporal gyrus,BA39,2240,5.06,−48,−66,28,L_Area_Pgi,330
+5,L,Thalamus,,984,4.35,−8,2,8,,
+6,L,Superior frontal gyrus,BA8,792,4.11,−20,36,46,L_Area_8Ad,248
+7,,Cingulate gyrus,BA24,768,4.92,0,−18,40,L_Area_23d,212
+8,L,Inferior temporal gyrus,BA21,480,4.22,−62,−6,−18,L_Area_TE1_anterior,312
+9,R,Middle temporal gyrus,BA39,416,4.49,54,−60,24,R_Area_PGi,150
+10,R,Insula,BA13,288,3.99,52,10,−6,R_Area_TA2,107
+11,L,Superior frontal gyrus,BA10,280,3.7,−24,50,22,L_Area_9_anterior,267
+12,R,Premotor cortex,BA6,256,3.88,46,6,24,R_Rostral_Area_6 R_Area_IFJp,78

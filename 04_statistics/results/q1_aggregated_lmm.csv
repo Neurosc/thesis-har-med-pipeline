@@ -1,0 +1,3 @@
+atlas,test,comparison,lrt_chi2,df_lrt,p_value,n_obs,loglik_full,loglik_reduced,converged_full,converged_red
+nonself,aggregated_lmm_lrt,higher_order_vs_sensory_3way,0.8316001256915087,1,0.3618102437381975,140,39.25841902233985,38.8426189594941,XTOL_REACHED,FTOL_REACHED
+self,aggregated_lmm_lrt,higher_order_vs_sensory_3way,0.7721983774479,1,0.37953782471601194,140,0.6739893128791152,0.28789012415516524,FTOL_REACHED,XTOL_REACHED
