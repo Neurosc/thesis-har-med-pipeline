@@ -600,23 +600,10 @@ fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
 ggsave(OUT_FIG28_PNG, fig28_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG28_PNG))
 
-cat("\n", SEP, "\nFIGURE 5 — Baseline balance plot (fig29)\n", SEP, "\n", sep = "")
-
-OUT_FIG29_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
-                            "fig29_baseline_balance.png")
-
-# Load pre-computed per-subject baseline medians
-baseline_df <- read.csv(
-  file.path(REPO_ROOT, "04_statistics", "results", "baseline_summary.csv"),
-  stringsAsFactors = FALSE
-)
-baseline_df$drug_group <- factor(baseline_df$drug_group,
-                                  levels = c("placebo", "verum"))
-
-# Cohen's d helper
+# ── Shared helpers for baseline figures ───────────────────────────────────────
 cohens_d <- function(x, y) {
-  sp <- sqrt(((length(x)-1)*var(x) + (length(y)-1)*var(y)) /
-               (length(x)+length(y)-2))
+  sp <- sqrt(((length(x) - 1) * var(x) + (length(y) - 1) * var(y)) /
+               (length(x) + length(y) - 2))
   if (sp == 0) return(0)
   (mean(x) - mean(y)) / sp
 }
@@ -626,33 +613,18 @@ d_label <- function(d) {
   if (a < 0.8) "medium"     else "large"
 }
 
-cat("=== Figure 5 source: baseline medians by group ===\n")
-for (col in c("self_baseline_median", "nonself_baseline_median")) {
-  plac <- baseline_df[[col]][baseline_df$drug_group == "placebo"]
-  verm <- baseline_df[[col]][baseline_df$drug_group == "verum"]
-  t_r  <- t.test(plac, verm, var.equal = FALSE)
-  mw_r <- wilcox.test(plac, verm, exact = FALSE)
-  d    <- cohens_d(plac, verm)
-  cat(sprintf("  %s\n", col))
-  cat(sprintf("    Welch t=%.3f (df=%.1f), p=%.4f\n",
-              t_r$statistic, t_r$parameter, t_r$p.value))
-  cat(sprintf("    Mann-Whitney U=%.0f, p=%.4f\n",
-              mw_r$statistic, mw_r$p.value))
-  cat(sprintf("    Cohen's d=%+.4f (%s)\n\n", d, d_label(d)))
-}
-
 BASE_COLORS <- c(placebo = "#CD5C5C", verum = "#4682B4")
 BASE_LABELS <- c("Placebo", "Verum")
 
-make_baseline_panel <- function(y_col, panel_title) {
-  d <- data.frame(
-    group = baseline_df$drug_group,
-    value = baseline_df[[y_col]],
-    stringsAsFactors = FALSE
-  )
-  d$group <- factor(d$group, levels = c("placebo", "verum"))
+# Derive ses-01 subject-level means from df_raw (already loaded)
+ses01_df <- df_raw[as.character(df_raw$session) == "ses-01", ]
 
-  # Compute stats for annotation
+make_base_panel <- function(d_in, panel_title) {
+  d <- data.frame(group = factor(as.character(d_in$group),
+                                  levels = c("placebo", "verum")),
+                  value = d_in$value,
+                  stringsAsFactors = FALSE)
+
   plac <- d$value[d$group == "placebo"]
   verm <- d$value[d$group == "verum"]
   t_r  <- t.test(plac, verm, var.equal = FALSE)
@@ -660,50 +632,32 @@ make_baseline_panel <- function(y_col, panel_title) {
   dv   <- cohens_d(plac, verm)
   stats_txt <- sprintf(
     "t=%.3f (df=%.1f), p=%.3f\nU=%.0f, p=%.3f\nd=%+.3f (%s)",
-    t_r$statistic, t_r$parameter, t_r$p.value,
-    mw_r$statistic, mw_r$p.value, dv, d_label(dv)
+    unname(t_r$statistic), unname(t_r$parameter), t_r$p.value,
+    unname(mw_r$statistic), mw_r$p.value, dv, d_label(dv)
   )
 
   set.seed(42)
   d <- d %>%
-    mutate(
-      x_cond   = as.numeric(group) * 2,
-      x_jitter = x_cond - 0.40 + runif(n(), -0.10, 0.10)
-    )
+    mutate(x_cond   = as.numeric(group) * 2,
+           x_jitter = x_cond - 0.40 + runif(n(), -0.10, 0.10))
 
   ggplot(d, aes(x = x_cond, y = value,
                 fill = group, color = group, group = group)) +
-    geom_point(
-      aes(x = x_jitter, color = group),
-      size = 1.5, alpha = 0.60, shape = 16
-    ) +
-    geom_boxplot(
-      fill = NA, width = 0.90,
-      outlier.shape = NA, linewidth = 0.70,
-      position = position_nudge(x = -0.4)
-    ) +
-    stat_halfeye(
-      adjust = 0.7, width = 0.55,
-      justification = -0.38,
-      .width = 0, point_colour = NA,
-      slab_alpha = 0.65
-    ) +
-    # Stats annotation box pinned to bottom-right corner
-    annotate("label",
-             x = Inf, y = -Inf, label = stats_txt,
-             hjust = 1.05, vjust = -0.08,
-             size = 2.8, family = "serif",
+    geom_point(aes(x = x_jitter, color = group),
+               size = 1.5, alpha = 0.60, shape = 16) +
+    geom_boxplot(fill = NA, width = 0.90, outlier.shape = NA,
+                 linewidth = 0.70, position = position_nudge(x = -0.4)) +
+    stat_halfeye(adjust = 0.7, width = 0.55, justification = -0.38,
+                 .width = 0, point_colour = NA, slab_alpha = 0.65) +
+    annotate("label", x = Inf, y = -Inf, label = stats_txt,
+             hjust = 1.05, vjust = -0.08, size = 2.8, family = "serif",
              fill = "white", color = "gray30",
-             label.size = 0.3,
-             label.padding = unit(0.15, "cm")) +
+             label.size = 0.3, label.padding = unit(0.15, "cm")) +
     scale_fill_manual(values = BASE_COLORS, guide = "none") +
     scale_color_manual(values = BASE_COLORS, guide = "none") +
-    scale_x_continuous(
-      breaks = (1:2) * 2,
-      labels = BASE_LABELS,
-      expand = expansion(add = c(0.65, 1.00))
-    ) +
-    labs(title = panel_title, y = "Median AUC (s)", x = NULL) +
+    scale_x_continuous(breaks = (1:2) * 2, labels = BASE_LABELS,
+                       expand = expansion(add = c(0.65, 1.00))) +
+    labs(title = panel_title, y = "Mean AUC (s)", x = NULL) +
     theme_minimal(base_size = 11, base_family = "serif") +
     theme(
       panel.background   = element_rect(fill = "white", color = NA),
@@ -718,21 +672,57 @@ make_baseline_panel <- function(y_col, panel_title) {
     )
 }
 
-p_self    <- make_baseline_panel("self_baseline_median",
-                                  "Self atlas — baseline (ses-01)")
-p_nonself <- make_baseline_panel("nonself_baseline_median",
-                                  "Nonself atlas — baseline (ses-01)")
+# ── Figure 5A — Pooled baseline (fig29a) ──────────────────────────────────────
+cat("\n", SEP, "\nFIGURE 5A — Pooled baseline balance (fig29a)\n",
+    SEP, "\n", sep = "")
 
-fig29_gg <- (p_self | p_nonself) +
+OUT_FIG29A_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
+                             "fig29a_baseline_balance_pooled.png")
+
+pooled_means <- ses01_df %>%
+  group_by(subject, group) %>%
+  summarise(value = mean(auc, na.rm = TRUE), .groups = "drop")
+
+cat("=== Pooled baseline: group means ===\n")
+cat(sprintf("  n_placebo=%d  n_verum=%d\n",
+            sum(pooled_means$group == "placebo"),
+            sum(pooled_means$group == "verum")))
+
+fig29a_gg <- make_base_panel(pooled_means,
+                              "Baseline balance — all regions pooled (ses-01)") +
+  theme(plot.title = element_text(face = "plain", hjust = 0.5, size = 13))
+
+ggsave(OUT_FIG29A_PNG, fig29a_gg, width = 5, height = 6,
+       dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG29A_PNG))
+
+# ── Figure 5B — Per-category baseline (fig29b) ────────────────────────────────
+cat("\n", SEP, "\nFIGURE 5B — Per-category baseline balance (fig29b)\n",
+    SEP, "\n", sep = "")
+
+OUT_FIG29B_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
+                             "fig29b_baseline_balance_per_category.png")
+
+cat("=== Per-category baseline ===\n")
+base_panels <- lapply(CAT_ORDER, function(cat) {
+  d_cat <- ses01_df[ses01_df$category == cat, ] %>%
+    group_by(subject, group) %>%
+    summarise(value = mean(auc, na.rm = TRUE), .groups = "drop")
+  cat(sprintf("  [%s] n_placebo=%d  n_verum=%d\n", cat,
+              sum(d_cat$group == "placebo"), sum(d_cat$group == "verum")))
+  make_base_panel(d_cat, cat)
+})
+
+fig29b_gg <- (base_panels[[1]] | base_panels[[2]]) /
+             (base_panels[[3]] | base_panels[[4]]) +
   plot_annotation(
-    title = "Per-subject AUC at baseline (ses-01) by drug group",
-    theme = theme(
-      plot.title = element_text(face = "plain", hjust = 0.5, size = 14,
-                                family = "serif")
-    )
+    title = "Baseline balance by region category (ses-01)",
+    theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
+                                            size = 14, family = "serif"))
   )
 
-ggsave(OUT_FIG29_PNG, fig29_gg, width = 10, height = 5, dpi = 300, bg = "white")
-cat(sprintf("Saved PNG: %s\n", OUT_FIG29_PNG))
+ggsave(OUT_FIG29B_PNG, fig29b_gg, width = 10, height = 8,
+       dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG29B_PNG))
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
