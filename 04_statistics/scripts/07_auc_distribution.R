@@ -1,18 +1,17 @@
-# 07_auc_distribution.R — AUC distribution by atlas (denoisedNoGSR)
-# Loads AUC long-format CSV and checks distribution: self vs nonself.
-# Reports NaN/Inf counts, distinct values, pile-ups, summary statistics.
-# Produces overlaid histogram + density plot.
+# 07_auc_distribution.R — AUC distribution plots
 #
-# Input:  04_statistics/results/analysis_long_format_auc.csv
-# Output: 04_statistics/figures/fig07_auc_distribution.png
+# Plot 1: self (spheres) vs nonself density overlay
+#   Input:  04_statistics/results/analysis_long_format_auc.csv
+#   Output: 04_statistics/figures/fig_auc_distribution_self_nonself.png
+#
+# Plot 2: all Glasser parcels pooled (single density + rug)
+#   Input:  04_statistics/results/glasser_self_nonself_model_ready.csv
+#   Output: 04_statistics/figures/fig_auc_distribution_all_glasser.png
 #
 # Run from repo root:
 #   Rscript 04_statistics/scripts/07_auc_distribution.R
 
-suppressPackageStartupMessages({
-  library(ggplot2)
-  library(dplyr)
-})
+suppressPackageStartupMessages(library(ggplot2))
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 args     <- commandArgs(trailingOnly = FALSE)
@@ -24,131 +23,133 @@ if (length(file_arg) > 0) {
   REPO_ROOT <- normalizePath(".")
 }
 
-DATA_CSV <- file.path(REPO_ROOT, "04_statistics", "results",
-                       "analysis_long_format_auc.csv")
+RES_DIR  <- file.path(REPO_ROOT, "04_statistics", "results")
 FIG_DIR  <- file.path(REPO_ROOT, "04_statistics", "figures")
-FIG_PATH <- file.path(FIG_DIR, "fig07_auc_distribution.png")
-
 dir.create(FIG_DIR, showWarnings = FALSE, recursive = TRUE)
 
+CSV1 <- file.path(RES_DIR, "analysis_long_format_auc.csv")
+CSV2 <- file.path(RES_DIR, "glasser_self_nonself_model_ready.csv")
+OUT1 <- file.path(FIG_DIR, "fig_auc_distribution_self_nonself.png")
+OUT2 <- file.path(FIG_DIR, "fig_auc_distribution_all_glasser.png")
+
 SEP <- paste(rep("=", 70), collapse = "")
-cat(SEP, "\n07_auc_distribution.R — AUC distribution by atlas\n",
-    SEP, "\n\n", sep = "")
+cat(SEP, "\n07_auc_distribution.R\n", SEP, "\n\n", sep = "")
 
-# ── Load ───────────────────────────────────────────────────────────────────────
-df <- read.csv(DATA_CSV, stringsAsFactors = FALSE)
-cat(sprintf("Loaded: %d rows, %d columns\n", nrow(df), ncol(df)))
-cat(sprintf("Atlases:  %s\n", paste(unique(df$atlas), collapse = ", ")))
-cat(sprintf("Sessions: %s\n", paste(sort(unique(df$session)), collapse = ", ")))
-cat(sprintf("Subjects: %d\n\n", length(unique(df$subject))))
-
-# ── Console summary per atlas ──────────────────────────────────────────────────
-atlas_summary <- function(label, vals) {
-  n_total    <- length(vals)
-  n_nan      <- sum(is.nan(vals))
-  n_inf      <- sum(is.infinite(vals))
-  finite     <- vals[is.finite(vals)]
-  n_finite   <- length(finite)
-  n_distinct <- length(unique(finite))
-
-  cat(sprintf("%s  (N=%d)\n", label, n_total))
-  cat(sprintf("  NaN: %d   Inf: %d   Finite: %d   Distinct: %d\n",
-              n_nan, n_inf, n_finite, n_distinct))
-  if (n_finite > 0) {
-    cat(sprintf("  min=%.3f   median=%.3f   max=%.3f\n",
-                min(finite), median(finite), max(finite)))
-    cat(sprintf("  mean=%.3f   SD=%.3f\n", mean(finite), sd(finite)))
-  }
-
-  # Top 5 most common finite values (pile-up check)
-  tbl    <- sort(table(round(finite, 6)), decreasing = TRUE)
-  top_n  <- min(5, length(tbl))
-  cat("  Top 5 most common AUC values:\n")
-  for (i in seq_len(top_n)) {
-    cat(sprintf("    %.6f  →  %d occurrences\n",
-                as.numeric(names(tbl)[i]), tbl[i]))
-  }
-  cat("\n")
-
-  invisible(finite)
+# ── Helper: console summary ────────────────────────────────────────────────────
+skewness <- function(x) {
+  x <- x[is.finite(x)]
+  n <- length(x)
+  if (n < 3) return(NA)
+  m <- mean(x); s <- sd(x)
+  if (s == 0) return(NA)
+  (sum((x - m)^3) / n) / s^3
+}
+kurt_excess <- function(x) {
+  x <- x[is.finite(x)]
+  n <- length(x)
+  if (n < 4) return(NA)
+  m <- mean(x); s <- sd(x)
+  if (s == 0) return(NA)
+  (sum((x - m)^4) / n) / s^4 - 3
 }
 
-self_auc    <- df$auc[df$atlas == "self"]
-nonself_auc <- df$auc[df$atlas == "nonself"]
+print_summary <- function(label, vals) {
+  n_miss   <- sum(is.na(vals) | is.nan(vals))
+  finite   <- vals[is.finite(vals)]
+  n        <- length(finite)
+  qs       <- quantile(finite, c(0, 0.25, 0.5, 0.75, 1))
+  cat(sprintf("  %s\n", label))
+  cat(sprintf("    N=%-8d  Missing/NaN=%d\n", n, n_miss))
+  cat(sprintf("    Min=%.4f  Q1=%.4f  Median=%.4f  Q3=%.4f  Max=%.4f\n",
+              qs[1], qs[2], qs[3], qs[4], qs[5]))
+  cat(sprintf("    Mean=%.4f  SD=%.4f\n", mean(finite), sd(finite)))
+  cat(sprintf("    Skewness=%.4f  Excess kurtosis=%.4f\n\n",
+              skewness(finite), kurt_excess(finite)))
+}
 
-self_finite    <- atlas_summary("Self",    self_auc)
-nonself_finite <- atlas_summary("Nonself", nonself_auc)
-
-# ── Figure: overlaid histogram + density ──────────────────────────────────────
-COLOR_SELF    <- "#3D5A6C"
-COLOR_NONSELF <- "#8B7355"
-
-plot_df <- data.frame(
-  auc   = c(self_finite, nonself_finite),
-  atlas = c(rep("Self",    length(self_finite)),
-            rep("Nonself", length(nonself_finite)))
-)
-plot_df$atlas <- factor(plot_df$atlas, levels = c("Self", "Nonself"))
-
-n_self    <- length(self_finite)
-n_nonself <- length(nonself_finite)
-
-ATLAS_COLORS <- c(Self = COLOR_SELF, Nonself = COLOR_NONSELF)
-ATLAS_LABELS <- c(
-  Self    = sprintf("Self (N=%d)",    n_self),
-  Nonself = sprintf("Nonself (N=%d)", n_nonself)
-)
-
-# Panel A: overlaid histogram
-p_hist <- ggplot(plot_df, aes(x = auc, fill = atlas, color = atlas)) +
-  geom_histogram(aes(y = after_stat(count)),
-                 binwidth = 0.1, alpha = 0.55, position = "identity") +
-  scale_fill_manual(values = ATLAS_COLORS, labels = ATLAS_LABELS,
-                    name = NULL) +
-  scale_color_manual(values = ATLAS_COLORS, labels = ATLAS_LABELS,
-                     name = NULL) +
-  labs(title = "AUC distribution by atlas — denoisedNoGSR",
-       subtitle = "All subjects and sessions pooled",
-       x = "AUC (seconds)", y = "Count") +
+# ── Shared theme ───────────────────────────────────────────────────────────────
+base_theme <- function() {
   theme_minimal(base_size = 12, base_family = "serif") +
-  theme(
-    panel.background = element_rect(fill = "white", color = NA),
-    plot.background  = element_rect(fill = "white", color = NA),
-    panel.grid.minor = element_blank(),
-    legend.position  = c(0.80, 0.85),
-    legend.background = element_rect(fill = "white", color = "gray80"),
-    plot.title    = element_text(face = "bold", size = 13),
-    plot.subtitle = element_text(size = 10, color = "gray40")
-  )
+    theme(
+      panel.background = element_rect(fill = "white", color = NA),
+      plot.background  = element_rect(fill = "white", color = NA),
+      panel.grid.minor = element_blank(),
+      plot.title = element_text(face = "bold", size = 13, hjust = 0.5)
+    )
+}
 
-# Panel B: density
-p_dens <- ggplot(plot_df, aes(x = auc, fill = atlas, color = atlas)) +
-  geom_density(alpha = 0.40, adjust = 0.8) +
-  scale_fill_manual(values = ATLAS_COLORS, labels = ATLAS_LABELS,
-                    name = NULL) +
-  scale_color_manual(values = ATLAS_COLORS, labels = ATLAS_LABELS,
-                     name = NULL) +
-  labs(title = "AUC density by atlas",
-       x = "AUC (seconds)", y = "Density") +
-  theme_minimal(base_size = 12, base_family = "serif") +
-  theme(
-    panel.background = element_rect(fill = "white", color = NA),
-    plot.background  = element_rect(fill = "white", color = NA),
-    panel.grid.minor = element_blank(),
-    legend.position  = c(0.80, 0.85),
-    legend.background = element_rect(fill = "white", color = "gray80"),
-    plot.title = element_text(face = "bold", size = 13)
-  )
+# ══════════════════════════════════════════════════════════════════════════════
+# Plot 1 — Self (spheres) vs Nonself
+# ══════════════════════════════════════════════════════════════════════════════
+cat(SEP, "\nPLOT 1 — Self vs Nonself (analysis_long_format_auc.csv)\n",
+    SEP, "\n", sep = "")
 
-# Combine with patchwork-style using cowplot or just stack with ggsave
-# Use base R graphics to stack two ggplots
-if (!requireNamespace("patchwork", quietly = TRUE))
-  install.packages("patchwork", repos = "https://cloud.r-project.org", quiet = TRUE)
-library(patchwork)
+df1 <- read.csv(CSV1, stringsAsFactors = FALSE)
+cat(sprintf("Loaded: %d rows\n\n", nrow(df1)))
 
-fig <- p_hist / p_dens
+self_vals    <- df1$auc[df1$atlas == "self"]
+nonself_vals <- df1$auc[df1$atlas == "nonself"]
 
-ggsave(FIG_PATH, fig, width = 10, height = 9, dpi = 300, bg = "white")
-cat(sprintf("[done] Figure → %s\n\n", FIG_PATH))
+print_summary("Self (atlas == 'self')",    self_vals)
+print_summary("Nonself (atlas == 'nonself')", nonself_vals)
+
+plot_df1 <- data.frame(
+  auc   = c(self_vals[is.finite(self_vals)],
+             nonself_vals[is.finite(nonself_vals)]),
+  atlas = c(rep("Self",    sum(is.finite(self_vals))),
+             rep("Nonself", sum(is.finite(nonself_vals))))
+)
+plot_df1$atlas <- factor(plot_df1$atlas, levels = c("Self", "Nonself"))
+
+COLORS1 <- c(Self = "#E8963E", Nonself = "#2E8B8B")
+LABELS1 <- c(
+  Self    = sprintf("Self (N=%d)",    sum(is.finite(self_vals))),
+  Nonself = sprintf("Nonself (N=%d)", sum(is.finite(nonself_vals)))
+)
+
+p1 <- ggplot(plot_df1, aes(x = auc, fill = atlas, color = atlas)) +
+  geom_density(alpha = 0.50, adjust = 0.8, linewidth = 0.7) +
+  scale_fill_manual(values = COLORS1, labels = LABELS1, name = NULL) +
+  scale_color_manual(values = COLORS1, labels = LABELS1, name = NULL) +
+  labs(
+    title = "AUC distribution — self (spheres) vs nonself",
+    x = "AUC (seconds)",
+    y = "Density"
+  ) +
+  base_theme() +
+  theme(legend.position = c(0.82, 0.85),
+        legend.background = element_rect(fill = "white", color = "gray80",
+                                         linewidth = 0.3))
+
+ggsave(OUT1, p1, width = 8, height = 6, dpi = 300, bg = "white")
+cat(sprintf("Saved: %s\n\n", OUT1))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Plot 2 — All Glasser parcels pooled
+# ══════════════════════════════════════════════════════════════════════════════
+cat(SEP, "\nPLOT 2 — All Glasser parcels pooled (glasser_self_nonself_model_ready.csv)\n",
+    SEP, "\n", sep = "")
+
+df2 <- read.csv(CSV2, stringsAsFactors = FALSE)
+cat(sprintf("Loaded: %d rows\n\n", nrow(df2)))
+
+print_summary("All Glasser parcels (pooled)", df2$auc)
+
+auc2 <- df2$auc[is.finite(df2$auc)]
+
+p2 <- ggplot(data.frame(auc = auc2), aes(x = auc)) +
+  geom_density(fill = "#2E8B8B", color = "#2E8B8B",
+               alpha = 0.50, adjust = 0.8, linewidth = 0.7) +
+  geom_rug(color = "#2E8B8B", alpha = 0.10, linewidth = 0.3) +
+  labs(
+    title = "AUC distribution — all Glasser parcels (pooled)",
+    x = "AUC (seconds)",
+    y = "Density"
+  ) +
+  base_theme() +
+  theme(legend.position = "none")
+
+ggsave(OUT2, p2, width = 8, height = 6, dpi = 300, bg = "white")
+cat(sprintf("Saved: %s\n\n", OUT2))
 
 cat(SEP, "\nDONE\n", SEP, "\n", sep = "")
