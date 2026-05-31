@@ -1,4 +1,4 @@
-# 10_baseline_drug_balance.R
+# 03_qc_baseline_balance.R
 # Baseline balance check: placebo vs verum at ses-01
 #
 # Test A — Pooled: grand mean AUC per subject across all ROIs (ses-01)
@@ -9,7 +9,7 @@
 #         04_statistics/results/baseline_balance_per_category.csv
 #
 # Run from repo root:
-#   Rscript 04_statistics/scripts/10_baseline_drug_balance.R
+#   Rscript 04_statistics/scripts/03_qc_baseline_balance.R
 
 suppressPackageStartupMessages(library(dplyr))
 
@@ -31,7 +31,7 @@ OUT_CAT    <- file.path(REPO_ROOT, "04_statistics", "results",
                          "baseline_balance_per_category.csv")
 
 SEP <- paste(rep("=", 70), collapse = "")
-cat(SEP, "\n10_baseline_drug_balance.R\n", SEP, "\n\n", sep = "")
+cat(SEP, "\n03_qc_baseline_balance.R\n", SEP, "\n\n", sep = "")
 
 # ── Load & prepare ─────────────────────────────────────────────────────────────
 df <- read.csv(DATA_CSV, stringsAsFactors = FALSE)

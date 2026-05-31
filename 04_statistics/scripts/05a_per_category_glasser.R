@@ -1,17 +1,12 @@
-# 26_per_category_drug_session_with_contrasts.R
+# 05a_per_category_glasser.R
 # Step 17: per-category drug × session tests + Exteroception vs nonself
-#          formal contrast + Keskin-style raincloud plots
-#
-# NOTE: task requested filename 24_per_category_drug_session_with_contrasts.R
-#   but 24_glasser_self_nonself_lmm.R already exists. Using 26_.
+#          formal contrast (Glasser-based data)
 #
 # Part 1: Per-category LMMs (auc ~ group * session + RE)
-# Part A: Exteroception vs nonself formal contrast using the full Step 16 model
-# Part 2: Raincloud / spaghetti figure (fig25)
-# Part 3: Bar chart of interaction effects with Ext vs nonself bracket (fig26)
+# Part A: Exteroception vs nonself formal contrast using the full 04a model
 #
 # Run from repo root:
-#   Rscript 04_statistics/scripts/26_per_category_drug_session_with_contrasts.R
+#   Rscript 04_statistics/scripts/05a_per_category_glasser.R
 
 if (!requireNamespace("emmeans", quietly = TRUE))
   install.packages("emmeans", repos = "https://cloud.r-project.org", quiet = TRUE)
@@ -45,7 +40,7 @@ OUT_FIG26 <- file.path(REPO_ROOT, "04_statistics", "figures",
 
 # Idempotent: delete outputs to re-run (script always overwrites)
 SEP <- paste(rep("=", 70), collapse = "")
-cat(SEP, "\n26_per_category_drug_session_with_contrasts.R — Step 17\n",
+cat(SEP, "\n05a_per_category_glasser.R\n",
     SEP, "\n\n", sep = "")
 
 # ── Load data ──────────────────────────────────────────────────────────────────

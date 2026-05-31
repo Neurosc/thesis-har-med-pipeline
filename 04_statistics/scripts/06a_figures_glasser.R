@@ -1,11 +1,13 @@
-# 25_keskin_style_figures.R
-# Step 17 (redesigned): Keskin-style raincloud + fixed interaction dot plot
+# 06a_figures_glasser.R
+# Keskin-style figures for Glasser-based analysis
 #
-# Figure 1 (fig25): 2×2 raincloud panels per category (ggdist)
-# Figure 2 (fig26): drug × session interaction dot + CI (fixed from bar chart)
+# Figure 1: 2×2 raincloud panels per category (ggdist)
+# Figure 2: delta plot (post−pre per drug group)
+# Figure 3: retreat effect (placebo pre vs post)
+# Figure 4: baseline balance
 #
 # Run from repo root:
-#   Rscript 04_statistics/scripts/25_keskin_style_figures.R
+#   Rscript 04_statistics/scripts/06a_figures_glasser.R
 
 # ── Packages ───────────────────────────────────────────────────────────────────
 required_pkgs <- c("ggplot2", "ggdist", "patchwork", "dplyr",
@@ -38,7 +40,7 @@ OUT_FIG25_PNG  <- file.path(REPO_ROOT, "04_statistics", "figures",
                              "fig25_raincloud_per_category.png")
 
 SEP <- paste(rep("=", 70), collapse = "")
-cat(SEP, "\n25_keskin_style_figures.R — Step 17 (Redesigned)\n", SEP, "\n\n", sep = "")
+cat(SEP, "\n06a_figures_glasser.R\n", SEP, "\n\n", sep = "")
 
 # ── Load & prepare data ────────────────────────────────────────────────────────
 df_raw <- read.csv(DATA_CSV, stringsAsFactors = FALSE)
@@ -76,7 +78,7 @@ CAT_COLORS <- c(
   "Sensory-Motor"      = "#888780"
 )
 
-# Factor relevels for LMMs (must match reference coding in script 26)
+# Factor relevels for LMMs (must match reference coding in 05a_per_category_glasser.R)
 df_raw$group      <- relevel(factor(df_raw$group),      ref = "placebo")
 df_raw$session    <- relevel(factor(df_raw$session),    ref = "ses-01")
 df_raw$subject    <- factor(df_raw$subject)

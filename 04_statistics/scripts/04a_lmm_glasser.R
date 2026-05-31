@@ -1,4 +1,4 @@
-# 24_glasser_self_nonself_lmm.R
+# 04a_lmm_glasser.R
 # Step 16: Glasser-based self vs nonself LMM (no sphere confound)
 #
 # Combines Keskin et al. self parcels (Glasser-based, 33 unique parcels → 35
@@ -15,7 +15,7 @@
 # Reference: "nonself"  (all coefficients relative to nonself)
 #
 # Run from repo root:
-#   Rscript 04_statistics/scripts/24_glasser_self_nonself_lmm.R
+#   Rscript 04_statistics/scripts/04a_lmm_glasser.R
 
 if (!requireNamespace("emmeans", quietly = TRUE))
   install.packages("emmeans", repos = "https://cloud.r-project.org", quiet = TRUE)
@@ -60,7 +60,7 @@ if (all(file.exists(all_out))) {
 }
 
 SEP <- paste(rep("=", 70), collapse = "")
-cat(SEP, "\n24_glasser_self_nonself_lmm.R — Step 16\n", SEP, "\n\n", sep = "")
+cat(SEP, "\n04a_lmm_glasser.R — Step 16\n", SEP, "\n\n", sep = "")
 
 # ── Part 1: Load and combine ───────────────────────────────────────────────────
 cat(SEP, "\nPART 1 — Assemble combined Glasser self + nonself dataset\n",

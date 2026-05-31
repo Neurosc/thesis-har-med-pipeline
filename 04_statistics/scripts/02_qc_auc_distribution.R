@@ -1,4 +1,4 @@
-# 07_auc_distribution.R — AUC distribution plots
+# 02_qc_auc_distribution.R — AUC distribution plots
 #
 # Plot 1: self (spheres) vs nonself density overlay
 #   Input:  04_statistics/results/analysis_long_format_auc.csv
@@ -9,7 +9,7 @@
 #   Output: 04_statistics/figures/fig_auc_distribution_all_glasser.png
 #
 # Run from repo root:
-#   Rscript 04_statistics/scripts/07_auc_distribution.R
+#   Rscript 04_statistics/scripts/02_qc_auc_distribution.R
 
 suppressPackageStartupMessages(library(ggplot2))
 
@@ -33,7 +33,7 @@ OUT1 <- file.path(FIG_DIR, "fig_auc_distribution_self_nonself.png")
 OUT2 <- file.path(FIG_DIR, "fig_auc_distribution_all_glasser.png")
 
 SEP <- paste(rep("=", 70), collapse = "")
-cat(SEP, "\n07_auc_distribution.R\n", SEP, "\n\n", sep = "")
+cat(SEP, "\n02_qc_auc_distribution.R\n", SEP, "\n\n", sep = "")
 
 # ── Helper: console summary ────────────────────────────────────────────────────
 skewness <- function(x) {
