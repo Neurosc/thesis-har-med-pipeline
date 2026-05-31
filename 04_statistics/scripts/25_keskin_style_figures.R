@@ -447,4 +447,157 @@ fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
 ggsave(OUT_FIG27_PNG, fig27_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG27_PNG))
 
+cat("\n", SEP, "\nFIGURE 4 — Retreat effect plot (fig28)\n", SEP, "\n", sep = "")
+
+OUT_FIG28_PNG <- file.path(REPO_ROOT, "04_statistics", "figures",
+                            "fig28_retreat_effect_per_category.png")
+
+# Subset to placebo group
+df_plac <- df_raw[df_raw$group == "placebo", ]
+
+# Subject-level means for placebo only (reuse session column from subj_means)
+plac_means <- subj_means[subj_means$group == "placebo", ]
+
+# ── Per-category LMMs (placebo only): auc ~ session + RE ──────────────────────
+retreat_rows <- list()
+for (cat in CAT_ORDER) {
+  sub <- df_plac[df_plac$category == cat, ]
+  sub$roi_uid <- droplevels(sub$roi_uid)
+
+  m <- tryCatch(
+    suppressWarnings(
+      lmer(auc ~ session + (1 | subject) + (1 | roi_uid),
+           data = sub, REML = TRUE, control = ctrl)
+    ),
+    error = function(e) {
+      cat(sprintf("  [%s] LMM error: %s\n", cat, e$message)); NULL
+    }
+  )
+  if (is.null(m)) next
+
+  fe    <- coef(summary(m))
+  b     <- fe["sessionses-02", "Estimate"]
+  se    <- fe["sessionses-02", "Std. Error"]
+  t_val <- fe["sessionses-02", "t value"]
+  p_val <- fe["sessionses-02", "Pr(>|t|)"]
+
+  retreat_rows[[cat]] <- data.frame(
+    category = cat, beta = b, SE = se, t_val = t_val, p_val = p_val,
+    stringsAsFactors = FALSE
+  )
+}
+retreat_tbl <- do.call(rbind, retreat_rows)
+rownames(retreat_tbl) <- NULL
+
+cat("=== Figure 4 source: session β (placebo only) per category ===\n")
+cat(sprintf("  %-22s %10s %8s %7s %8s\n", "Category", "β", "SE", "t", "p"))
+cat(strrep("-", 60), "\n")
+for (i in seq_len(nrow(retreat_tbl))) {
+  r <- retreat_tbl[i, ]
+  ast <- if (!is.na(r$p_val) && r$p_val < 0.001) " ***"  else
+         if (!is.na(r$p_val) && r$p_val < 0.01)  " **"   else
+         if (!is.na(r$p_val) && r$p_val < 0.05)  " *"    else ""
+  cat(sprintf("  %-22s %10.6f %8.6f %7.3f %8.4g%s\n",
+              r$category, r$beta, r$SE, r$t_val, r$p_val, ast))
+}
+cat("\n")
+
+# ── Panel function ─────────────────────────────────────────────────────────────
+SESSION_COLORS <- c("ses-01" = "#CD5C5C", "ses-02" = "#E8963E")
+SESSION_LABELS <- c("Pre", "Post")
+
+make_retreat_panel <- function(cat_label) {
+  d    <- plac_means[plac_means$category == cat_label, ]
+  rrow <- retreat_tbl[retreat_tbl$category == cat_label, ]
+  p_val <- if (nrow(rrow) > 0) rrow$p_val[1] else NA
+
+  d$session_f <- factor(as.character(d$session), levels = c("ses-01", "ses-02"))
+
+  set.seed(42)
+  d <- d %>%
+    mutate(
+      x_cond   = as.numeric(session_f) * 2,
+      x_jitter = x_cond - 0.40 + runif(n(), -0.10, 0.10)
+    )
+
+  p <- ggplot(d, aes(x = x_cond, y = mean_auc,
+                     fill = session_f, color = session_f,
+                     group = session_f)) +
+    geom_point(
+      aes(x = x_jitter, color = session_f),
+      size = 1.5, alpha = 0.60, shape = 16
+    ) +
+    geom_boxplot(
+      fill = NA, width = 0.90,
+      outlier.shape = NA, linewidth = 0.70,
+      position = position_nudge(x = -0.4)
+    ) +
+    stat_halfeye(
+      adjust = 0.7, width = 0.55,
+      justification = -0.38,
+      .width = 0, point_colour = NA,
+      slab_alpha = 0.65
+    ) +
+    scale_fill_manual(values = SESSION_COLORS, guide = "none") +
+    scale_color_manual(values = SESSION_COLORS, guide = "none") +
+    scale_x_continuous(
+      breaks = (1:2) * 2,
+      labels = SESSION_LABELS,
+      expand = expansion(add = c(0.65, 1.00))
+    ) +
+    labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
+    theme_minimal(base_size = 11, base_family = "Times New Roman") +
+    theme(
+      panel.background   = element_rect(fill = "white", color = NA),
+      plot.background    = element_rect(fill = "white", color = NA),
+      panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor   = element_blank(),
+      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
+      axis.text.x  = element_text(size = 9, lineheight = 0.85),
+      axis.title.y = element_text(size = 10),
+      legend.position = "none"
+    )
+
+  # Bracket always shown; asterisk label depends on p-value
+  if (!is.na(p_val)) {
+    y_max  <- max(d$mean_auc, na.rm = TRUE)
+    y_span <- diff(range(d$mean_auc, na.rm = TRUE))
+    y_br   <- y_max + y_span * 0.06
+    y_tick <- y_br  - y_span * 0.025
+    ast    <- if (p_val < 0.001) "***" else
+              if (p_val < 0.01)  "**"  else
+              if (p_val < 0.05)  "*"   else "n.s."
+    p_str  <- if (p_val < 0.05) sprintf("%s p=%.3f", ast, p_val) else
+              sprintf("n.s. p=%.3f", p_val)
+
+    p <- p +
+      annotate("segment", x = 1.6, xend = 3.6, y = y_br, yend = y_br,
+               color = "black", linewidth = 0.5) +
+      annotate("segment", x = 1.6, xend = 1.6, y = y_br, yend = y_tick,
+               color = "black", linewidth = 0.5) +
+      annotate("segment", x = 3.6, xend = 3.6, y = y_br, yend = y_tick,
+               color = "black", linewidth = 0.5) +
+      annotate("text", x = 2.6, y = y_br + y_span * 0.04,
+               label = p_str, size = 3.5, hjust = 0.5, color = "black") +
+      coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
+  }
+  p
+}
+
+retreat_panels <- lapply(CAT_ORDER, make_retreat_panel)
+
+fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
+            (retreat_panels[[3]] | retreat_panels[[4]]) +
+  plot_annotation(
+    title = "Meditation retreat effect (placebo group, n=18)",
+    theme = theme(
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 14,
+                                family = "Times New Roman")
+    )
+  )
+
+ggsave(OUT_FIG28_PNG, fig28_gg, width = 10, height = 8, dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG28_PNG))
+
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
