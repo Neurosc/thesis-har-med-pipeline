@@ -246,7 +246,7 @@ make_panel <- function(cat_label) {
     # 2. Box plot: transparent fill, condition-colored outline (on top of dots)
     geom_boxplot(
       fill = NA,
-      width = 0.18,
+      width = 0.35,
       outlier.shape = NA,
       linewidth = 0.70
     ) +
@@ -279,6 +279,7 @@ make_panel <- function(cat_label) {
       panel.grid.minor   = element_blank(),
       plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
       axis.text.x  = element_text(size = 9, lineheight = 0.85),
+      
       axis.title.y = element_text(size = 10),
       legend.position = "none"
     )
