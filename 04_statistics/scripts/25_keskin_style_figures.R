@@ -652,7 +652,7 @@ make_base_panel <- function(d_in, panel_title) {
     annotate("label", x = Inf, y = -Inf, label = stats_txt,
              hjust = 1.05, vjust = -0.08, size = 2.8, family = "serif",
              fill = "white", color = "gray30",
-             label.size = 0.3, label.padding = unit(0.15, "cm")) +
+             label.padding = unit(0.15, "cm")) +
     scale_fill_manual(values = BASE_COLORS, guide = "none") +
     scale_color_manual(values = BASE_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:2) * 2, labels = BASE_LABELS,
