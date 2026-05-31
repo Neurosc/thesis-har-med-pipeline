@@ -230,7 +230,7 @@ make_panel <- function(cat_label) {
     group_by(condition) %>%
     mutate(
       x_cond  = as.numeric(condition) * 2,
-      x_jitter = x_cond - 0.40 + runif(n(), -0.06, 0.06)
+      x_jitter = x_cond - 0.40 + runif(n(), -0.2, 0.2)
     ) %>%
     ungroup()
 
@@ -285,25 +285,6 @@ make_panel <- function(cat_label) {
       legend.position = "none"
     )
 
-  # Significance bracket: Placebo Post (box at 5.6) vs Verum Post (box at 7.6)
-  if (!is.na(p_val) && p_val < 0.05) {
-    y_max  <- max(d$mean_auc, na.rm = TRUE)
-    y_span <- diff(range(d$mean_auc, na.rm = TRUE))
-    y_br   <- y_max + y_span * 0.06
-    y_tick <- y_br  - y_span * 0.025
-    p_str  <- if (p_val < 0.001) "p<0.001" else sprintf("p=%.3f", p_val)
-
-    p <- p +
-      annotate("segment", x = 5.6, xend = 7.6, y = y_br,   yend = y_br,
-               color = "black", linewidth = 0.5) +
-      annotate("segment", x = 5.6, xend = 5.6, y = y_br,   yend = y_tick,
-               color = "black", linewidth = 0.5) +
-      annotate("segment", x = 7.6, xend = 7.6, y = y_br,   yend = y_tick,
-               color = "black", linewidth = 0.5) +
-      annotate("text", x = 6.6, y = y_br + y_span * 0.03,
-               label = p_str, size = 3.5, hjust = 0.5, color = "black") +
-      coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
-  }
   p
 }
 
@@ -331,101 +312,5 @@ tryCatch({
   cat(sprintf("  HTML fig25 skipped (ggplotly conversion error): %s\n", e$message))
 })
 
-# ── Figure 2: interaction dot + CI ────────────────────────────────────────────
-cat("\n", SEP, "\nFIGURE 2 — Drug × Session interaction dot + CI (fig26)\n",
-    SEP, "\n", sep = "")
-
-# Sort by β (most negative left)
-int_sorted          <- int_tbl[order(int_tbl$beta), ]
-int_sorted$category <- factor(int_sorted$category, levels = int_sorted$category)
-int_sorted$color    <- CAT_COLORS[as.character(int_sorted$category)]
-
-# Find numeric x positions of Exteroceptive Self and Sensory-Motor for bracket
-sorted_levels <- levels(int_sorted$category)
-x_ext <- which(sorted_levels == "Exteroceptive Self")
-x_sm  <- which(sorted_levels == "Sensory-Motor")
-
-y_ci_max <- max(int_sorted$ci_hi, na.rm = TRUE)
-y_br     <- y_ci_max + abs(y_ci_max) * 0.12
-y_tick   <- y_br - abs(y_ci_max) * 0.04
-p_str_ext <- if (!is.na(ext_p) && ext_p < 0.001) "p<0.001" else
-             if (!is.na(ext_p)) sprintf("p=%.3f", ext_p) else "n.s."
-
-# Asterisk: mark categories where CI does not cross 0
-int_sorted$sig_ast <- (!is.na(int_sorted$ci_lo) & int_sorted$ci_lo > 0) |
-                      (!is.na(int_sorted$ci_hi) & int_sorted$ci_hi < 0)
-# Fallback: mark by p < 0.05 if CI not conclusive
-int_sorted$sig_ast[!int_sorted$sig_ast] <-
-  !is.na(int_sorted$p_val[!int_sorted$sig_ast]) &
-  int_sorted$p_val[!int_sorted$sig_ast] < 0.05
-
-ast_data <- int_sorted[int_sorted$sig_ast, ]
-
-fig26_gg <- ggplot(int_sorted, aes(x = category, y = beta, color = category)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "black",
-             linewidth = 0.7) +
-  geom_errorbar(aes(ymin = ci_lo, ymax = ci_hi),
-                width = 0.10, linewidth = 1.0) +
-  geom_point(size = 4.5, shape = 16) +
-  scale_color_manual(values = CAT_COLORS, guide = "none") +
-  labs(
-    title = "Drug × Session interaction per region category",
-    y     = "Drug × Session interaction β (AUC, s)",
-    x     = NULL
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    panel.background   = element_rect(fill = "white", color = NA),
-    plot.background    = element_rect(fill = "white", color = NA),
-    panel.grid.major.y = element_line(color = "#eeeeee"),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor   = element_blank(),
-    plot.title   = element_text(face = "plain", hjust = 0.5, size = 13),
-    axis.text.x  = element_text(size = 11, face = "plain"),
-    axis.title.y = element_text(size = 11)
-  )
-
-# Asterisks for significant categories
-if (nrow(ast_data) > 0) {
-  fig26_gg <- fig26_gg +
-    geom_text(data = ast_data,
-              aes(y = ci_hi + abs(ci_hi) * 0.06, label = "*"),
-              size = 7, color = "black", vjust = 0)
-}
-
-# Bracket: Exteroceptive Self vs Sensory-Motor
-if (!is.na(ext_p) && length(x_ext) == 1 && length(x_sm) == 1) {
-  brk_lo <- min(x_ext, x_sm)
-  brk_hi <- max(x_ext, x_sm)
-  fig26_gg <- fig26_gg +
-    annotate("segment", x = brk_lo, xend = brk_hi,
-             y = y_br, yend = y_br, color = "black", linewidth = 0.6) +
-    annotate("segment", x = brk_lo, xend = brk_lo,
-             y = y_br, yend = y_tick, color = "black", linewidth = 0.6) +
-    annotate("segment", x = brk_hi, xend = brk_hi,
-             y = y_br, yend = y_tick, color = "black", linewidth = 0.6) +
-    annotate("text", x = (brk_lo + brk_hi) / 2, y = y_br + abs(y_br) * 0.04,
-             label = p_str_ext, size = 3.8, hjust = 0.5) +
-    coord_cartesian(ylim = c(NA, y_br + abs(y_br) * 0.12))
-}
-
-ggsave(OUT_FIG26_PNG, fig26_gg, width = 8, height = 6, dpi = 300, bg = "white")
-cat(sprintf("Saved PNG: %s\n", OUT_FIG26_PNG))
-
-# HTML version
-tryCatch({
-  fig26_pl <- ggplotly(fig26_gg) %>%
-    layout(
-      title = list(text = "Drug × Session interaction per region category",
-                   x = 0.5),
-      xaxis = list(title = ""),
-      yaxis = list(title = "Drug × Session interaction β (AUC, s)")
-    )
-  saveWidget(fig26_pl, OUT_FIG26_HTML, selfcontained = FALSE,
-             title = "Drug x Session Interaction Dot Plot")
-  cat(sprintf("Saved HTML: %s\n", OUT_FIG26_HTML))
-}, error = function(e) {
-  cat(sprintf("  HTML fig26 skipped: %s\n", e$message))
-})
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
