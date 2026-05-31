@@ -101,7 +101,7 @@ plot_df1 <- data.frame(
 )
 plot_df1$atlas <- factor(plot_df1$atlas, levels = c("Self", "Nonself"))
 
-COLORS1 <- c(Self = "#E8963E", Nonself = "#2E8B8B")
+COLORS1 <- c(Self = "#123434", Nonself = "#2E8B8B")
 LABELS1 <- c(
   Self    = sprintf("Self (N=%d)",    sum(is.finite(self_vals))),
   Nonself = sprintf("Nonself (N=%d)", sum(is.finite(nonself_vals)))
@@ -140,7 +140,8 @@ auc2 <- df2$auc[is.finite(df2$auc)]
 p2 <- ggplot(data.frame(auc = auc2), aes(x = auc)) +
   geom_density(fill = "#2E8B8B", color = "#2E8B8B",
                alpha = 0.50, adjust = 0.8, linewidth = 0.7) +
-  geom_rug(color = "#2E8B8B", alpha = 0.10, linewidth = 0.3) +
+  geom_rug(data = data.frame(auc = sample(auc2, min(500, length(auc2)))),
+           color = "#2E8B8B", alpha = 0.25, linewidth = 0.3) +
   labs(
     title = "AUC distribution — all Glasser parcels (pooled)",
     x = "AUC (seconds)",
