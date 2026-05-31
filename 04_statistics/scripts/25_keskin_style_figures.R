@@ -66,12 +66,12 @@ CAT_ORDER <- c("Interoceptive Self", "Exteroceptive Self",
 COND_LEVELS <- c("Placebo Pre", "Verum Pre", "Placebo Post", "Verum Post")
 COND_LABELS <- c("Placebo\nPre", "Verum\nPre", "Placebo\nPost", "Verum\nPost")
 
-# Colors for four conditions (Keskin style: red, blue, orange, lighter blue)
+# Colors for four conditions (Keskin style: red, blue, orange, teal)
 COND_COLORS <- c(
   "Placebo Pre"  = "#CD5C5C",
   "Verum Pre"    = "#4682B4",
   "Placebo Post" = "#E8963E",
-  "Verum Post"   = "#5B8DB8"
+  "Verum Post"   = "#2E8B8B"
 )
 
 # Category colors for Figure 2
@@ -219,42 +219,52 @@ cat(sprintf("  Exteroception vs Sensory-Motor: β=%.6f, p=%.4g%s\n\n",
 # ── Figure 1: Keskin-style raincloud ──────────────────────────────────────────
 cat(SEP, "\nFIGURE 1 — Keskin-style raincloud (fig25)\n", SEP, "\n", sep = "")
 
-make_panel <- function(cat_label, show_legend = FALSE) {
-  d    <- subj_means[subj_means$category == cat_label, ]
+make_panel <- function(cat_label) {
+  d <- subj_means[subj_means$category == cat_label, ]
   irow <- int_tbl[int_tbl$category == cat_label, ]
   p_val <- if (nrow(irow) > 0) irow$p_val[1] else NA
 
-  p <- ggplot(d, aes(x = condition, y = mean_auc,
-                     fill = condition, color = condition)) +
-    # 1. Subject dots drawn first (behind box), jittered inside box area
-    geom_jitter(
-      width = 0.08, height = 0,
-      size = 1.5, alpha = 0.65, shape = 16
+  # Pre-compute jittered x positions for dots (left of box, consistent per panel)
+  set.seed(42)
+  d <- d %>%
+    group_by(condition) %>%
+    mutate(x_dot = as.numeric(condition) - 0.22 + runif(n(), -0.05, 0.05)) %>%
+    ungroup()
+
+  p <- ggplot(d, aes(x = as.numeric(condition), y = mean_auc,
+                     fill = condition, color = condition,
+                     group = condition)) +
+    # 1. Subject dots to the LEFT of the box
+    geom_point(
+      aes(x = x_dot, color = condition),
+      size = 1.5, alpha = 0.60, shape = 16
     ) +
-    # 2. Transparent box plot overlaid on top of dots
+    # 2. Box plot: transparent fill, condition-colored outline
     geom_boxplot(
-      width = 0.25,
+      fill = NA,
+      width = 0.18,
       outlier.shape = NA,
-      alpha = 0.30,
-      color = "gray20",
-      linewidth = 0.55
+      linewidth = 0.70
     ) +
-    # 3. Half-violin density curve to the right of the box
+    # 3. Mean diamond (black) on top of the box
+    stat_summary(
+      fun = mean, geom = "point",
+      shape = 18, size = 3.5, color = "black"
+    ) +
+    # 4. Half-violin to the RIGHT, with gap from box
     stat_halfeye(
-      adjust = 0.7, width = 0.45,
-      justification = -0.15,
+      adjust = 0.7, width = 0.50,
+      justification = -0.25,
       .width = 0, point_colour = NA,
       slab_alpha = 0.65
     ) +
-    scale_fill_manual(
-      values = COND_COLORS, name = "Condition",
-      labels = COND_LABELS
+    scale_fill_manual(values = COND_COLORS, guide = "none") +
+    scale_color_manual(values = COND_COLORS, guide = "none") +
+    scale_x_continuous(
+      breaks = 1:4,
+      labels = COND_LABELS,
+      expand = expansion(add = c(0.55, 0.80))
     ) +
-    scale_color_manual(
-      values = COND_COLORS,
-      guide = "none"
-    ) +
-    scale_x_discrete(labels = COND_LABELS) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
     theme_minimal(base_size = 11) +
     theme(
@@ -266,10 +276,7 @@ make_panel <- function(cat_label, show_legend = FALSE) {
       plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
       axis.text.x  = element_text(size = 9, lineheight = 0.85),
       axis.title.y = element_text(size = 10),
-      legend.position = if (show_legend) "right" else "none",
-      legend.key.size = unit(0.5, "cm"),
-      legend.text     = element_text(size = 9),
-      legend.title    = element_text(size = 10, face = "bold")
+      legend.position = "none"
     )
 
   # Significance bracket between Placebo Post (x=3) and Verum Post (x=4)
@@ -281,21 +288,20 @@ make_panel <- function(cat_label, show_legend = FALSE) {
     p_str  <- if (p_val < 0.001) "p<0.001" else sprintf("p=%.3f", p_val)
 
     p <- p +
-      annotate("segment", x = 3, xend = 4,     y = y_br,   yend = y_br,
+      annotate("segment", x = 3, xend = 4, y = y_br,   yend = y_br,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 3, xend = 3,     y = y_br,   yend = y_tick,
+      annotate("segment", x = 3, xend = 3, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 4, xend = 4,     y = y_br,   yend = y_tick,
+      annotate("segment", x = 4, xend = 4, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("text",    x = 3.5, y = y_br + y_span * 0.03,
+      annotate("text", x = 3.5, y = y_br + y_span * 0.03,
                label = p_str, size = 3.5, hjust = 0.5, color = "black") +
       coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
   }
   p
 }
 
-panels <- lapply(seq_along(CAT_ORDER), function(i)
-  make_panel(CAT_ORDER[i], show_legend = (i == 2)))
+panels <- lapply(CAT_ORDER, make_panel)
 
 fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
   plot_annotation(
