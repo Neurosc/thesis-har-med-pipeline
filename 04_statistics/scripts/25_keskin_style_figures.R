@@ -288,7 +288,8 @@ fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
   plot_annotation(
     title = "Drug × Session effect per region category (Glasser self ROIs)",
     theme = theme(
-      plot.title = element_text(face = "plain", hjust = 0.5, size = 14)
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
+                                family = "serif")
     )
   )
 
@@ -423,7 +424,8 @@ fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
   plot_annotation(
     title = "Post − Pre AUC change per region category (Glasser self ROIs)",
     theme = theme(
-      plot.title = element_text(face = "plain", hjust = 0.5, size = 14)
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
+                                family = "serif")
     )
   )
 
@@ -536,7 +538,7 @@ make_retreat_panel <- function(cat_label) {
       panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
       panel.grid.major.x = element_blank(),
       panel.grid.minor   = element_blank(),
-      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
+      plot.title   = element_text(face = "plain", hjust = 0.5, size = 12),
       axis.text.x  = element_text(size = 9, lineheight = 0.85),
       axis.title.y = element_text(size = 10),
       legend.position = "none"
@@ -575,7 +577,7 @@ fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
   plot_annotation(
     title = "Meditation retreat effect (placebo group, n=18)",
     theme = theme(
-      plot.title = element_text(face = "plain", hjust = 0.5, size = 14,
+      plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
                                 family = "serif")
     )
   )
@@ -648,7 +650,7 @@ make_base_panel <- function(d_in, panel_title) {
       panel.grid.major.y = element_line(color = "#e8e8e8", linewidth = 0.4),
       panel.grid.major.x = element_blank(),
       panel.grid.minor   = element_blank(),
-      plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
+      plot.title   = element_text(face = "plain", hjust = 0.5, size = 12),
       axis.text.x  = element_text(size = 9, lineheight = 0.85),
       axis.title.y = element_text(size = 10),
       legend.position = "none"
@@ -673,7 +675,8 @@ cat(sprintf("  n_placebo=%d  n_verum=%d\n",
 
 fig29a_gg <- make_base_panel(pooled_means,
                               "Baseline balance — all regions pooled (ses-01)") +
-  theme(plot.title = element_text(face = "plain", hjust = 0.5, size = 13))
+  theme(plot.title = element_text(face = "plain", hjust = 0.5, size = 12,
+                                   family = "serif"))
 
 ggsave(OUT_FIG29A_PNG, fig29a_gg, width = 5, height = 6,
        dpi = 300, bg = "white")
@@ -701,7 +704,7 @@ fig29b_gg <- (base_panels[[1]] | base_panels[[2]]) /
   plot_annotation(
     title = "Baseline balance by region category (ses-01)",
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
-                                            size = 14, family = "serif"))
+                                            size = 12, family = "serif"))
   )
 
 ggsave(OUT_FIG29B_PNG, fig29b_gg, width = 10, height = 8,
