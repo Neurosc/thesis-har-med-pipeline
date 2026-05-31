@@ -8,7 +8,7 @@
 #   Rscript 04_statistics/scripts/25_keskin_style_figures.R
 
 # ── Packages ───────────────────────────────────────────────────────────────────
-required_pkgs <- c("ggplot2", "ggdist", "patchwork", "dplyr",
+required_pkgs <- c("ggplot2", "ggdist", "gghalves", "patchwork", "dplyr",
                    "lme4", "lmerTest", "emmeans", "plotly", "htmlwidgets")
 for (pkg in required_pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE))
@@ -20,6 +20,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(lme4); library(lmerTest); library(emmeans)
   library(plotly); library(htmlwidgets)
+  if (requireNamespace("gghalves", quietly = TRUE)) library(gghalves)
 })
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -226,56 +227,48 @@ make_panel <- function(cat_label, show_legend = FALSE) {
 
   p <- ggplot(d, aes(x = condition, y = mean_auc,
                      fill = condition, color = condition)) +
-    # Half-violin density slab on the right side
+    # 1. Subject dots inside the box area (drawn first, behind box)
+    geom_jitter(
+      width = 0.08, height = 0,
+      size = 1.5, alpha = 0.65, shape = 16
+    ) +
+    # 2. Box plot transparent on top of dots (median, IQR, whiskers, no outlier pts)
+    geom_boxplot(
+      width = 0.25,
+      outlier.shape = NA,
+      alpha = 0.30,
+      linewidth = 0.55,
+      color = "gray20"
+    ) +
+    # 3. Half-violin density immediately to the right of the box
     stat_halfeye(
-      aes(fill = condition),
-      adjust = 0.8, width = 0.5,
-      .width = 0,
-      justification = -0.25,
-      point_colour = NA,
+      adjust = 0.7, width = 0.45,
+      justification = -0.15,
+      .width = 0, point_colour = NA,
       slab_alpha = 0.65,
       normalize = "groups"
-    ) +
-    # Narrow boxplot in center (no outlier dots — individual dots shown separately)
-    geom_boxplot(
-      width = 0.10,
-      outlier.shape = NA,
-      alpha = 0.45,
-      color = "gray25",
-      linewidth = 0.5
-    ) +
-    # Individual dots on the left side (stacked dot plot via stat_dots)
-    stat_dots(
-      side = "left",
-      justification = 1.12,
-      dotsize = 1.6,
-      alpha = 0.70,
-      binwidth = NA
     ) +
     scale_fill_manual(
       values = COND_COLORS, name = "Condition",
       labels = COND_LABELS
     ) +
-    scale_color_manual(
-      values = COND_COLORS,
-      guide = "none"
-    ) +
+    scale_color_manual(values = COND_COLORS, guide = "none") +
     scale_x_discrete(labels = COND_LABELS) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) +
     theme_minimal(base_size = 11) +
     theme(
-      panel.background  = element_rect(fill = "#F0F0F0", color = NA),
-      plot.background   = element_rect(fill = "white",   color = NA),
+      panel.background   = element_rect(fill = "#F0F0F0", color = NA),
+      plot.background    = element_rect(fill = "white",   color = NA),
       panel.grid.major.y = element_line(color = "white", linewidth = 0.4),
       panel.grid.major.x = element_blank(),
       panel.grid.minor   = element_blank(),
       plot.title   = element_text(face = "bold", hjust = 0.5, size = 12),
       axis.text.x  = element_text(size = 9, lineheight = 0.85),
       axis.title.y = element_text(size = 10),
-      legend.position  = if (show_legend) "right" else "none",
-      legend.key.size  = unit(0.5, "cm"),
-      legend.text      = element_text(size = 9),
-      legend.title     = element_text(size = 10, face = "bold")
+      legend.position = if (show_legend) "right" else "none",
+      legend.key.size = unit(0.5, "cm"),
+      legend.text     = element_text(size = 9),
+      legend.title    = element_text(size = 10, face = "bold")
     )
 
   # Significance bracket between Placebo Post (x=3) and Verum Post (x=4)
@@ -287,13 +280,13 @@ make_panel <- function(cat_label, show_legend = FALSE) {
     p_str  <- if (p_val < 0.001) "p<0.001" else sprintf("p=%.3f", p_val)
 
     p <- p +
-      annotate("segment", x = 3, xend = 4,     y = y_br,   yend = y_br,
+      annotate("segment", x = 3, xend = 4, y = y_br,   yend = y_br,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 3, xend = 3,     y = y_br,   yend = y_tick,
+      annotate("segment", x = 3, xend = 3, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("segment", x = 4, xend = 4,     y = y_br,   yend = y_tick,
+      annotate("segment", x = 4, xend = 4, y = y_br,   yend = y_tick,
                color = "black", linewidth = 0.5) +
-      annotate("text",    x = 3.5, y = y_br + y_span * 0.03,
+      annotate("text", x = 3.5, y = y_br + y_span * 0.03,
                label = p_str, size = 3.5, hjust = 0.5, color = "black") +
       coord_cartesian(ylim = c(NA, y_br + y_span * 0.10))
   }
@@ -311,7 +304,7 @@ fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
     )
   )
 
-ggsave(OUT_FIG25_PNG, fig25_gg, width = 13, height = 10, dpi = 300, bg = "white")
+ggsave(OUT_FIG25_PNG, fig25_gg, width = 10, height = 8, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG25_PNG))
 
 # HTML: attempt ggplotly (ggdist slabs may render partially)
