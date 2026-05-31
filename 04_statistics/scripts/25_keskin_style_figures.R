@@ -230,27 +230,32 @@ make_panel <- function(cat_label) {
   d <- d %>%
     group_by(condition) %>%
     mutate(
-      x_cond = as.numeric(condition) * 1.5,
-      x_dot  = x_cond - 0.22 + runif(n(), -0.05, 0.05)
+      x_cond  = as.numeric(condition) * 1.5,
+      x_jitter = x_cond + runif(n(), -0.06, 0.06)
     ) %>%
     ungroup()
 
   p <- ggplot(d, aes(x = x_cond, y = mean_auc,
                      fill = condition, color = condition,
                      group = condition)) +
-    # 1. Subject dots to the LEFT of the box
+    # 1. Subject dots INSIDE the box, jittered horizontally
     geom_point(
-      aes(x = x_dot, color = condition),
+      aes(x = x_jitter, color = condition),
       size = 1.5, alpha = 0.60, shape = 16
     ) +
-    # 2. Box plot: transparent fill, condition-colored outline
+    # 2. Box plot: transparent fill, condition-colored outline (on top of dots)
     geom_boxplot(
       fill = NA,
       width = 0.18,
       outlier.shape = NA,
       linewidth = 0.70
     ) +
-    # 3. Half-violin to the RIGHT, with clear gap from box
+    # 3. Mean diamond (black) at the mean of each condition
+    stat_summary(
+      fun = mean, geom = "point",
+      shape = 18, size = 3.5, color = "black"
+    ) +
+    # 4. Half-violin to the RIGHT, with clear gap from box
     stat_halfeye(
       adjust = 0.7, width = 0.55,
       justification = -0.38,
