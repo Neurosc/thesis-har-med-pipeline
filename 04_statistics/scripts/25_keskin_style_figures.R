@@ -231,7 +231,7 @@ make_panel <- function(cat_label) {
     group_by(condition) %>%
     mutate(
       x_cond  = as.numeric(condition) * 1.5,
-      x_jitter = x_cond + 0.20 + runif(n(), -0.06, 0.06)
+      x_jitter = x_cond - 0.10 + runif(n(), -0.06, 0.06)
     ) %>%
     ungroup()
 
@@ -249,13 +249,13 @@ make_panel <- function(cat_label) {
       width = 0.35,
       outlier.shape = NA,
       linewidth = 0.70,
-      position = position_nudge(x = 0.20)
+      position = position_nudge(x = -0.1) # boxplotla violin arasindaki bosluk
     ) +
     # 3. Mean diamond (black) at the mean of each condition
     stat_summary(
       fun = mean, geom = "point",
-      shape = 18, size = 3.5, color = "black",
-      position = position_nudge(x = 0.20)
+      shape = 18, size = 2, color = "black",
+      position = position_nudge(x = -0.1) # boxplotla violin arasindaki bosluk - diamond
     ) +
     # 4. Half-violin to the RIGHT, with clear gap from box
     stat_halfeye(
