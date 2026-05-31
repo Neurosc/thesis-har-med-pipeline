@@ -23,7 +23,7 @@ if (!requireNamespace("emmeans", quietly = TRUE))
 suppressPackageStartupMessages({
   library(lme4); library(lmerTest); library(emmeans)
   library(moments); library(dplyr); library(tidyr)
-  library(plotly); library(htmlwidgets)
+  library(ggplot2)
 })
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -51,14 +51,10 @@ OUT_EMM     <- file.path(REPO_ROOT, "04_statistics", "results",
                           "glasser_self_lmm_emm_contrasts.csv")
 OUT_FLAT    <- file.path(REPO_ROOT, "04_statistics", "results",
                           "glasser_self_lmm_flattening.csv")
-OUT_FIG22   <- file.path(REPO_ROOT, "04_statistics", "figures",
-                          "fig22_glasser_self_emm_profile.html")
-OUT_FIG23   <- file.path(REPO_ROOT, "04_statistics", "figures",
-                          "fig23_glasser_self_flattening_dotplot.html")
 OUT_FIG24   <- file.path(REPO_ROOT, "04_statistics", "figures",
-                          "fig24_glasser_self_lmm_diagnostics.html")
+                          "fig24_glasser_self_lmm_diagnostics.png")
 
-all_out <- c(OUT_DATA, OUT_FE, OUT_EMM, OUT_FLAT, OUT_FIG22, OUT_FIG23, OUT_FIG24)
+all_out <- c(OUT_DATA, OUT_FE, OUT_EMM, OUT_FLAT, OUT_FIG24)
 if (all(file.exists(all_out))) {
   cat("All outputs exist — nothing to do. Delete to rerun.\n"); quit(status = 0)
 }
@@ -185,7 +181,6 @@ if (is.null(m)) {
 }
 if (is.null(m)) stop("All model fits failed.")
 
-FORMULA_USED <- FORMULA_FULL
 conv <- m@optinfo$conv$lme4$messages
 if (!is.null(conv)) {
   cat(sprintf("CONVERGENCE: %s\n", paste(conv, collapse="; ")))
@@ -203,26 +198,6 @@ fe_tbl <- data.frame(term=rownames(fe_raw), estimate=fe_raw[,"Estimate"],
                      t_value=fe_raw[,"t value"], p_value=fe_raw[,"Pr(>|t|)"],
                      stringsAsFactors=FALSE, row.names=NULL)
 cat("\nRandom effects:\n"); print(as.data.frame(VarCorr(m)))
-
-# ── Part 4: LRT ───────────────────────────────────────────────────────────────
-cat("\n", SEP, "\nPART 4 — LRT (drop group:session:self_layer)\n", SEP, "\n", sep = "")
-
-ctrl_ml <- lmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 2e5))
-FORMULA_RED <- if (re_label == "(1 + session | subject) + (1 | roi_uid)") {
-  auc ~ group * session + self_layer + session:self_layer + group:self_layer +
-        (1 + session | subject) + (1 | roi_uid)
-} else {
-  auc ~ group * session + self_layer + session:self_layer + group:self_layer +
-        (1 | subject) + (1 | roi_uid)
-}
-
-m_full_ml <- suppressWarnings(lme4::lmer(FORMULA_USED, data=df, REML=FALSE, control=ctrl_ml))
-m_red_ml  <- suppressWarnings(lme4::lmer(FORMULA_RED,  data=df, REML=FALSE, control=ctrl_ml))
-
-lrt <- anova(m_red_ml, m_full_ml); print(lrt)
-chi2_lrt <- lrt$Chisq[2]; df_lrt <- lrt$Df[2]; p_lrt <- lrt$`Pr(>Chisq)`[2]
-cat(sprintf("\nLRT: chi2(%d) = %.4f, p = %.4g  →  3-way interaction %s significant.\n",
-            df_lrt, chi2_lrt, p_lrt, if (p_lrt < 0.05) "IS" else "is NOT"))
 
 # ── Part 5: EMMs ──────────────────────────────────────────────────────────────
 cat("\n", SEP, "\nPART 5 — Estimated marginal means and contrasts\n", SEP, "\n", sep = "")
@@ -292,135 +267,58 @@ write.csv(flat_save, OUT_FLAT, row.names = FALSE); cat(sprintf("Saved: %s\n", OU
 
 # ── Part 6: Residual diagnostics (fig24) ─────────────────────────────────────
 cat("\n", SEP, "\nPART 6 — Residual diagnostics\n", SEP, "\n", sep = "")
-resids <- resid(m); fitted_ <- fitted(m)
+
+resids  <- resid(m)
+fitted_ <- fitted(m)
 sk <- skewness(resids); ku <- kurtosis(resids)
-cat(sprintf("Skewness: %.4f   Kurtosis: %.4f  (excess %.4f)\n", sk, ku, ku-3))
+cat(sprintf("Skewness: %.4f   Kurtosis: %.4f  (excess %.4f)\n", sk, ku, ku - 3))
 set.seed(42); sw_idx <- sample(length(resids), min(5000L, length(resids)))
 sw <- shapiro.test(resids[sw_idx])
-cat(sprintf("Shapiro-Wilk (n=%d): W=%.5f  p=%.4e\n", length(sw_idx), sw$statistic, sw$p.value))
+cat(sprintf("Shapiro-Wilk (n=%d): W=%.5f  p=%.4e\n",
+            length(sw_idx), sw$statistic, sw$p.value))
 
-qq_n <- min(5000L, length(resids))
-qq_smp <- sort(resids[sample(length(resids), qq_n)]); qq_teo <- qnorm(ppoints(qq_n))
-p_qq <- plot_ly() %>%
-  add_trace(x=qq_teo, y=qq_smp, type="scatter", mode="markers",
-            marker=list(size=4,color="steelblue",opacity=0.5)) %>%
-  add_trace(x=range(qq_teo), y=range(qq_teo)*sd(qq_smp), type="scatter",
-            mode="lines", line=list(color="red",dash="dash")) %>%
-  layout(title="QQ Plot", xaxis=list(title="Theoretical"), yaxis=list(title="Sample"),
-         showlegend=FALSE)
+if (!requireNamespace("patchwork", quietly = TRUE))
+  install.packages("patchwork", repos = "https://cloud.r-project.org", quiet = TRUE)
+suppressPackageStartupMessages(library(patchwork))
+
+qq_n   <- min(5000L, length(resids))
+qq_smp <- sort(sample(resids, qq_n))
+qq_teo <- qnorm(ppoints(qq_n))
+
+diag_theme <- theme_minimal(base_family = "serif") +
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        plot.background  = element_rect(fill = "white", color = NA),
+        plot.title = element_text(face = "plain", size = 11, hjust = 0.5))
+
+p_qq <- ggplot(data.frame(theoretical = qq_teo, sample = qq_smp),
+               aes(x = theoretical, y = sample)) +
+  geom_point(size = 0.8, alpha = 0.35, color = "steelblue") +
+  geom_abline(color = "red", linetype = "dashed") +
+  labs(title = "QQ Plot", x = "Theoretical", y = "Sample") +
+  diag_theme
+
 rvf_idx <- sample(length(resids), min(5000L, length(resids)))
-p_rvf <- plot_ly() %>%
-  add_trace(x=fitted_[rvf_idx], y=resids[rvf_idx], type="scatter", mode="markers",
-            marker=list(size=4,color="steelblue",opacity=0.4)) %>%
-  add_trace(x=range(fitted_), y=c(0,0), type="scatter", mode="lines",
-            line=list(color="red",dash="dash")) %>%
-  layout(title="Resid vs Fitted", xaxis=list(title="Fitted"),
-         yaxis=list(title="Residuals"), showlegend=FALSE)
-p_hist <- plot_ly(x=resids, type="histogram",
-                  marker=list(color="steelblue",line=list(color="white",width=0.3)),
-                  nbinsx=80) %>%
-  layout(title="Histogram", xaxis=list(title="Residual"), yaxis=list(title="Count"))
-fig24 <- subplot(p_qq, p_rvf, p_hist, nrows=1, titleX=TRUE, titleY=TRUE, margin=0.06) %>%
-  layout(title=list(text="Glasser Self LMM Diagnostics (Step 16)", x=0.5), showlegend=FALSE)
-saveWidget(fig24, OUT_FIG24, selfcontained=FALSE, title="Glasser Self LMM Diagnostics")
+p_rvf <- ggplot(data.frame(fitted = fitted_[rvf_idx], resid = resids[rvf_idx]),
+                aes(x = fitted, y = resid)) +
+  geom_point(size = 0.8, alpha = 0.25, color = "steelblue") +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Resid vs Fitted", x = "Fitted", y = "Residuals") +
+  diag_theme
+
+p_hist <- ggplot(data.frame(resid = resids), aes(x = resid)) +
+  geom_histogram(bins = 80, fill = "steelblue", color = "white", linewidth = 0.2) +
+  labs(title = "Histogram", x = "Residual", y = "Count") +
+  diag_theme
+
+fig24 <- p_qq | p_rvf | p_hist
+ggsave(OUT_FIG24, fig24, width = 12, height = 4, dpi = 300, bg = "white")
 cat(sprintf("Saved: %s\n", OUT_FIG24))
-
-# ── Part 7: Visualizations (fig22, fig23) ─────────────────────────────────────
-cat("\n", SEP, "\nPART 7 — Visualizations\n", SEP, "\n", sep = "")
-
-LAYER_ORDER  <- c("nonself","Interoception","Exteroception","Cognition")
-SES_COLORS   <- c("ses-01"="#3D5A6C", "ses-02"="#8B7355")
-LAYER_COLORS <- c(Interoception="#1f77b4", Exteroception="#ff7f0e",
-                  Cognition="#2ca02c")
-
-# fig22: EMM profile (placebo | verum)
-make_panel <- function(grp_label, show_leg) {
-  sub <- emm_df[emm_df$group == grp_label, ]
-  ci_lo <- if ("lower.CL" %in% names(sub)) "lower.CL" else "asymp.LCL"
-  ci_hi <- if ("upper.CL" %in% names(sub)) "upper.CL" else "asymp.UCL"
-  p <- plot_ly()
-  for (ses in c("ses-01","ses-02")) {
-    d   <- sub[sub$session == ses, ][match(LAYER_ORDER, as.character(sub$self_layer[sub$session==ses])),]
-    col <- SES_COLORS[[ses]]
-    lty <- if (ses == "ses-01") "solid" else "dash"
-    p <- p %>%
-      add_trace(x=1:4, y=d$emmean, type="scatter", mode="lines+markers",
-                line=list(color=col,width=2,dash=lty), marker=list(size=8,color=col),
-                error_y=list(type="data",
-                             array=d[[ci_hi]]-d$emmean,
-                             arrayminus=d$emmean-d[[ci_lo]],
-                             color=col,thickness=1.5,width=4),
-                name=if(ses=="ses-01")"Pre (ses-01)" else "Post (ses-02)",
-                showlegend=show_leg)
-  }
-  p %>% layout(title=list(text=grp_label,font=list(size=14)),
-               xaxis=list(tickvals=1:4,ticktext=LAYER_ORDER,title="Layer",showgrid=TRUE),
-               yaxis=list(title="EMM AUC (s)"), plot_bgcolor="white",paper_bgcolor="white")
-}
-fig22 <- subplot(make_panel("placebo",TRUE), make_panel("verum",FALSE),
-                 nrows=1, titleX=TRUE, titleY=TRUE, shareY=TRUE, margin=0.07) %>%
-  layout(title=list(text="Glasser Self vs Nonself EMMs — Placebo vs Verum",x=0.5),
-         legend=list(x=0.01,y=0.99))
-saveWidget(fig22, OUT_FIG22, selfcontained=FALSE, title="Glasser Self EMM Profile")
-cat(sprintf("Saved: %s\n", OUT_FIG22))
-
-# fig23: Flattening dotplot
-if (nrow(flat_df) == length(SELF_LAYERS)) {
-  flat_df$self_layer <- SELF_LAYERS
-} else if ("contrast" %in% names(flat_df)) {
-  flat_df$self_layer <- sub(" - nonself.*","", flat_df$contrast)
-} else {
-  flat_df$self_layer <- SELF_LAYERS[seq_len(nrow(flat_df))]
-}
-
-fig23 <- plot_ly() %>%
-  add_trace(x=c(0.5,3.5), y=c(0,0), type="scatter", mode="lines",
-            line=list(color="black",dash="dash",width=1), showlegend=FALSE, hoverinfo="skip")
-for (i in seq_along(SELF_LAYERS)) {
-  lyr <- SELF_LAYERS[i]
-  r   <- flat_df[flat_df$self_layer == lyr, ]
-  if (nrow(r) == 0) next
-  col <- LAYER_COLORS[[lyr]]
-  fig23 <- fig23 %>%
-    add_trace(x=i, y=r$estimate, type="scatter", mode="markers",
-              marker=list(size=12,color=col,symbol=if(!is.na(r$p.value)&&r$p.value<0.05)"asterisk" else "circle"),
-              error_y=list(type="data",array=r$upper.CL-r$estimate,
-                           arrayminus=r$estimate-r$lower.CL,color=col,thickness=2,width=8),
-              name=lyr,
-              hovertemplate=sprintf("%s<br>flattening=%%{y:.4f}<br>p=%.4g<extra></extra>",
-                                    lyr, r$p.value))
-}
-fig23 <- fig23 %>%
-  layout(title=list(text="DMT Flattening of Self–Nonself Gap (Glasser)",x=0.5),
-         xaxis=list(tickvals=1:3,ticktext=SELF_LAYERS,title="Self-processing layer",showgrid=FALSE,range=c(0.4,3.6)),
-         yaxis=list(title="Flattening: Δgap_verum − Δgap_placebo (AUC, s)",showgrid=TRUE),
-         plot_bgcolor="white", paper_bgcolor="white",
-         annotations=list(list(x=0.5,y=1.06,xref="paper",yref="paper",
-                               text="Negative = gap narrows; * = p<0.05",
-                               showarrow=FALSE,font=list(size=11,color="grey40"))))
-saveWidget(fig23, OUT_FIG23, selfcontained=FALSE, title="Glasser Flattening Dotplot")
-cat(sprintf("Saved: %s\n", OUT_FIG23))
-
-# ── Part 8: G1 comparison ─────────────────────────────────────────────────────
-cat("\n", SEP, "\nPART 8 — Comparison with G1 gradient analysis (Script 23)\n",
-    SEP, "\n", sep = "")
-G1_B3 <- 0.030333; G1_P3 <- 0.00142; G1_LRT_P <- 1.828e-11
-cat(sprintf("G1 continuous (script 23): group:session:G1_z p = %.4g\n", G1_P3))
-cat(sprintf("Categorical LRT  (this) : group:session:self_layer p = %.4g\n", p_lrt))
-if ((G1_P3 < 0.05) == (p_lrt < 0.05)) {
-  cat("AGREEMENT: both analyses show a significant (or both non-significant) drug×session×cortical-hierarchy interaction.\n")
-} else {
-  cat("DISCREPANCY: G1 and categorical analyses give different significance conclusions.\n")
-}
 
 # ── Save CSVs ─────────────────────────────────────────────────────────────────
 write.csv(fe_tbl, OUT_FE, row.names = FALSE); cat(sprintf("Saved: %s\n", OUT_FE))
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 cat("\n", SEP, "\nSUMMARY\n", SEP, "\n", sep = "")
-cat(sprintf(
-  "Glasser-based self vs nonself LMM: group×session×self_layer %s significant (LRT p=%.4g).\n",
-  if(p_lrt<0.05)"IS" else "is NOT", p_lrt))
 cat(sprintf(
   "Average flattening (self-nonself gap change under DMT): β=%.5f, p=%.4g.\n",
   avg_flat_b, avg_flat_p))
