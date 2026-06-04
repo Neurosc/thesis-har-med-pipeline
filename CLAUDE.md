@@ -130,7 +130,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Logs: `99_QC/02_denoising_qc/results/sub-XX_ses-YY_dvars_comparison.txt`
 - Both sub-01 ses-01 (low motion) and sub-21 ses-01 (high motion) figures retained as evidence
 
-### ROI Atlas Generation
+### ROI Atlas Generation (OLD — 4mm sphere approach, superseded)
 - Self-referential atlas: 37 ROIs (Qin et al. 2020, Interoception/Exteroception/Cognition), 4mm-radius spheres
   - Built at 1mm MNI resolution, resampled to native BOLD grid (1.72×1.72×2.00 mm, MNI152NLin2009cAsym)
 - Nonself atlas: Glasser parcellation (~327 ROIs), 4mm-radius spheres
@@ -143,6 +143,25 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Atlas outputs: `02_timeseries_extraction/results/atlases/`
 - Requires AFNI (`3dUndump`, `3dAFNItoNIFTI`, `3dresample`) + conda env `fmri` for Python script
 - MNI 1mm template: `/home/jkokino/meditation_project/templates/MNI/mni_icbm152_1mm.nii`
+- **NOTE: Replaced by Glasser-based atlas below. Old outputs and all derived timeseries/ACW are obsolete.**
+
+### Glasser-based atlas (methodological correction, replaces 4mm sphere approach)
+- Self atlas: Glasser MMP1.0 parcels whose name appears in Keskin et al. 2025 self-referential table
+- 4 self NIfTI files (combined + per-category):
+  - Combined self (all 3 categories merged): `glasser_self_atlas_{1mm,native}.nii.gz`
+  - Interoceptive only: `glasser_self_interoceptive_{1mm,native}.nii.gz`
+  - Exteroceptive only: `glasser_self_exteroceptive_{1mm,native}.nii.gz`
+  - Mental Self only: `glasser_self_mental_{1mm,native}.nii.gz`
+- Each category has its own atlas file at both 1mm MNI and native BOLD grid
+- Cross-category overlapping parcels (rare) are included in all relevant per-category atlases
+- Nonself atlas: all remaining Glasser parcels (1 file at 1mm + native): `glasser_nonself_atlas_{1mm,native}.nii.gz`
+- Subcortical coordinates (thalamus, etc.) dropped — Glasser is cortical-only
+- Multi-parcel Keskin focus_point entries treated as multiple separate parcels
+- Script: `02_timeseries_extraction/scripts/04_create_glasser_self_nonself.py`
+- Input atlas: `glasser360MNI.nii.gz` (1mm MNI, 1-360 indexing, matches Cole-Anticevic label key)
+- Input data dir: `02_timeseries_extraction/data/` (user places files manually)
+- Metadata: `glasser_self_metadata.tsv` (parcel_id, parcel_name, hemisphere, categories, keskin coords)
+- NOTE: Old 4mm sphere atlases (`self_atlas_*.nii.gz`, `nonself_atlas_*.nii.gz`) and all derived timeseries/ACW outputs are now obsolete and must be regenerated.
 
 ### Self timeseries extraction
 - Script: `02_timeseries_extraction/scripts/05_extract_self_timeseries.py`
