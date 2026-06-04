@@ -9,6 +9,12 @@
 
 using PlotlyJS, DataFrames, JLD2, Statistics, HypothesisTests
 
+# ── Config ────────────────────────────────────────────────────────────────────
+include(normpath(joinpath(@__DIR__, "..", "..", "utils", "config_loader.jl")))
+let cfg = load_config()
+    println("Config: atlas=$(cfg.atlas_method)  denoising=$(cfg.denoising_method)  tag=$(tag())")
+end
+
 # ── Subjects (35 included; excluded: sub-06, sub-08, sub-12, sub-26, sub-36) ──
 const SUBJECTS = [
     "sub-01", "sub-02", "sub-03", "sub-04", "sub-05",
@@ -26,10 +32,9 @@ const VERSIONS = ["raw", "denoisedNoGSR"]
 const ATLASES  = ["self", "nonself"]
 const TAU_IDX  = 2   # ACW_TYPES = [:auc, :tau]; tau is index 2
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-const ACW_BASE  = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
-const FIG_DIR   = joinpath(REPO_ROOT, "03_acw_analysis", "results", "figures")
+# ── Paths (REPO_ROOT provided by config_loader.jl) ───────────────────────────
+const ACW_BASE  = joinpath(REPO_ROOT, "03_acw_analysis", "results", tag(), "acw")
+const FIG_DIR   = joinpath(REPO_ROOT, "03_acw_analysis", "results", tag(), "figures")
 mkpath(FIG_DIR)
 
 # ── Colors (Palette A: slate = self, taupe = nonself) ─────────────────────────

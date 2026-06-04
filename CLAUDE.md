@@ -10,6 +10,35 @@ and bandpass filtering (0.01-0.1 Hz).
 **Final analysis:** Autocorrelation Window (ACW) calculation in self vs non-self
 brain regions. (Analysis details to be specified later.)
 
+## Configuration system
+
+All analysis scripts read the active analysis configuration from `config.toml` at
+repo root. Edit the two values there to switch which (denoising × atlas) combination
+is being analyzed:
+
+```toml
+[active]
+denoising_method = "NoGSR"   # NoGSR | GSR
+atlas_method = "parcels"     # spheres | parcels
+```
+
+Each script imports a small loader (`utils/config_loader.{py,jl,R}`), reads the
+active config, and writes outputs into folders tagged with the combination (e.g.,
+`parcels_NoGSR/`). This keeps outputs from different runs separated.
+
+- Python loader: `utils/config_loader.py` — `from utils.config_loader import load_config, tag`
+- Julia loader:  `utils/config_loader.jl` — `include(...)`, then call `tag()`
+- R loader:      `utils/config_loader.R`  — `source(...)`, then call `tag()`
+
+Scripts updated to use config tags: `03_acw_analysis/scripts/01_compute_acw.jl`,
+`03_acw_analysis/scripts/02_boxplot_session_self_nonself.jl`.
+
+Scripts not yet updated (pending confirmation of scope): timeseries extraction
+(`04_extract_nonself_timeseries.py`, `05_extract_self_timeseries.py`,
+`08_extract_keskin_timeseries.py`), statistics R scripts
+(`04_statistics/scripts/05a_per_category_glasser.R`, `05b_per_category_sphere.R`),
+and ACW helper scripts (`02_compute_acw_keskin.jl`, `03_build_keskin_auc_csv.jl`).
+
 ## Data Locations
 
 ### Remote research server (where fMRIPrep outputs live)

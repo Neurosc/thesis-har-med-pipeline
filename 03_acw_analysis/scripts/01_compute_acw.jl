@@ -10,6 +10,12 @@
 
 using IntrinsicTimescales, CSV, DataFrames, JLD2, Statistics
 
+# ── Config ───────────────────────────────────────────────────────────────────
+include(normpath(joinpath(@__DIR__, "..", "..", "utils", "config_loader.jl")))
+let cfg = load_config()
+    println("Config: atlas=$(cfg.atlas_method)  denoising=$(cfg.denoising_method)  tag=$(tag())")
+end
+
 # ── Parameters ───────────────────────────────────────────────────────────────
 const TR            = 1.8
 const FS            = 1.0 / TR       # 0.556 Hz
@@ -34,10 +40,9 @@ const SESSIONS = ["ses-01", "ses-02"]
 const VERSIONS = ["raw", "denoisedNoGSR"]
 const ATLASES  = ["self", "nonself"]
 
-# ── Paths (anchored to script location → repo root) ──────────────────────────
-const REPO_ROOT   = normpath(joinpath(@__DIR__, "..", ".."))
+# ── Paths (REPO_ROOT provided by config_loader.jl) ───────────────────────────
 const TS_BASE     = joinpath(REPO_ROOT, "02_timeseries_extraction", "results")
-const OUTPUT_BASE = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
+const OUTPUT_BASE = joinpath(REPO_ROOT, "03_acw_analysis", "results", tag(), "acw")
 
 # ── Main loop ────────────────────────────────────────────────────────────────
 const TOTAL = length(ATLASES) * length(VERSIONS) * length(SUBJECTS) * length(SESSIONS)
