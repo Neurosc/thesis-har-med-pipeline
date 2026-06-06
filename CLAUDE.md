@@ -200,6 +200,15 @@ neural timescales. *Imaging Neuroscience*, 2.
   - Atlas outputs: `02_timeseries_extraction/results/atlases/glasser_*_atlas_*.nii.gz`
 - Extraction outputs separated via `config.toml` tag (`spheres_NoGSR`, `parcels_NoGSR`, etc.)
 
+### Parcel-based timeseries extraction (Keskin method)
+- Script: `02_timeseries_extraction/scripts/parcels/02_extract_parcel_timeseries.py`
+- Runs on server (uses NIfTI files only available there)
+- 5 atlases × 3 BOLD versions × 70 subject-sessions = 1,050 CSVs
+- Output: `02_timeseries_extraction/results/timeseries_parcels/{atlas}/{version}/{subject}_{session}_{atlas}_parcel_timeseries.csv`
+- Per-parcel mean BOLD per timepoint, 240 timepoints (or 234 after dummy removal if applied downstream)
+- Optimization: BOLD loaded once per (sub, ses, version), all 5 atlases extracted from same in-memory array → 210 BOLD loads instead of 1,050
+- Log: `02_timeseries_extraction/results/timeseries_parcels/_extraction_log.tsv`
+
 ### ACW Computation
 - Script: `03_acw_analysis/scripts/01_compute_acw.jl`
 - TR = 1.8 s, n_lags = 100, dummy volumes discarded = 6
