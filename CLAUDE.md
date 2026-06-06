@@ -34,10 +34,9 @@ Scripts updated to use config tags: `03_acw_analysis/scripts/01_compute_acw.jl`,
 `03_acw_analysis/scripts/02_boxplot_session_self_nonself.jl`.
 
 Scripts not yet updated (pending confirmation of scope): timeseries extraction
-(`04_extract_nonself_timeseries.py`, `05_extract_self_timeseries.py`,
-`08_extract_keskin_timeseries.py`), statistics R scripts
-(`04_statistics/scripts/05a_per_category_glasser.R`, `05b_per_category_sphere.R`),
-and ACW helper scripts (`02_compute_acw_keskin.jl`, `03_build_keskin_auc_csv.jl`).
+(`scripts/spheres/04_extract_nonself_timeseries.py`,
+`scripts/spheres/05_extract_self_timeseries.py`) and statistics R scripts
+(`04_statistics/scripts/05a_per_category_glasser.R`, `05b_per_category_sphere.R`).
 
 ## Data Locations
 
@@ -165,7 +164,7 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Nonself atlas: Glasser parcellation (~327 ROIs), 4mm-radius spheres
   - Original coords at `/home/jkokino/meditation_project/templates/nonself_roi/glasser_coordinates_nonself_327_original.txt`
   - After overlap check, clean coords saved to `02_timeseries_extraction/results/atlases/glasser_coordinates_nonself_clean.txt`
-- Scripts in `02_timeseries_extraction/scripts/`:
+- Scripts in `02_timeseries_extraction/scripts/spheres/`:
   - `01_create_self_atlas.sh` — builds self atlas at 1mm + native BOLD resolution
   - `02_create_nonself_atlas.sh` — builds nonself atlas at 1mm + native BOLD resolution
   - `03_check_nonself_overlap.py` — removes nonself ROIs overlapping with self atlas (radius 4mm)
@@ -186,29 +185,20 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Nonself atlas: all remaining Glasser parcels (1 file at 1mm + native): `glasser_nonself_atlas_{1mm,native}.nii.gz`
 - Subcortical coordinates (thalamus, etc.) dropped — Glasser is cortical-only
 - Multi-parcel Keskin focus_point entries treated as multiple separate parcels
-- Script: `02_timeseries_extraction/scripts/04_create_glasser_self_nonself.py`
+- Script: `02_timeseries_extraction/scripts/parcels/01_create_glasser_self_nonself.py`
 - Input atlas: `glasser360MNI.nii.gz` (1mm MNI, 1-360 indexing, matches Cole-Anticevic label key)
 - Input data dir: `02_timeseries_extraction/data/` (user places files manually)
 - Metadata: `glasser_self_metadata.tsv` (parcel_id, parcel_name, hemisphere, categories, keskin coords)
 - NOTE: Old 4mm sphere atlases (`self_atlas_*.nii.gz`, `nonself_atlas_*.nii.gz`) and all derived timeseries/ACW outputs are now obsolete and must be regenerated.
 
-### Self timeseries extraction
-- Script: `02_timeseries_extraction/scripts/05_extract_self_timeseries.py`
-- Same scope as nonself: 35 subjects × 2 sessions × 3 versions = 210 runs
-- Atlas: `self_atlas_native.nii.gz` (37 ROIs, Qin et al. 2020)
-- Output: `02_timeseries_extraction/results/timeseries_self/{version}/sub-XX_ses-YY_self_timeseries.csv`
-- Log: `02_timeseries_extraction/results/timeseries_self/_extraction_log.tsv`
-- Idempotent: skips runs where output CSV already exists
-
-### Nonself timeseries extraction
-- Script: `02_timeseries_extraction/scripts/04_extract_nonself_timeseries.py`
-- Subjects: 35 included × 2 sessions = 70 runs
-- 3 BOLD versions extracted per run: raw fMRIPrep, denoisedNoGSR, denoisedGSR (210 total)
-- Atlas: `nonself_atlas_native.nii.gz` (Glasser-derived, ~290-310 ROIs after self-overlap removal)
-- Output: CSV per (subject, session, version) — rows=timepoints, cols=ROI numbers
-- Output directory: `02_timeseries_extraction/results/timeseries_nonself/{version}/`
-- Log: `02_timeseries_extraction/results/timeseries_nonself/_extraction_log.tsv`
-- Idempotent: skips runs where output CSV already exists
+### Timeseries extraction (two methods, kept in parallel for now)
+- **Sphere method** (legacy, Qin 2020 coordinates + 4mm spheres):
+  - Scripts: `02_timeseries_extraction/scripts/spheres/`
+  - Atlas outputs: `02_timeseries_extraction/results/atlases/self_atlas_*.nii.gz`, `nonself_atlas_*.nii.gz`
+- **Parcel method** (Keskin et al. 2025, direct Glasser MMP1.0 parcels):
+  - Scripts: `02_timeseries_extraction/scripts/parcels/`
+  - Atlas outputs: `02_timeseries_extraction/results/atlases/glasser_*_atlas_*.nii.gz`
+- Extraction outputs separated via `config.toml` tag (`spheres_NoGSR`, `parcels_NoGSR`, etc.)
 
 ### ACW Computation
 - Script: `03_acw_analysis/scripts/01_compute_acw.jl`
