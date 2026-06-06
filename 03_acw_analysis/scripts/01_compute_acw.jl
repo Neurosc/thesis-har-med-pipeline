@@ -39,22 +39,27 @@ tg  = tag()
 
 println("Running ACW with: atlas=$(cfg.atlas_method), denoising=$(cfg.denoising_method) (tag=$tg)")
 
+# Map config denoising_method ("NoGSR"/"GSR"/"raw") to the actual on-disk folder name.
+# Extraction scripts write subdirs as "denoisedNoGSR", "denoisedGSR", or "raw".
+# The output tag stays clean ("parcels_NoGSR"), only the input path uses the prefix.
+denoising_folder = cfg.denoising_method == "raw" ? "raw" : "denoised" * cfg.denoising_method
+
 # ── Input directory mapping ───────────────────────────────────────────────────
 if cfg.atlas_method == "spheres"
-    TS_BASE_M  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results")
+    TS_BASE_M  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results", "timeseries_spheres")
     atlas_dirs = [
-        "self"    => joinpath(TS_BASE_M, "timeseries_self",    cfg.denoising_method),
-        "nonself" => joinpath(TS_BASE_M, "timeseries_nonself", cfg.denoising_method),
+        "self"    => joinpath(TS_BASE_M, "timeseries_self",    denoising_folder),
+        "nonself" => joinpath(TS_BASE_M, "timeseries_nonself", denoising_folder),
     ]
     csv_suffix = "_timeseries.csv"
 elseif cfg.atlas_method == "parcels"
     TS_BASE_M  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results", "timeseries_parcels")
     atlas_dirs = [
-        "self"          => joinpath(TS_BASE_M, "self",          cfg.denoising_method),
-        "nonself"       => joinpath(TS_BASE_M, "nonself",       cfg.denoising_method),
-        "interoceptive" => joinpath(TS_BASE_M, "interoceptive", cfg.denoising_method),
-        "exteroceptive" => joinpath(TS_BASE_M, "exteroceptive", cfg.denoising_method),
-        "mental"        => joinpath(TS_BASE_M, "mental",        cfg.denoising_method),
+        "self"          => joinpath(TS_BASE_M, "self",          denoising_folder),
+        "nonself"       => joinpath(TS_BASE_M, "nonself",       denoising_folder),
+        "interoceptive" => joinpath(TS_BASE_M, "interoceptive", denoising_folder),
+        "exteroceptive" => joinpath(TS_BASE_M, "exteroceptive", denoising_folder),
+        "mental"        => joinpath(TS_BASE_M, "mental",        denoising_folder),
     ]
     csv_suffix = "_parcel_timeseries.csv"
 else
