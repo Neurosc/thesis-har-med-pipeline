@@ -1,26 +1,21 @@
-# 01_compute_acw.jl — Compute ACW for DMT-MED dataset
-# Adapted from ACW_calculation.jl (task-med reference)
+# 01_compute_acw.jl — Compute ACW for DMT-MED dataset (multi-method)
+# Reads config.toml → switches between sphere and parcel input directories automatically.
 #
-# Key changes vs reference:
-#   TR 2.0 → 1.8 s; no session window (use full run after dummy removal);
-#   no groups; two sessions (ses-01/02); two denoising versions; per-run JLD2 output
+# Key parameters:
+#   TR 1.8 s; dummy volumes = 6; n_lags = 100; acwtypes = [:auc, :tau]
 #
 # Run from repo root:  julia 03_acw_analysis/scripts/01_compute_acw.jl
 # Idempotent: skips runs where the output JLD2 already exists.
 
 using IntrinsicTimescales, CSV, DataFrames, JLD2, Statistics
 
-# ── Config ───────────────────────────────────────────────────────────────────
-include(normpath(joinpath(@__DIR__, "..", "..", "utils", "config_loader.jl")))
-let cfg = load_config()
-    println("Config: atlas=$(cfg.atlas_method)  denoising=$(cfg.denoising_method)  tag=$(tag())")
-end
+include(joinpath(@__DIR__, "..", "..", "utils", "config_loader.jl"))
 
 # ── Parameters ───────────────────────────────────────────────────────────────
 const TR            = 1.8
-const FS            = 1.0 / TR       # 0.556 Hz
+const FS            = 1.0 / TR
 const N_LAGS        = 100
-const DUMMY_VOLUMES = 6              # discard first 10.8 s (6 × 1.8 s)
+const DUMMY_VOLUMES = 6
 const ACW_TYPES     = [:auc, :tau]
 const SKIP_ZERO_LAG = false
 
@@ -37,29 +32,54 @@ const SUBJECTS = [
 ]
 
 const SESSIONS = ["ses-01", "ses-02"]
-const VERSIONS = ["raw", "denoisedNoGSR"]
-const ATLASES  = ["self", "nonself"]
 
-# ── Paths (REPO_ROOT provided by config_loader.jl) ───────────────────────────
-const TS_BASE     = joinpath(REPO_ROOT, "02_timeseries_extraction", "results")
-const OUTPUT_BASE = joinpath(REPO_ROOT, "03_acw_analysis", "results", tag(), "acw")
+# ── Config ────────────────────────────────────────────────────────────────────
+cfg = load_config()
+tg  = tag()
+
+println("Running ACW with: atlas=$(cfg.atlas_method), denoising=$(cfg.denoising_method) (tag=$tg)")
+
+# ── Input directory mapping ───────────────────────────────────────────────────
+if cfg.atlas_method == "spheres"
+    TS_BASE_M  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results")
+    atlas_dirs = [
+        "self"    => joinpath(TS_BASE_M, "timeseries_self",    cfg.denoising_method),
+        "nonself" => joinpath(TS_BASE_M, "timeseries_nonself", cfg.denoising_method),
+    ]
+    csv_suffix = "_timeseries.csv"
+elseif cfg.atlas_method == "parcels"
+    TS_BASE_M  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results", "timeseries_parcels")
+    atlas_dirs = [
+        "self"          => joinpath(TS_BASE_M, "self",          cfg.denoising_method),
+        "nonself"       => joinpath(TS_BASE_M, "nonself",       cfg.denoising_method),
+        "interoceptive" => joinpath(TS_BASE_M, "interoceptive", cfg.denoising_method),
+        "exteroceptive" => joinpath(TS_BASE_M, "exteroceptive", cfg.denoising_method),
+        "mental"        => joinpath(TS_BASE_M, "mental",        cfg.denoising_method),
+    ]
+    csv_suffix = "_parcel_timeseries.csv"
+else
+    error("Unknown atlas_method '$(cfg.atlas_method)' in config.toml. Expected 'spheres' or 'parcels'.")
+end
+
+# ── Output directory ──────────────────────────────────────────────────────────
+const OUT_DIR = joinpath(REPO_ROOT, "03_acw_analysis", "results", tg)
+println("Output dir: $OUT_DIR\n")
 
 # ── Main loop ────────────────────────────────────────────────────────────────
-const TOTAL = length(ATLASES) * length(VERSIONS) * length(SUBJECTS) * length(SESSIONS)
+TOTAL     = length(atlas_dirs) * length(SUBJECTS) * length(SESSIONS)
 completed = 0
 skipped   = 0
 failed    = 0
 run_idx   = 0
 
-for atlas in ATLASES, version in VERSIONS, subject in SUBJECTS, session in SESSIONS
+for (atlas_name, ts_dir) in atlas_dirs, subject in SUBJECTS, session in SESSIONS
     global run_idx, completed, skipped, failed
     run_idx += 1
 
-    csv_path = joinpath(TS_BASE, "timeseries_$(atlas)", version,
-                        "$(subject)_$(session)_$(atlas)_timeseries.csv")
-    out_dir  = joinpath(OUTPUT_BASE, atlas, version)
+    csv_path = joinpath(ts_dir, "$(subject)_$(session)_$(atlas_name)$(csv_suffix)")
+    out_dir  = joinpath(OUT_DIR, atlas_name)
     out_path = joinpath(out_dir, "$(subject)_$(session).jld2")
-    label    = "[$run_idx/$TOTAL] $subject $session $atlas $version"
+    label    = "[$run_idx/$TOTAL] $subject $session $atlas_name"
 
     if isfile(out_path)
         println("$label ... SKIP (already exists)")
@@ -75,21 +95,21 @@ for atlas in ATLASES, version in VERSIONS, subject in SUBJECTS, session in SESSI
 
     t_start = time()
     try
-        df  = CSV.read(csv_path, DataFrame)
-        ts  = Matrix(df[:, 2:end])'           # ROI × time
-        ts  = ts[:, (DUMMY_VOLUMES + 1):end]  # discard dummies → ROI × 234
-        n_rois = size(ts, 1)
+        df         = CSV.read(csv_path, DataFrame)
+        ts         = Matrix(df[:, 2:end])'           # ROI × time
+        ts         = ts[:, (DUMMY_VOLUMES + 1):end]  # discard dummies → ROI × 234
+        n_rois     = size(ts, 1)
 
-        acw_obj = acw(ts, FS;
-                      dims          = 2,
-                      acwtypes      = ACW_TYPES,
-                      n_lags        = N_LAGS,
-                      skip_zero_lag = SKIP_ZERO_LAG)
+        acw_obj    = acw(ts, FS;
+                         dims          = 2,
+                         acwtypes      = ACW_TYPES,
+                         n_lags        = N_LAGS,
+                         skip_zero_lag = SKIP_ZERO_LAG)
 
         mkpath(out_dir)
-        roi_columns = names(df)[2:end]
+        parcel_ids  = names(df)[2:end]
         acw_results = acw_obj.acw_results
-        @save out_path acw_results subject session atlas version roi_columns
+        @save out_path acw_results parcel_ids
 
         elapsed = round(time() - t_start; digits = 2)
         println("$label ... DONE ($(elapsed)s, $n_rois ROIs)")
@@ -100,8 +120,10 @@ for atlas in ATLASES, version in VERSIONS, subject in SUBJECTS, session in SESSI
     end
 end
 
-println("\n─── ACW Computation Summary ───")
-println("Total runs:  $TOTAL")
-println("Completed:   $completed")
-println("Skipped:     $skipped")
-println("Failed:      $failed")
+println("\n─── ACW summary ───")
+println("Atlas:     $(cfg.atlas_method)")
+println("Denoising: $(cfg.denoising_method)")
+println("Total:     $TOTAL")
+println("Completed: $completed")
+println("Skipped (already existed): $skipped")
+println("Failed:    $failed")

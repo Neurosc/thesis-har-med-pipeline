@@ -209,12 +209,13 @@ neural timescales. *Imaging Neuroscience*, 2.
 - Optimization: BOLD loaded once per (sub, ses, version), all 5 atlases extracted from same in-memory array → 210 BOLD loads instead of 1,050
 - Log: `02_timeseries_extraction/results/timeseries_parcels/_extraction_log.tsv`
 
-### ACW Computation
+### ACW computation (multi-method)
 - Script: `03_acw_analysis/scripts/01_compute_acw.jl`
-- TR = 1.8 s, n_lags = 100, dummy volumes discarded = 6
-- ACW types: tau (exponential decay), auc (area under curve)
-- Processes self + nonself × raw + denoisedNoGSR = 4 combinations × 70 subject-sessions = 280 JLD2 outputs
-- Output: `03_acw_analysis/results/acw/{atlas}/{version}/{subject}_{session}.jld2`
+- Reads `config.toml` → switches between sphere and parcel input directories automatically
+- TR = 1.8 s, n_lags = 100, dummy volumes discarded = 6; ACW types: tau, auc
+- Output: `03_acw_analysis/results/{atlas_method}_{denoising_method}/{atlas_name}/{subject}_{session}.jld2`
+- Per atlas: self + nonself (spheres) OR self + nonself + interoceptive + exteroceptive + mental (parcels)
+- JLD2 variables: `acw_results` (ACWResults struct), `parcel_ids` (column names from CSV)
 
 ### ACW Boxplot Analysis
 - Script: `03_acw_analysis/scripts/02_boxplot_session_self_nonself.jl`
