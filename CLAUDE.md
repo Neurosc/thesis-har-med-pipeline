@@ -253,6 +253,77 @@ neural timescales. *Imaging Neuroscience*, 2.
   - Outputs: `*_markers.html` (view_markers, open in browser), `*_montage.pdf` (37/316 pages), `*_atlas_summary.tsv` (centroid + voxel counts)
 - `99_QC/troubleshooting/` — non-thesis experimental scripts and outputs
 
+## Statistics Pipeline (04_statistics)
+
+### Script inventory (parcels only; sphere branch guarded)
+```
+04_statistics/scripts/
+├── 01_build_dataframe.jl      Julia — reads parcel JLD2s, NaN/tSNR exclusion, writes CSVs
+├── 02_lmm.R                   R    — main LMM (no G1), sensitivity analysis (±2.5 SD trim)
+├── 03_per_category.R          R    — per-category LMMs + Extero vs nonself contrast
+├── 04_qc_auc_distribution.R   R    — AUC distribution QC plots (3 figures)
+├── 05_qc_baseline_balance.R   R    — baseline balance: Welch t + MW + Cohen's d
+├── 06_figures.R               R    — thesis figures (raincloud, delta, retreat, baseline, paired)
+└── archive_scripts/           old exploratory scripts (do not delete)
+```
+
+### Data directory
+```
+04_statistics/data/
+├── keskin_auc_model_ready.csv        ARCHIVAL — old atlas IDs, NOT pipeline input
+└── nonself_g1_model_ready_316.csv    ARCHIVAL — old sphere IDs, NOT pipeline input
+```
+G1 lookup archived at: `_old/g1_archive/glasser_g1_lookup.csv`
+
+### Output structure
+```
+04_statistics/results/{tag}/
+├── tables/   CSV outputs (keskin_auc_model_ready.csv, nonself_model_ready.csv,
+│             glasser_self_nonself_model_ready.csv, analysis_long_format_auc.csv,
+│             per_category_drug_session.csv, lmm_fixed_effects/emm/flattening CSVs,
+│             baseline_balance_pooled/per_category.csv)
+└── figures/  PNG outputs (fig25 raincloud, fig27 delta, fig28 retreat,
+              fig29a/b baseline, fig_paired; + LMM diagnostics, AUC QC plots)
+```
+
+### LMM formula (no G1)
+```
+auc ~ group * session * self_layer + (1 + session | subject) + (1 | roi_uid)
+# fallback (convergence failure): (1 | subject) + (1 | roi_uid)
+```
+- `self_layer` levels: nonself (ref), Interoception, Exteroception, Cognition
+- `roi_uid`: paste0("self_", glasser_id) for self; paste0("nonself_", glasser_id) for nonself
+
+### Self parcel atlas (Keskin et al. 2025, Glasser MMP1.0)
+- 40 parcels total: 14 interoceptive + 16 exteroceptive + 12 mental (2 shared)
+- Shared: parcel 111 (L_AVI) = Interoceptive + Mental; parcel 258 (R_6r) = Exteroceptive + Mental
+- Metadata: `02_timeseries_extraction/results/atlases/glasser_self_metadata.tsv`
+- tSNR exclusion: `99_QC/03_acw_qc/results/tsnr/excluded_rois_low_tsnr.tsv` (58 parcels, tSNR < 30)
+- NaN exclusion: dynamic detection in 01_build_dataframe.jl (not CSV-based)
+
+### JLD2 input paths
+- Self per-category: `03_acw_analysis/results/parcels_{DENOISING}/{interoceptive,exteroceptive,mental}/{sub}_{ses}.jld2`
+- Nonself: `03_acw_analysis/results/parcels_{DENOISING}/nonself/{sub}_{ses}.jld2`
+- Variables: `parcel_ids` (Vector{String}, Glasser IDs), `acw_results` ([1]=AUC, [2]=τ)
+
+### Run order
+```
+julia 04_statistics/scripts/01_build_dataframe.jl
+Rscript 04_statistics/scripts/02_lmm.R
+Rscript 04_statistics/scripts/03_per_category.R
+Rscript 04_statistics/scripts/04_qc_auc_distribution.R
+Rscript 04_statistics/scripts/05_qc_baseline_balance.R
+Rscript 04_statistics/scripts/06_figures.R
+```
+Switch `config.toml` between `NoGSR` and `GSR` and re-run all 6 scripts for each condition.
+
+### Design decisions
+- **G1 gradient covariate: DROPPED** — archived in `_old/g1_archive/`; no reference anywhere in active scripts
+- **Sphere pipeline: OUT OF SCOPE** — all scripts guard with `stop("Sphere pipeline not yet implemented...")`
+- **Sensitivity analysis**: residual trimming ±2.5 SD retained in 02_lmm.R
+- **tSNR exclusion**: parcels only (58 Glasser parcels with tSNR < 30 excluded)
+- **NaN exclusion**: dynamic — parcel-level if ≤5 distinct NaN parcels AND max recurrence >50% of 70 runs; else obs-level
+
 ## Things NOT to redo
 - Do not reapply respiratory filter (empirically tested, not needed)
 - Do not switch to 4-TR backward difference (no justification for our TR)

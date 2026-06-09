@@ -1,5 +1,0 @@
-atlas,test,comparison,observed_stat,chi2,df_lrt,p_value,n_perms,n_verum,n_placebo
-nonself,permutation,higher_order_vs_sensory,0.09548917027070737,NaN,0,0.1372862713728627,10000,17,18
-nonself,lmm_lrt,higher_order_vs_sensory,NaN,18.750930967744353,1,1.4895062570639842e-5,0,0,0
-self,permutation,higher_order_vs_sensory,0.11914363069532721,NaN,0,0.08199180081991801,10000,17,18
-self,lmm_lrt,higher_order_vs_sensory,NaN,2.717426387585874,1,0.0992579382664574,0,0,0

@@ -1,29 +1,47 @@
-# 08_build_analysis_dataframe_auc.jl — Step 9: AUC long-format DataFrame
+# 01_build_dataframe.jl — Build analysis-ready DataFrames (parcels only)
 #
-# Builds the analysis-ready long-format DataFrame with AUC as the outcome.
-# Two nonself exclusion rules applied:
-#   1. tSNR < 30 parcel-level exclusion (58 parcels, all subjects)
-#   2. AUC = NaN exclusion (18 obs outside tSNR set; granularity decided in Part 1)
-# Self atlas: no exclusions.
+# Config-aware: reads config.toml for atlas_method + denoising_method.
+# Guards against sphere runs (use atlas_method = "parcels").
 #
-# Run from repo root:  julia 04_statistics/scripts/08_build_analysis_dataframe_auc.jl
+# Outputs to 04_statistics/results/{tag}/tables/:
+#   keskin_auc_model_ready.csv   — self parcels per Keskin layer (no G1)
+#   nonself_model_ready.csv      — nonself parcels (tSNR+NaN exclusions applied, no G1)
+#   analysis_long_format_auc.csv — combined long format for QC scripts
+#
+# Run from repo root:
+#   julia 04_statistics/scripts/01_build_dataframe.jl
 
 using JLD2, DataFrames, CSV, Statistics, Printf
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-const REPO_ROOT    = normpath(joinpath(@__DIR__, "..", ".."))
-const ATLAS_FILE   = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
-                              "glasser_coordinates_nonself_clean_1mm.txt")
-const EXCL_TSV     = joinpath(REPO_ROOT, "excluded_rois_low_tsnr.tsv")
-const NAN_CSV      = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results",
-                              "auc_nan_not_in_tsnr_exclusion.csv")
-const PARTICIPANTS = joinpath(REPO_ROOT, "participants.tsv")
-const ACW_BASE     = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
-const VERSION      = "denoisedNoGSR"
-const RES_DIR      = joinpath(REPO_ROOT, "04_statistics", "results")
-const OUT_CSV      = joinpath(RES_DIR, "analysis_long_format_auc.csv")
+const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 
-# ── Subjects (35; excluded: sub-06, sub-08, sub-12, sub-26, sub-36) ───────────
+# ── Config ─────────────────────────────────────────────────────────────────────
+include(joinpath(REPO_ROOT, "utils", "config_loader.jl"))
+cfg = load_config()
+
+if cfg.atlas_method == "spheres"
+    error("Sphere pipeline not yet implemented in refactored statistics. " *
+          "Set atlas_method = \"parcels\" in config.toml.")
+end
+
+const DENOISING = cfg.denoising_method
+const TAG       = tag()
+const ACW_BASE  = joinpath(REPO_ROOT, "03_acw_analysis", "results", "parcels_$(DENOISING)")
+const EXCL_TSV  = joinpath(REPO_ROOT, "excluded_rois_low_tsnr.tsv")
+const PARTS_TSV = joinpath(REPO_ROOT, "participants.tsv")
+const OUT_DIR   = joinpath(REPO_ROOT, "04_statistics", "results", TAG, "tables")
+
+mkpath(OUT_DIR)
+
+println("Config: $TAG")
+println("ACW base: $ACW_BASE")
+println("Out dir:  $OUT_DIR\n")
+
+for f in [EXCL_TSV, PARTS_TSV]
+    isfile(f) || error("Missing required input: $f")
+end
+
+# ── Subjects (35; excluded: sub-06, sub-08, sub-12, sub-26, sub-36) ──────────
 const SUBJECTS = [
     "sub-01", "sub-02", "sub-03", "sub-04", "sub-05",
     "sub-07",
@@ -34,261 +52,232 @@ const SUBJECTS = [
     "sub-34", "sub-35",
     "sub-37", "sub-38", "sub-39", "sub-40"
 ]
-const SESSIONS    = ["ses-01", "ses-02"]
-const ATLASES     = ["self", "nonself"]
-const AUC_IDX     = 1   # acw_results[1] = AUC; acw_results[2] = τ
-const TOTAL_FILES = length(SUBJECTS) * length(SESSIONS) * length(ATLASES)  # 140
+const SESSIONS = ["ses-01", "ses-02"]
+const AUC_IDX  = 1   # acw_results[1] = AUC; acw_results[2] = τ
 
-# ── Idempotency ────────────────────────────────────────────────────────────────
-if isfile(OUT_CSV)
-    println("[skip] output already exists at $OUT_CSV")
-    exit()
-end
+const SELF_DIRS = [
+    ("interoceptive", "Interoception"),
+    ("exteroceptive", "Exteroception"),
+    ("mental",        "Cognition"),
+]
 
-# ── Check required inputs ─────────────────────────────────────────────────────
-for f in [ATLAS_FILE, EXCL_TSV, NAN_CSV, PARTICIPANTS]
-    isfile(f) || error("Missing required input: $f")
-end
-
-mkpath(RES_DIR)
-
-# ── Build Glasser→position mapping ────────────────────────────────────────────
-# Row order in the clean atlas file defines nonself position numbering:
-#   row 1 → position 1, row 2 → position 2, …
-# roi_columns in JLD2 holds Glasser IDs (strings) for nonself, so we need
-# this mapping to convert Glasser IDs to nonself position IDs.
-atlas_df       = CSV.read(ATLAS_FILE, DataFrame; delim='\t')
-glasser_to_pos = Dict{Int,Int}(row.ROI_Number => pos
-                                for (pos, row) in enumerate(eachrow(atlas_df)))
-n_atlas = length(glasser_to_pos)
-n_atlas == 316 || error("Atlas mapping has $n_atlas entries; expected 316 — STOP")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Part 1 — Load exclusion lists and decide AUC exclusion granularity
-# ══════════════════════════════════════════════════════════════════════════════
-println("═══ Part 1: Load exclusion lists ═══\n")
-
-# tSNR exclusion (parcel-level, all subjects)
-excl_df      = CSV.read(EXCL_TSV, DataFrame; delim='\t')
-excl_pos_set = Set{Int}(glasser_to_pos[id] for id in excl_df.roi_id)
-n_tsnr_excl  = length(excl_pos_set)
-@printf("  tSNR exclusion: %d parcels [expected 58: %s]\n",
-        n_tsnr_excl, n_tsnr_excl == 58 ? "OK" : "MISMATCH")
-n_tsnr_excl == 58 || error("tSNR exclusion has $n_tsnr_excl entries; expected 58 — STOP")
-
-println("  tSNR-excluded nonself_pos_ids:")
-for p in sort(collect(excl_pos_set))
-    print("  $p")
-end
-println()
-
-# AUC NaN exclusion (outside tSNR set)
-nan_df   = CSV.read(NAN_CSV, DataFrame)
-n_nan_ex = nrow(nan_df)
-@printf("\n  AUC NaN cases (outside tSNR excl): %d [expected 18: %s]\n",
-        n_nan_ex, n_nan_ex == 18 ? "OK" : "MISMATCH")
-n_nan_ex == 18 || error("AUC NaN list has $n_nan_ex rows; expected 18 — STOP")
-
-println("  AUC NaN cases:")
-@printf("  %-10s %-8s  %10s  %s\n", "subject", "session", "roi_pos_id", "roi_name")
-println("  " * "─" ^ 52)
-for row in eachrow(nan_df)
-    @printf("  %-10s %-8s  %10d  %s\n",
-            row.subject, row.session, row.roi_pos_id, row.roi_name)
-end
-
-# Recurrence analysis: how many distinct parcels, and how often does each recur?
-parcel_counts          = combine(groupby(nan_df, [:roi_pos_id, :roi_name]), nrow => :n_obs)
-sort!(parcel_counts, :n_obs, rev=true)
-n_distinct_nan_parcels = nrow(parcel_counts)
-max_recurrence         = maximum(parcel_counts.n_obs)
-
-println("\n  Recurrence by parcel:")
-@printf("  %10s  %-20s  %s\n", "roi_pos_id", "roi_name", "n_obs (of 70 possible)")
-println("  " * "─" ^ 52)
-for row in eachrow(parcel_counts)
-    @printf("  %10d  %-20s  %d\n", row.roi_pos_id, row.roi_name, row.n_obs)
-end
-@printf("\n  Distinct NaN parcels: %d\n", n_distinct_nan_parcels)
-@printf("  Max recurrence:       %d / 70 (%.1f%%)\n",
-        max_recurrence, 100.0 * max_recurrence / 70)
-
-# Decision rule:
-#   Parcel-level if parcels are few (≤5) AND the most-affected parcel is NaN
-#   in >50% of its possible observations (implying a structural signal issue).
-#   Otherwise: (subject, session, parcel)-level (drop only those 18 rows).
-parcel_level_auc_excl = n_distinct_nan_parcels <= 5 &&
-                         (max_recurrence / 70.0 > 0.5)
-
-if parcel_level_auc_excl
-    println("\n  → Applying PARCEL-LEVEL AUC exclusion ",
-            "($(n_distinct_nan_parcels) parcels dropped for all subjects).")
-    auc_excl_parcels = Set{Int}(parcel_counts.roi_pos_id)
-    nan_obs_set      = Set{Tuple{String,String,Int}}()
-else
-    println("\n  → Applying (SUBJECT, SESSION, PARCEL)-LEVEL AUC exclusion ",
-            "(18 specific observations dropped).")
-    auc_excl_parcels = Set{Int}()
-    nan_obs_set      = Set{Tuple{String,String,Int}}(
-        (row.subject, row.session, row.roi_pos_id) for row in eachrow(nan_df))
-end
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Part 2 — Build long-format AUC DataFrame
-# ══════════════════════════════════════════════════════════════════════════════
-println("\n═══ Part 2: Building long-format AUC DataFrame ═══\n")
-
-isfile(PARTICIPANTS) || error("Drug-group metadata not found at $PARTICIPANTS — STOP")
-part_df        = CSV.read(PARTICIPANTS, DataFrame; delim='\t')
+# ── Drug-group map ────────────────────────────────────────────────────────────
+part_df        = CSV.read(PARTS_TSV, DataFrame; delim='\t')
 drug_group_map = Dict{String,String}(row.participant_id => row.condition
                                      for row in eachrow(part_df))
-println("Drug-group metadata loaded: $(length(drug_group_map)) participants")
+println("Drug-group metadata: $(length(drug_group_map)) participants\n")
 
-rows = NamedTuple{(:subject, :session, :atlas, :roi_pos_id, :auc, :drug_group),
-                  Tuple{String,String,String,Int,Float64,String}}[]
+# ── tSNR exclusion (nonself only) ─────────────────────────────────────────────
+println("═══ tSNR exclusion ═══")
+excl_df          = CSV.read(EXCL_TSV, DataFrame; delim='\t')
+excl_glasser_set = Set{Int}(excl_df.roi_id)
+n_tsnr = length(excl_glasser_set)
+@printf("  %d nonself Glasser parcels excluded by tSNR < 30\n\n", n_tsnr)
 
-file_idx     = 0
-n_unfiltered = 0
+# ══════════════════════════════════════════════════════════════════════════════
+# Part 1 — Self parcels (per-category JLD2)
+# ══════════════════════════════════════════════════════════════════════════════
+println("═══ Part 1: Self parcels (per-category) ═══\n")
 
-for subject in SUBJECTS, session in SESSIONS, atlas in ATLASES
-    global file_idx, n_unfiltered
+self_rows = NamedTuple{(:subject, :session, :atlas, :glasser_id, :auc, :layer, :drug_group),
+                        Tuple{String,String,String,Int,Float64,String,String}}[]
+
+file_idx = 0
+TOTAL_SELF = length(SUBJECTS) * length(SESSIONS) * length(SELF_DIRS)
+
+for (dir_name, layer_label) in SELF_DIRS, subject in SUBJECTS, session in SESSIONS
+    global file_idx
     file_idx += 1
-
-    jld_path = joinpath(ACW_BASE, atlas, VERSION, "$(subject)_$(session).jld2")
+    jld_path = joinpath(ACW_BASE, dir_name, "$(subject)_$(session).jld2")
     if !isfile(jld_path)
-        println("[$file_idx/$TOTAL_FILES] MISSING: $jld_path")
+        println("[$file_idx/$TOTAL_SELF] MISSING: $jld_path")
         continue
     end
-
     data        = load(jld_path)
     acw_results = data["acw_results"]
-    roi_columns = data["roi_columns"]  # nonself: Glasser ID strings; self: position ID strings
+    parcel_ids  = data["parcel_ids"]
     auc_vals    = collect(acw_results[AUC_IDX])
+    dg          = get(drug_group_map, subject, "unknown")
+    for (pid_str, auc) in zip(parcel_ids, auc_vals)
+        glasser_id = parse(Int, pid_str)
+        push!(self_rows, (subject=subject, session=session, atlas="self",
+                          glasser_id=glasser_id, auc=Float64(auc),
+                          layer=layer_label, drug_group=dg))
+    end
+end
 
-    dg = get(drug_group_map, subject, "unknown")
+self_df = DataFrame(self_rows)
 
-    n_kept = 0
-    for (col_name, auc) in zip(roi_columns, auc_vals)
-        n_unfiltered += 1
-        if atlas == "nonself"
-            # Convert Glasser ID → nonself position
-            glasser_id = parse(Int, col_name)
-            pos_id     = glasser_to_pos[glasser_id]
-            # tSNR exclusion (parcel-level)
-            pos_id in excl_pos_set && continue
-            # AUC NaN exclusion (parcel- or obs-level depending on Part 1 decision)
-            pos_id in auc_excl_parcels && continue
-            (subject, session, pos_id) in nan_obs_set && continue
-        else
-            pos_id = parse(Int, col_name)
+@printf("Self rows loaded: %d  (%.0f per run × %d runs)\n",
+        nrow(self_df),
+        nrow(self_df) / (length(SUBJECTS) * length(SESSIONS)),
+        length(SUBJECTS) * length(SESSIONS))
+
+n_nan_self = count(isnan, self_df.auc)
+@printf("NaN self AUC: %d\n\n", n_nan_self)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Part 2 — Nonself parcels (tSNR exclusion + NaN detection)
+# ══════════════════════════════════════════════════════════════════════════════
+println("═══ Part 2: Nonself parcels ═══\n")
+
+ns_all = NamedTuple{(:subject, :session, :atlas, :glasser_id, :auc, :drug_group),
+                     Tuple{String,String,String,Int,Float64,String}}[]
+
+TOTAL_NS = length(SUBJECTS) * length(SESSIONS)
+file_idx = 0
+n_raw = 0; n_tsnr_dropped = 0
+
+for subject in SUBJECTS, session in SESSIONS
+    global file_idx, n_raw, n_tsnr_dropped
+    file_idx += 1
+    jld_path = joinpath(ACW_BASE, "nonself", "$(subject)_$(session).jld2")
+    if !isfile(jld_path)
+        println("[$file_idx/$TOTAL_NS] MISSING: $jld_path")
+        continue
+    end
+    data        = load(jld_path)
+    acw_results = data["acw_results"]
+    parcel_ids  = data["parcel_ids"]
+    auc_vals    = collect(acw_results[AUC_IDX])
+    dg          = get(drug_group_map, subject, "unknown")
+    for (pid_str, auc) in zip(parcel_ids, auc_vals)
+        n_raw += 1
+        glasser_id = parse(Int, pid_str)
+        if glasser_id in excl_glasser_set
+            n_tsnr_dropped += 1
+            continue
         end
-        push!(rows, (subject=subject, session=session, atlas=atlas,
-                     roi_pos_id=pos_id, auc=Float64(auc), drug_group=dg))
-        n_kept += 1
+        push!(ns_all, (subject=subject, session=session, atlas="nonself",
+                       glasser_id=glasser_id, auc=Float64(auc), drug_group=dg))
+    end
+end
+
+ns_df_raw = DataFrame(ns_all)
+@printf("Nonself raw obs:            %d\n", n_raw)
+@printf("Dropped by tSNR exclusion:  %d\n", n_tsnr_dropped)
+@printf("Remaining:                  %d\n\n", nrow(ns_df_raw))
+
+# ── NaN detection ────────────────────────────────────────────────────────────
+println("═══ NaN detection (nonself, post-tSNR) ═══\n")
+
+nan_mask = isnan.(ns_df_raw.auc)
+n_nan    = sum(nan_mask)
+@printf("  NaN AUC observations: %d\n", n_nan)
+
+if n_nan > 0
+    nan_rows      = ns_df_raw[nan_mask, :]
+    parcel_counts = combine(groupby(nan_rows, :glasser_id), nrow => :n_obs)
+    sort!(parcel_counts, :n_obs, rev=true)
+    n_distinct    = nrow(parcel_counts)
+    max_recur     = maximum(parcel_counts.n_obs)
+    n_runs        = length(SUBJECTS) * length(SESSIONS)
+
+    println("  NaN cases by parcel:")
+    @printf("  %10s  %s\n", "glasser_id", "n_obs (of $(n_runs))")
+    for row in eachrow(parcel_counts)
+        @printf("  %10d  %d\n", row.glasser_id, row.n_obs)
     end
 
-    println("[$file_idx/$TOTAL_FILES] $subject $session $atlas → $n_kept ROIs kept")
-end
-
-long_df = DataFrame(rows)
-
-@printf("\nUnfiltered observations loaded: %d [expected 24710: %s]\n",
-        n_unfiltered, n_unfiltered == 24710 ? "OK" : "MISMATCH")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Part 3 — Safety net: verify no NaN AUC remains
-# ══════════════════════════════════════════════════════════════════════════════
-println("\n═══ Part 3: Post-exclusion NaN check ═══\n")
-
-n_nan_remaining = count(isnan, long_df.auc)
-n_inf_remaining = count(isinf, long_df.auc)
-@printf("  NaN AUC remaining: %d [expected 0: %s]\n",
-        n_nan_remaining, n_nan_remaining == 0 ? "OK" : "*** UNEXPECTED — investigate")
-@printf("  Inf AUC remaining: %d [expected 0: %s]\n",
-        n_inf_remaining, n_inf_remaining == 0 ? "OK" : "*** UNEXPECTED — investigate")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Part 4 — Verify drug-group join completeness
-# ══════════════════════════════════════════════════════════════════════════════
-println("\n═══ Part 4: Drug-group join check ═══\n")
-
-n_unknown = count(==("unknown"), long_df.drug_group)
-if n_unknown > 0
-    missing_subjs = unique(long_df.subject[long_df.drug_group .== "unknown"])
-    @printf("  WARNING: %d rows have drug_group='unknown' — subjects: %s\n",
-            n_unknown, join(missing_subjs, ", "))
+    parcel_level = n_distinct <= 5 && (max_recur / n_runs > 0.5)
+    if parcel_level
+        println("\n  → PARCEL-LEVEL NaN exclusion ($n_distinct parcels dropped for all subjects)")
+        nan_glasser_set = Set{Int}(parcel_counts.glasser_id)
+        ns_df_raw = ns_df_raw[.!isnan.(ns_df_raw.auc) .&
+                              .![g in nan_glasser_set for g in ns_df_raw.glasser_id], :]
+    else
+        println("\n  → OBS-LEVEL NaN exclusion ($n_nan rows dropped)")
+        ns_df_raw = ns_df_raw[.!nan_mask, :]
+    end
+    @printf("  Nonself rows after NaN exclusion: %d\n\n", nrow(ns_df_raw))
 else
-    println("  All subjects have a drug_group assignment. OK")
+    println("  No NaN AUC values — no additional exclusions needed.\n")
 end
 
-drug_counts = combine(groupby(long_df, :drug_group), nrow => :n_rows)
-println("\n  Drug-group row breakdown:")
-for row in eachrow(drug_counts)
-    @printf("    %-10s  %d rows\n", row.drug_group, row.n_rows)
-end
+ns_df = ns_df_raw
 
-# Session balance within each drug group (subject count, not rows)
-println("\n  Subjects per drug_group × session (should be balanced):")
-subj_sess = unique(select(long_df, :subject, :session, :drug_group))
-bal = combine(groupby(subj_sess, [:drug_group, :session]), nrow => :n_subjects)
-sort!(bal, [:drug_group, :session])
-for row in eachrow(bal)
-    @printf("    %-10s  %-8s  %d subjects\n",
-            row.drug_group, row.session, row.n_subjects)
-end
+# ── Post-exclusion NaN/Inf safety check ────────────────────────────────────────
+n_nan_final = count(isnan, ns_df.auc)
+n_inf_final = count(isinf, ns_df.auc)
+@printf("Post-exclusion NaN: %d [%s]  Inf: %d [%s]\n\n",
+        n_nan_final, n_nan_final == 0 ? "OK" : "*** CHECK",
+        n_inf_final, n_inf_final == 0 ? "OK" : "*** CHECK")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Part 5 — Sanity checks and save
+# Part 3 — Drug-group join check
 # ══════════════════════════════════════════════════════════════════════════════
-println("\n═══ Part 5: Sanity checks ═══\n")
+println("═══ Part 3: Drug-group join check ═══\n")
 
-n_total   = nrow(long_df)
+for (label, df_chk) in [("self", self_df), ("nonself", ns_df)]
+    n_unk = count(==("unknown"), df_chk.drug_group)
+    if n_unk > 0
+        @printf("  WARNING [%s]: %d rows with drug_group='unknown'\n", label, n_unk)
+    else
+        @printf("  [%s] All subjects have drug_group. OK\n", label)
+    end
+end
+println()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Part 4 — Assemble and save outputs
+# ══════════════════════════════════════════════════════════════════════════════
+println("═══ Part 4: Save outputs ═══\n")
+
+# --- keskin_auc_model_ready.csv ---
+keskin_out = select(self_df, :subject, :session, :drug_group => :group,
+                    :glasser_id, :auc, :layer)
+
+out_keskin = joinpath(OUT_DIR, "keskin_auc_model_ready.csv")
+CSV.write(out_keskin, keskin_out)
+@printf("Saved: %s  (%d rows)\n", out_keskin, nrow(keskin_out))
+
+# --- nonself_model_ready.csv ---
+nonself_out = select(ns_df, :subject, :session, :drug_group => :group,
+                     :glasser_id, :auc)
+
+out_nonself = joinpath(OUT_DIR, "nonself_model_ready.csv")
+CSV.write(out_nonself, nonself_out)
+@printf("Saved: %s  (%d rows)\n", out_nonself, nrow(nonself_out))
+
+# --- analysis_long_format_auc.csv ---
+# Combine self + nonself for QC plots; self has no per-layer split here (atlas = "self")
+self_long = select(self_df, :subject, :session, :atlas, :glasser_id, :auc,
+                   :drug_group)
+ns_long   = select(ns_df,   :subject, :session, :atlas, :glasser_id, :auc,
+                   :drug_group)
+long_df   = vcat(self_long, ns_long)
+
+out_long = joinpath(OUT_DIR, "analysis_long_format_auc.csv")
+CSV.write(out_long, long_df)
+@printf("Saved: %s  (%d rows)\n", out_long, nrow(long_df))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Part 5 — Summary statistics
+# ══════════════════════════════════════════════════════════════════════════════
+println("\n═══ Part 5: Summary ═══\n")
+
 n_self    = count(==("self"),    long_df.atlas)
 n_nonself = count(==("nonself"), long_df.atlas)
+@printf("  Self rows:    %d  (%.0f per run)\n",
+        n_self,    n_self    / (length(SUBJECTS) * length(SESSIONS)))
+@printf("  Nonself rows: %d  (%.0f per run)\n",
+        n_nonself, n_nonself / (length(SUBJECTS) * length(SESSIONS)))
+@printf("  Total:        %d\n\n", nrow(long_df))
 
-# Expected nonself depends on exclusion granularity chosen in Part 1
-exp_nonself = if parcel_level_auc_excl
-    35 * 2 * (316 - 58 - n_distinct_nan_parcels)
-else
-    35 * 2 * (316 - 58) - n_nan_ex   # 18060 - 18 = 18042
-end
-exp_self    = 35 * 2 * 37             # 2590
-exp_total   = exp_self + exp_nonself
-
-@printf("  %-18s  %8s  %8s\n", "", "actual", "expected")
-println("  " * "─" ^ 38)
-@printf("  %-18s  %8d  %8d  %s\n", "self",    n_self,    exp_self,
-        n_self == exp_self ? "OK" : "MISMATCH")
-@printf("  %-18s  %8d  %8d  %s\n", "nonself", n_nonself, exp_nonself,
-        n_nonself == exp_nonself ? "OK" : "MISMATCH")
-@printf("  %-18s  %8d  %8d  %s\n", "total",   n_total,   exp_total,
-        n_total == exp_total ? "OK" : "MISMATCH")
-
-println()
-for sess in ["ses-01", "ses-02"]
-    n = count(==(sess), long_df.session)
-    @printf("  %s: %d rows\n", sess, n)
+for atlas_label in ["self", "nonself"]
+    sub_df   = long_df[long_df.atlas .== atlas_label, :]
+    finite_v = filter(isfinite, sub_df.auc)
+    @printf("  %-8s  min=%.4f  median=%.4f  max=%.4f\n",
+            atlas_label,
+            isempty(finite_v) ? NaN : minimum(finite_v),
+            isempty(finite_v) ? NaN : median(finite_v),
+            isempty(finite_v) ? NaN : maximum(finite_v))
 end
 
-# AUC summary statistics per atlas (finite values only)
-println("\n  AUC summary (finite values) per atlas:")
-@printf("  %-10s  %10s  %10s  %10s  %8s  %8s\n",
-        "atlas", "min", "median", "max", "n_NaN", "n_Inf")
-println("  " * "─" ^ 62)
-for at in ["self", "nonself"]
-    sub = long_df[long_df.atlas .== at, :]
-    auc_vals = sub.auc
-    finite   = filter(isfinite, auc_vals)
-    @printf("  %-10s  %10.4f  %10.4f  %10.4f  %8d  %8d\n",
-            at,
-            isempty(finite) ? NaN : minimum(finite),
-            isempty(finite) ? NaN : median(finite),
-            isempty(finite) ? NaN : maximum(finite),
-            count(isnan, auc_vals),
-            count(isinf, auc_vals))
+for layer_lbl in ["Interoception", "Exteroception", "Cognition"]
+    sub_lk = keskin_out[keskin_out.layer .== layer_lbl, :]
+    sub01  = sub_lk[sub_lk.subject .== "sub-01" .&& sub_lk.session .== "ses-01", :]
+    @printf("  Keskin %s: %d parcels/run\n", layer_lbl, nrow(sub01))
 end
 
-# ── Save ───────────────────────────────────────────────────────────────────────
-CSV.write(OUT_CSV, long_df)
-println("\nWrote: $OUT_CSV  ($(nrow(long_df)) rows × $(ncol(long_df)) columns)")
 println("\nDone.")

@@ -2,5 +2,5 @@
 # All scripts (Python, Julia, R) read from this file.
 
 [active]
-denoising_method = "NoGSR"   # options: "NoGSR" | "GSR"
+denoising_method = "GSR"   # options: "NoGSR" | "GSR"
 atlas_method = "parcels"      # options: "spheres" | "parcels"
