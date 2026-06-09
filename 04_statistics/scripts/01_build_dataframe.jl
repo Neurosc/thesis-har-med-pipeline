@@ -103,9 +103,8 @@ if cfg.atlas_method == "parcels"
     # ── Part 2: Nonself parcels (tSNR exclusion + NaN detection) ─────────────
     println("═══ Part 2: Nonself parcels ═══\n")
 
-    ns_all = NamedTuple{(:subject, :session, :atlas, :glasser_id, :auc, :drug_group),
-                         Tuple{String,String,String,Int,Float64,String}}[]
-    n_raw = 0; n_tsnr_dropped = 0
+    ns_all_raw = NamedTuple{(:subject, :session, :atlas, :glasser_id, :auc, :drug_group),
+                             Tuple{String,String,String,Int,Float64,String}}[]
 
     for subject in SUBJECTS, session in SESSIONS
         jld_path = joinpath(ACW_BASE, "nonself", "$(subject)_$(session).jld2")
@@ -114,22 +113,19 @@ if cfg.atlas_method == "parcels"
             continue
         end
         data = load(jld_path)
-        auc_vals = collect(data["acw_results"][AUC_IDX])
+        auc_vals  = collect(data["acw_results"][AUC_IDX])
         parcel_ids = data["parcel_ids"]
         dg = get(drug_group_map, subject, "unknown")
         for (pid_str, auc) in zip(parcel_ids, auc_vals)
-            n_raw += 1
-            glasser_id = parse(Int, pid_str)
-            if glasser_id in excl_glasser_set
-                n_tsnr_dropped += 1
-                continue
-            end
-            push!(ns_all, (subject=subject, session=session, atlas="nonself",
-                           glasser_id=glasser_id, auc=Float64(auc), drug_group=dg))
+            push!(ns_all_raw, (subject=subject, session=session, atlas="nonself",
+                               glasser_id=parse(Int, pid_str), auc=Float64(auc), drug_group=dg))
         end
     end
 
-    ns_df_raw = DataFrame(ns_all)
+    ns_df_all      = DataFrame(ns_all_raw)
+    n_raw          = nrow(ns_df_all)
+    ns_df_raw      = ns_df_all[.![g in excl_glasser_set for g in ns_df_all.glasser_id], :]
+    n_tsnr_dropped = n_raw - nrow(ns_df_raw)
     @printf("Nonself raw obs:            %d\n", n_raw)
     @printf("Dropped by tSNR exclusion:  %d\n", n_tsnr_dropped)
     @printf("Remaining:                  %d\n\n", nrow(ns_df_raw))
@@ -251,13 +247,12 @@ else  # cfg.atlas_method == "spheres"
 
     self_rows_sph = NamedTuple{(:subject, :session, :atlas, :roi_id, :auc, :drug_group, :self_layer),
                                 Tuple{String,String,String,Int,Float64,String,String}}[]
-    n_miss_self = 0
+    miss_self = String[]
 
     for subject in SUBJECTS, session in SESSIONS
         jld_path = joinpath(ACW_BASE, "self", "$(subject)_$(session).jld2")
         if !isfile(jld_path)
-            n_miss_self += 1
-            println("  MISSING: $jld_path")
+            push!(miss_self, jld_path); println("  MISSING: $jld_path")
             continue
         end
         data     = load(jld_path)
@@ -272,6 +267,7 @@ else  # cfg.atlas_method == "spheres"
     end
 
     self_df_sph = DataFrame(self_rows_sph)
+    n_miss_self = length(miss_self)
     n_nan_self  = count(isnan, self_df_sph.auc)
     @printf("Self rows loaded: %d  (%.0f per run × %d runs)\n",
             nrow(self_df_sph),
@@ -290,13 +286,12 @@ else  # cfg.atlas_method == "spheres"
 
     ns_rows_sph = NamedTuple{(:subject, :session, :atlas, :roi_id, :auc, :drug_group, :self_layer),
                               Tuple{String,String,String,Int,Float64,String,String}}[]
-    n_miss_ns = 0
+    miss_ns = String[]
 
     for subject in SUBJECTS, session in SESSIONS
         jld_path = joinpath(ACW_BASE, "nonself", "$(subject)_$(session).jld2")
         if !isfile(jld_path)
-            n_miss_ns += 1
-            println("  MISSING: $jld_path")
+            push!(miss_ns, jld_path); println("  MISSING: $jld_path")
             continue
         end
         data     = load(jld_path)
@@ -310,6 +305,7 @@ else  # cfg.atlas_method == "spheres"
     end
 
     ns_df_sph = DataFrame(ns_rows_sph)
+    n_miss_ns = length(miss_ns)
     @printf("Nonself rows loaded: %d  (%.0f per run × %d runs)\n",
             nrow(ns_df_sph),
             nrow(ns_df_sph) / max(1, length(SUBJECTS) * length(SESSIONS) - n_miss_ns),
