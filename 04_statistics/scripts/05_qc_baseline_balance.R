@@ -25,18 +25,15 @@ if (length(file_arg) > 0) {
 cfg              <- parseTOML(file.path(REPO_ROOT, "config.toml"))
 ATLAS_METHOD     <- cfg$active$atlas_method
 DENOISING_METHOD <- cfg$active$denoising_method
-
-if (ATLAS_METHOD == "spheres")
-  stop("Sphere pipeline not yet implemented in refactored statistics.")
-
-TAG <- paste0(ATLAS_METHOD, "_", DENOISING_METHOD)
+TAG              <- paste0(ATLAS_METHOD, "_", DENOISING_METHOD)
 
 TABLES_DIR <- file.path(REPO_ROOT, "04_statistics", "results", TAG, "tables")
 dir.create(TABLES_DIR, showWarnings = FALSE, recursive = TRUE)
 
-DATA_CSV   <- file.path(TABLES_DIR, "glasser_self_nonself_model_ready.csv")
-OUT_POOLED <- file.path(TABLES_DIR, "baseline_balance_pooled.csv")
-OUT_CAT    <- file.path(TABLES_DIR, "baseline_balance_per_category.csv")
+MODEL_FNAME <- "model_ready.csv"
+DATA_CSV    <- file.path(TABLES_DIR, MODEL_FNAME)
+OUT_POOLED  <- file.path(TABLES_DIR, "baseline_balance_pooled.csv")
+OUT_CAT     <- file.path(TABLES_DIR, "baseline_balance_per_category.csv")
 
 SEP <- paste(rep("=", 70), collapse = "")
 cat(SEP, "\n05_qc_baseline_balance.R — config: ", TAG, "\n", SEP, "\n\n", sep = "")
@@ -51,16 +48,10 @@ cat(sprintf("Loaded: %d rows\n", nrow(df)))
 ses01 <- df[df$session == "ses-01", ]
 cat(sprintf("ses-01 subset: %d rows\n\n", nrow(ses01)))
 
-CAT_MAP <- c(
-  Interoception = "Interoceptive Self",
-  Exteroception = "Exteroceptive Self",
-  Cognition     = "Mental Self",
-  nonself       = "Sensory-Motor"
-)
+CAT_MAP <- c(Interoception = "Interoceptive Self", Exteroception = "Exteroceptive Self",
+             Cognition = "Mental Self", nonself = "Sensory-Motor")
 ses01$category <- CAT_MAP[ses01$self_layer]
-
-CAT_ORDER <- c("Interoceptive Self", "Exteroceptive Self",
-               "Mental Self", "Sensory-Motor")
+CAT_ORDER <- c("Interoceptive Self", "Exteroceptive Self", "Mental Self", "Sensory-Motor")
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 cohens_d <- function(x, y) {

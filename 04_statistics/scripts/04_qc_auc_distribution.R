@@ -26,20 +26,19 @@ if (length(file_arg) > 0) {
 cfg              <- parseTOML(file.path(REPO_ROOT, "config.toml"))
 ATLAS_METHOD     <- cfg$active$atlas_method
 DENOISING_METHOD <- cfg$active$denoising_method
-
-if (ATLAS_METHOD == "spheres")
-  stop("Sphere pipeline not yet implemented in refactored statistics.")
-
-TAG <- paste0(ATLAS_METHOD, "_", DENOISING_METHOD)
+TAG              <- paste0(ATLAS_METHOD, "_", DENOISING_METHOD)
 
 TABLES_DIR <- file.path(REPO_ROOT, "04_statistics", "results", TAG, "tables")
 FIGS_DIR   <- file.path(REPO_ROOT, "04_statistics", "results", TAG, "figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
 
+MODEL_FNAME <- "model_ready.csv"
+ATLAS_LABEL <- if (ATLAS_METHOD == "parcels") "Glasser parcels" else "sphere ROIs"
+
 CSV1 <- file.path(TABLES_DIR, "analysis_long_format_auc.csv")
-CSV2 <- file.path(TABLES_DIR, "glasser_self_nonself_model_ready.csv")
+CSV2 <- file.path(TABLES_DIR, MODEL_FNAME)
 OUT1 <- file.path(FIGS_DIR,   "fig_auc_distribution_self_nonself.png")
-OUT2 <- file.path(FIGS_DIR,   "fig_auc_distribution_all_glasser.png")
+OUT2 <- file.path(FIGS_DIR,   "fig_auc_distribution_all_pooled.png")
 OUT3 <- file.path(FIGS_DIR,   "fig_auc_per_subject_distribution.png")
 
 SEP <- paste(rep("=", 70), collapse = "")
@@ -114,7 +113,7 @@ p1 <- ggplot(plot_df1, aes(x = auc, fill = atlas, color = atlas)) +
   geom_density(alpha = 0.20, adjust = 0.8, linewidth = 1.0) +
   scale_fill_manual(values = COLORS1, labels = LABELS1, name = NULL) +
   scale_color_manual(values = COLORS1, labels = LABELS1, name = NULL) +
-  labs(title = "AUC distribution — self vs nonself (Glasser parcels)",
+  labs(title = sprintf("AUC distribution — self vs nonself (%s)", ATLAS_LABEL),
        x = "AUC (seconds)", y = "Density") +
   base_theme() +
   theme(legend.position = c(0.82, 0.85),
@@ -126,11 +125,11 @@ cat(sprintf("Saved: %s\n\n", OUT1))
 # ══════════════════════════════════════════════════════════════════════════════
 # Plot 2 — All Glasser parcels pooled
 # ══════════════════════════════════════════════════════════════════════════════
-cat(SEP, "\nPLOT 2 — All Glasser parcels pooled\n", SEP, "\n", sep = "")
+cat(SEP, "\nPLOT 2 — All ", ATLAS_LABEL, " pooled\n", SEP, "\n", sep = "")
 
 df2 <- read.csv(CSV2, stringsAsFactors = FALSE)
 cat(sprintf("Loaded: %d rows\n\n", nrow(df2)))
-print_summary("All Glasser parcels (pooled)", df2$auc)
+print_summary(sprintf("All %s (pooled)", ATLAS_LABEL), df2$auc)
 
 auc2 <- df2$auc[is.finite(df2$auc)]
 p2 <- ggplot(data.frame(auc = auc2), aes(x = auc)) +
@@ -138,7 +137,7 @@ p2 <- ggplot(data.frame(auc = auc2), aes(x = auc)) +
                alpha = 0.50, adjust = 0.8, linewidth = 0.7) +
   geom_rug(data = data.frame(auc = sample(auc2, min(500, length(auc2)))),
            color = "#2E8B8B", alpha = 0.25, linewidth = 0.3) +
-  labs(title = "AUC distribution — all Glasser parcels (pooled)",
+  labs(title = sprintf("AUC distribution — all %s (pooled)", ATLAS_LABEL),
        x = "AUC (seconds)", y = "Density") +
   base_theme() + theme(legend.position = "none")
 ggsave(OUT2, p2, width = 8, height = 6, dpi = 300, bg = "white")

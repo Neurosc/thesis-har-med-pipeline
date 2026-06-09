@@ -35,18 +35,15 @@ if (length(file_arg) > 0) {
 cfg              <- parseTOML(file.path(REPO_ROOT, "config.toml"))
 ATLAS_METHOD     <- cfg$active$atlas_method
 DENOISING_METHOD <- cfg$active$denoising_method
-
-if (ATLAS_METHOD == "spheres")
-  stop("Sphere pipeline not yet implemented in refactored statistics.")
-
-TAG <- paste0(ATLAS_METHOD, "_", DENOISING_METHOD)
+TAG              <- paste0(ATLAS_METHOD, "_", DENOISING_METHOD)
 
 TABLES_DIR <- file.path(REPO_ROOT, "04_statistics", "results", TAG, "tables")
 FIGS_DIR   <- file.path(REPO_ROOT, "04_statistics", "results", TAG, "figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
 
-DATA_CSV   <- file.path(TABLES_DIR, "glasser_self_nonself_model_ready.csv")
-PVAL_CSV   <- file.path(TABLES_DIR, "per_category_drug_session.csv")
+MODEL_FNAME <- "model_ready.csv"
+DATA_CSV    <- file.path(TABLES_DIR, MODEL_FNAME)
+PVAL_CSV    <- file.path(TABLES_DIR, "per_category_drug_session.csv")
 
 SEP <- paste(rep("=", 70), collapse = "")
 cat(SEP, "\n06_figures.R — config: ", TAG, "\n", SEP, "\n\n", sep = "")
@@ -60,28 +57,29 @@ if (!file.exists(PVAL_CSV))
 df_raw <- read.csv(DATA_CSV, stringsAsFactors = FALSE)
 cat(sprintf("Loaded: %d rows\n\n", nrow(df_raw)))
 
-CAT_MAP <- c(
-  Interoception = "Interoceptive Self",
-  Exteroception = "Exteroceptive Self",
-  Cognition     = "Mental Self",
-  nonself       = "Sensory-Motor"
-)
-CAT_ORDER   <- c("Interoceptive Self", "Exteroceptive Self",
-                 "Mental Self", "Sensory-Motor")
 COND_LEVELS <- c("Placebo Pre", "Verum Pre", "Placebo Post", "Verum Post")
 COND_LABELS <- c("Placebo\nPre", "Verum\nPre", "Placebo\nPost", "Verum\nPost")
 COND_COLORS <- c("Placebo Pre"  = "#CD5C5C", "Verum Pre"    = "#4682B4",
                  "Placebo Post" = "#E8963E", "Verum Post"   = "#2E8B8B")
-CAT_COLORS  <- c("Interoceptive Self" = "#1f77b4", "Exteroceptive Self" = "#ff7f0e",
-                 "Mental Self"        = "#2ca02c", "Sensory-Motor"      = "#888780")
 
-df_raw$group      <- relevel(factor(df_raw$group),      ref = "placebo")
-df_raw$session    <- relevel(factor(df_raw$session),    ref = "ses-01")
-df_raw$subject    <- factor(df_raw$subject)
-df_raw$roi_uid    <- factor(df_raw$roi_uid)
+CAT_MAP      <- c(Interoception = "Interoceptive Self", Exteroception = "Exteroceptive Self",
+                  Cognition = "Mental Self", nonself = "Sensory-Motor")
+CAT_ORDER    <- c("Interoceptive Self", "Exteroceptive Self", "Mental Self", "Sensory-Motor")
+CAT_COLORS   <- c("Interoceptive Self" = "#1f77b4", "Exteroceptive Self" = "#ff7f0e",
+                  "Mental Self" = "#2ca02c", "Sensory-Motor" = "#888780")
+PVAL_CAT_MAP <- c("Sensory-Motor" = "Sensory-Motor", "Interoception" = "Interoceptive Self",
+                  "Exteroception" = "Exteroceptive Self", "Cognition" = "Mental Self")
+PAIRED_CATS  <- c("Exteroceptive Self", "Sensory-Motor")
+LAYER_COL    <- "self_layer"
 df_raw$self_layer <- relevel(factor(df_raw$self_layer), ref = "nonself")
 df_raw$category   <- CAT_MAP[as.character(df_raw$self_layer)]
-df_raw$condition  <- factor(
+ATLAS_LABEL  <- if (ATLAS_METHOD == "parcels") "Glasser self ROIs" else "sphere ROIs"
+
+df_raw$group     <- relevel(factor(df_raw$group),   ref = "placebo")
+df_raw$session   <- relevel(factor(df_raw$session), ref = "ses-01")
+df_raw$subject   <- factor(df_raw$subject)
+df_raw$roi_uid   <- factor(df_raw$roi_uid)
+df_raw$condition <- factor(
   paste0(ifelse(df_raw$group == "placebo", "Placebo", "Verum"), " ",
          ifelse(df_raw$session == "ses-01", "Pre", "Post")),
   levels = COND_LEVELS)
@@ -129,10 +127,6 @@ cat("\n")
 
 # Load pval table for delta plot
 pval_tbl <- read.csv(PVAL_CSV, stringsAsFactors = FALSE)
-PVAL_CAT_MAP <- c("Sensory-Motor" = "Sensory-Motor",
-                  "Interoception" = "Interoceptive Self",
-                  "Exteroception" = "Exteroceptive Self",
-                  "Cognition"     = "Mental Self")
 pval_tbl$cat_display <- PVAL_CAT_MAP[pval_tbl$category]
 
 # ── Figure 1: Keskin-style raincloud (fig25) ───────────────────────────────────
@@ -173,11 +167,18 @@ make_panel <- function(cat_label) {
           axis.title.y = element_text(size = 10), legend.position = "none")
 }
 panels <- lapply(CAT_ORDER, make_panel)
-fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]]) +
-  plot_annotation(title = "Drug × Session effect per region category (Glasser self ROIs)",
+if (length(CAT_ORDER) == 4) {
+  fig25_gg <- (panels[[1]] | panels[[2]]) / (panels[[3]] | panels[[4]])
+  fig25_w  <- 10; fig25_h <- 8
+} else {
+  fig25_gg <- panels[[1]] | panels[[2]]
+  fig25_w  <- 10; fig25_h <- 5
+}
+fig25_gg <- fig25_gg +
+  plot_annotation(title = sprintf("Drug × Session effect per category (%s)", ATLAS_LABEL),
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
                                             size = 12, family = "serif")))
-ggsave(OUT_FIG25, fig25_gg, width = 10, height = 8, dpi = 300, bg = "white")
+ggsave(OUT_FIG25, fig25_gg, width = fig25_w, height = fig25_h, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG25))
 
 # ── Figure 2: Delta plot (fig27) ───────────────────────────────────────────────
@@ -243,12 +244,19 @@ make_delta_panel <- function(cat_label) {
   p
 }
 delta_panels <- lapply(CAT_ORDER, make_delta_panel)
-fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
-            (delta_panels[[3]] | delta_panels[[4]]) +
-  plot_annotation(title = "Post − Pre AUC change per region category (Glasser self ROIs)",
+if (length(CAT_ORDER) == 4) {
+  fig27_gg <- (delta_panels[[1]] | delta_panels[[2]]) /
+              (delta_panels[[3]] | delta_panels[[4]])
+  fig27_h  <- 8
+} else {
+  fig27_gg <- delta_panels[[1]] | delta_panels[[2]]
+  fig27_h  <- 5
+}
+fig27_gg <- fig27_gg +
+  plot_annotation(title = sprintf("Post − Pre AUC change per category (%s)", ATLAS_LABEL),
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
                                             size = 12, family = "serif")))
-ggsave(OUT_FIG27, fig27_gg, width = 10, height = 8, dpi = 300, bg = "white")
+ggsave(OUT_FIG27, fig27_gg, width = 10, height = fig27_h, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG27))
 
 # ── Figure 3: Retreat effect (fig28) ──────────────────────────────────────────
@@ -326,12 +334,19 @@ make_retreat_panel <- function(cat_label) {
   p
 }
 retreat_panels <- lapply(CAT_ORDER, make_retreat_panel)
-fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
-            (retreat_panels[[3]] | retreat_panels[[4]]) +
+if (length(CAT_ORDER) == 4) {
+  fig28_gg <- (retreat_panels[[1]] | retreat_panels[[2]]) /
+              (retreat_panels[[3]] | retreat_panels[[4]])
+  fig28_h  <- 8
+} else {
+  fig28_gg <- retreat_panels[[1]] | retreat_panels[[2]]
+  fig28_h  <- 5
+}
+fig28_gg <- fig28_gg +
   plot_annotation(title = "Meditation retreat effect (placebo group)",
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
                                             size = 12, family = "serif")))
-ggsave(OUT_FIG28, fig28_gg, width = 10, height = 8, dpi = 300, bg = "white")
+ggsave(OUT_FIG28, fig28_gg, width = 10, height = fig28_h, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG28))
 
 # ── Shared helpers for baseline figures ───────────────────────────────────────
@@ -412,17 +427,24 @@ base_panels <- lapply(CAT_ORDER, function(cat) {
     summarise(value = mean(auc, na.rm = TRUE), .groups = "drop")
   make_base_panel(d_cat, cat)
 })
-fig29b_gg <- (base_panels[[1]] | base_panels[[2]]) /
-             (base_panels[[3]] | base_panels[[4]]) +
-  plot_annotation(title = "Baseline balance by region category (ses-01)",
+if (length(CAT_ORDER) == 4) {
+  fig29b_gg <- (base_panels[[1]] | base_panels[[2]]) /
+               (base_panels[[3]] | base_panels[[4]])
+  fig29b_h  <- 8
+} else {
+  fig29b_gg <- base_panels[[1]] | base_panels[[2]]
+  fig29b_h  <- 5
+}
+fig29b_gg <- fig29b_gg +
+  plot_annotation(title = "Baseline balance by category (ses-01)",
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
                                             size = 12, family = "serif")))
-ggsave(OUT_FIG29B, fig29b_gg, width = 10, height = 8, dpi = 300, bg = "white")
+ggsave(OUT_FIG29B, fig29b_gg, width = 10, height = fig29b_h, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG29B))
 
 # ── Figure 5: Paired pre→post (fig_paired) ─────────────────────────────────────
 cat("\n", SEP, "\nFIGURE 5 — Paired pre→post (fig_paired)\n", SEP, "\n", sep = "")
-OUT_FIG_PAIRED <- file.path(FIGS_DIR, "fig_glasser_paired_prepost.png")
+OUT_FIG_PAIRED <- file.path(FIGS_DIR, "lmm_paired_prepost.png")
 
 XPOS_PAIRED <- c("Placebo Pre"  = 1.0, "Placebo Post" = 2.0,
                  "Verum Pre"    = 3.2, "Verum Post"   = 4.2)
@@ -506,10 +528,9 @@ make_paired_panel <- function(cat_label) {
     coord_cartesian(ylim = c(NA, y_br3 + y_span * 0.08))
 }
 
-PAIRED_CATS   <- c("Exteroceptive Self", "Sensory-Motor")
 paired_panels <- lapply(PAIRED_CATS, make_paired_panel)
 fig_paired    <- (paired_panels[[1]] | paired_panels[[2]]) +
-  plot_annotation(title = "Pre → Post AUC change by drug group (significant categories)",
+  plot_annotation(title = "Pre → Post AUC change by drug group",
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
                                             size = 12, family = "serif")))
 ggsave(OUT_FIG_PAIRED, fig_paired, width = 10, height = 5, dpi = 300, bg = "white")

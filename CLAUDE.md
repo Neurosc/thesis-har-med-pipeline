@@ -255,12 +255,12 @@ neural timescales. *Imaging Neuroscience*, 2.
 
 ## Statistics Pipeline (04_statistics)
 
-### Script inventory (parcels only; sphere branch guarded)
+### Script inventory (both atlas methods via config.toml)
 ```
 04_statistics/scripts/
-├── 01_build_dataframe.jl      Julia — reads parcel JLD2s, NaN/tSNR exclusion, writes CSVs
+├── 01_build_dataframe.jl      Julia — reads JLD2s, exclusions, writes CSVs
 ├── 02_lmm.R                   R    — main LMM (no G1), sensitivity analysis (±2.5 SD trim)
-├── 03_per_category.R          R    — per-category LMMs + Extero vs nonself contrast
+├── 03_per_category.R          R    — per-category LMMs + Extero vs nonself contrast (parcels)
 ├── 04_qc_auc_distribution.R   R    — AUC distribution QC plots (3 figures)
 ├── 05_qc_baseline_balance.R   R    — baseline balance: Welch t + MW + Cohen's d
 ├── 06_figures.R               R    — thesis figures (raincloud, delta, retreat, baseline, paired)
@@ -275,24 +275,35 @@ neural timescales. *Imaging Neuroscience*, 2.
 ```
 G1 lookup archived at: `_old/g1_archive/glasser_g1_lookup.csv`
 
-### Output structure
+### Output structure (identical across all 4 tags)
 ```
-04_statistics/results/{tag}/
-├── tables/   CSV outputs (keskin_auc_model_ready.csv, nonself_model_ready.csv,
-│             glasser_self_nonself_model_ready.csv, analysis_long_format_auc.csv,
-│             per_category_drug_session.csv, lmm_fixed_effects/emm/flattening CSVs,
-│             baseline_balance_pooled/per_category.csv)
-└── figures/  PNG outputs (fig25 raincloud, fig27 delta, fig28 retreat,
-              fig29a/b baseline, fig_paired; + LMM diagnostics, AUC QC plots)
+04_statistics/results/{tag}/         tag = {atlas_method}_{denoising_method}
+├── tables/
+│   analysis_long_format_auc.csv      raw long format (includes self_layer column)
+│   model_ready.csv                   combined self+nonself, model-ready
+│   lmm_fixed_effects.csv             primary LMM fixed-effects table
+│   lmm_emm_contrasts.csv             self-layer vs nonself gap EMM contrasts
+│   lmm_flattening.csv                flattening contrasts per layer
+│   per_category_drug_session.csv     per-category drug×session β
+│   per_category_simple_effects.csv   per-category simple effects
+│   baseline_balance_pooled.csv       pooled baseline Welch/MW/d
+│   baseline_balance_per_category.csv per-category baseline tests
+│   (parcels only) keskin_auc_model_ready.csv, nonself_model_ready.csv
+└── figures/  fig24_lmm_diagnostics.png, fig_lmm_diagnostics_trimmed.png,
+              fig25_raincloud_per_category.png, fig27_delta_plot_per_category.png,
+              fig28_retreat_effect_per_category.png,
+              fig29a_baseline_balance_pooled.png, fig29b_baseline_balance_per_category.png,
+              lmm_paired_prepost.png, AUC QC figures
 ```
 
-### LMM formula (no G1)
+### LMM formula (identical for both atlas methods)
 ```
 auc ~ group * session * self_layer + (1 + session | subject) + (1 | roi_uid)
-# fallback (convergence failure): (1 | subject) + (1 | roi_uid)
+self_layer: nonself (ref), Interoception, Exteroception, Cognition
+Parcels: roi_uid = paste0("self_"|"nonself_", glasser_id)
+Spheres: roi_uid = paste0("self_"|"nonself_", sphere_position_id)
 ```
-- `self_layer` levels: nonself (ref), Interoception, Exteroception, Cognition
-- `roi_uid`: paste0("self_", glasser_id) for self; paste0("nonself_", glasser_id) for nonself
+Fallback (convergence failure): `(1 | subject) + (1 | roi_uid)`
 
 ### Self parcel atlas (Keskin et al. 2025, Glasser MMP1.0)
 - 40 parcels total: 14 interoceptive + 16 exteroceptive + 12 mental (2 shared)
@@ -301,12 +312,20 @@ auc ~ group * session * self_layer + (1 + session | subject) + (1 | roi_uid)
 - tSNR exclusion: `99_QC/03_acw_qc/results/tsnr/excluded_rois_low_tsnr.tsv` (58 parcels, tSNR < 30)
 - NaN exclusion: dynamic detection in 01_build_dataframe.jl (not CSV-based)
 
-### JLD2 input paths
-- Self per-category: `03_acw_analysis/results/parcels_{DENOISING}/{interoceptive,exteroceptive,mental}/{sub}_{ses}.jld2`
-- Nonself: `03_acw_analysis/results/parcels_{DENOISING}/nonself/{sub}_{ses}.jld2`
-- Variables: `parcel_ids` (Vector{String}, Glasser IDs), `acw_results` ([1]=AUC, [2]=τ)
+### Sphere atlas
+- Self: 37 ROIs; Nonself: 316 ROIs; position IDs are string integers ("1".."37"/"316")
+- Self ROI layer assignment: `_old/Thesis/01_atlases/self_coordinates.txt` (ROI_Number→Layer)
+  - Layer split (Qin 2020): 11 Interoception, 14 Exteroception, 12 Cognition
+- 360 NaN values in nonself AUC (1.6% of 22,120 obs, 45 ROIs, 55/70 runs); kept in output — lme4 applies listwise deletion
+- No tSNR exclusion for spheres (tSNR list is Glasser parcel-specific)
+- No G1 covariate for spheres
 
-### Run order
+### JLD2 input paths
+Parcels: `03_acw_analysis/results/parcels_{DENOISING}/{interoceptive,exteroceptive,mental,nonself}/{sub}_{ses}.jld2`
+Spheres: `03_acw_analysis/results/spheres_{DENOISING}/{self,nonself}/{sub}_{ses}.jld2`
+Variables: `parcel_ids` (Vector{String}), `acw_results` ([1]=AUC, [2]=τ)
+
+### Run order (same for both atlas methods)
 ```
 julia 04_statistics/scripts/01_build_dataframe.jl
 Rscript 04_statistics/scripts/02_lmm.R
@@ -315,14 +334,16 @@ Rscript 04_statistics/scripts/04_qc_auc_distribution.R
 Rscript 04_statistics/scripts/05_qc_baseline_balance.R
 Rscript 04_statistics/scripts/06_figures.R
 ```
-Switch `config.toml` between `NoGSR` and `GSR` and re-run all 6 scripts for each condition.
+Switch `config.toml` `atlas_method` (parcels|spheres) and `denoising_method` (NoGSR|GSR); re-run all 6 for each combination.
 
 ### Design decisions
 - **G1 gradient covariate: DROPPED** — archived in `_old/g1_archive/`; no reference anywhere in active scripts
-- **Sphere pipeline: OUT OF SCOPE** — all scripts guard with `stop("Sphere pipeline not yet implemented...")`
-- **Sensitivity analysis**: residual trimming ±2.5 SD retained in 02_lmm.R
+- **Sphere pipeline: IMPLEMENTED** — all 6 scripts branch on `atlas_method` via config.toml
+- **Sphere LMM: 4-level self_layer** (nonself, Interoception, Exteroception, Cognition) — mirrors parcel branch exactly; layers from Qin 2020 self_coordinates.txt
+- **Output filenames: UNIFIED** — `model_ready.csv`, `lmm_fixed_effects.csv`, `lmm_emm_contrasts.csv`, `lmm_flattening.csv`, `lmm_paired_prepost.png` for all 4 tags; old glasser_self_* and sphere_* prefixes removed
+- **Sensitivity analysis**: residual trimming ±2.5 SD retained in 02_lmm.R for both atlas methods
 - **tSNR exclusion**: parcels only (58 Glasser parcels with tSNR < 30 excluded)
-- **NaN exclusion**: dynamic — parcel-level if ≤5 distinct NaN parcels AND max recurrence >50% of 70 runs; else obs-level
+- **NaN exclusion**: parcels — dynamic (parcel-level or obs-level); spheres — NaN kept, lme4 handles
 
 ## Things NOT to redo
 - Do not reapply respiratory filter (empirically tested, not needed)
