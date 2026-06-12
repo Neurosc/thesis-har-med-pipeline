@@ -43,14 +43,21 @@ COND_LEVELS <- c("Placebo Pre", "Verum Pre", "Placebo Post", "Verum Post")
 COND_COLORS <- c("Placebo Pre"  = "#CD5C5C", "Verum Pre"   = "#4682B4",
                  "Placebo Post" = "#E8963E", "Verum Post"  = "#2E8B8B")
 
+external_means <- df %>%
+  filter(self_layer %in% c("Exteroception", "nonself")) %>%
+  group_by(subject, session, group) %>%
+  summarise(External = mean(auc, na.rm = TRUE), .groups = "drop")
+
 diff_df <- df %>%
   filter(self_layer %in% c("Interoception", "Exteroception", "nonself")) %>%
   group_by(subject, session, group, self_layer) %>%
   summarise(mean_auc = mean(auc, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(names_from = self_layer, values_from = mean_auc) %>%
+  left_join(external_means, by = c("subject", "session", "group")) %>%
   mutate(
     IE_diff_1 = Interoception - Exteroception,
     IE_diff_2 = Interoception - nonself,
+    IE_diff_3 = Interoception - External,
     condition = factor(
       paste0(ifelse(group == "placebo", "Placebo", "Verum"), " ",
              ifelse(session == "ses-01", "Pre", "Post")),
@@ -71,8 +78,10 @@ inter_p <- function(diff_col) {
 
 p1 <- inter_p("IE_diff_1")
 p2 <- inter_p("IE_diff_2")
+p3 <- inter_p("IE_diff_3")
 
-cat(sprintf("Drug × session p  —  IE_diff_1: %.4f  |  IE_diff_2: %.4f\n", p1, p2))
+cat(sprintf("Drug × session p  —  IE_diff_1: %.4f  |  IE_diff_2: %.4f  |  IE_diff_3: %.4f\n",
+            p1, p2, p3))
 
 # ── Raincloud panel builder ───────────────────────────────────────────────────
 make_panel <- function(diff_col, panel_title, y_lab, inter_pval) {
@@ -148,8 +157,11 @@ panel1 <- make_panel("IE_diff_1",
 panel2 <- make_panel("IE_diff_2",
                      "Interoception − Sensory-Motor",
                      "ACW difference (s)", p2)
+panel3 <- make_panel("IE_diff_3",
+                     "Interoception − (Extero + Sensory-Motor)",
+                     "ACW difference (s)", p3)
 
-fig <- (panel1 | panel2) +
+fig <- (panel1 | panel2 | panel3) +
   plot_annotation(
     title = "Internal–external ACW differences by drug group and session",
     theme = theme(
@@ -158,6 +170,6 @@ fig <- (panel1 | panel2) +
     )
   )
 
-ggsave(OUT_PNG, fig, width = 8, height = 5, dpi = 300, bg = "white")
+ggsave(OUT_PNG, fig, width = 12, height = 5, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_PNG))
 cat("Done.\n")

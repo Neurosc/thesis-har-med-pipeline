@@ -57,16 +57,29 @@ n_rois <- df %>%
   filter(self_layer %in% c("Interoception", "Exteroception", "nonself")) %>%
   group_by(self_layer) %>%
   summarise(n_roi = n_distinct(glasser_id), .groups = "drop")
+n_rois_ext <- df %>%
+  filter(self_layer %in% c("Exteroception", "nonself")) %>%
+  summarise(n_roi = n_distinct(glasser_id)) %>% pull(n_roi)
 cat("ROIs per layer (total across both sessions):\n")
 for (i in seq_len(nrow(n_rois)))
   cat(sprintf("  %-16s %d\n", n_rois$self_layer[i], n_rois$n_roi[i]))
+cat(sprintf("  %-16s %d  (Exteroception + Sensory-Motor pooled)\n",
+            "External", n_rois_ext))
 cat("\n")
+
+# Combined external mean (Exteroception + Sensory-Motor pooled, ~115 ROIs)
+external_means <- df %>%
+  filter(self_layer %in% c("Exteroception", "nonself")) %>%
+  group_by(subject, session, group) %>%
+  summarise(External = mean(auc, na.rm = TRUE), .groups = "drop")
 
 # ── Step 2: Difference scores ────────────────────────────────────────────────
 diff_df <- layer_means %>%
+  left_join(external_means, by = c("subject", "session", "group")) %>%
   mutate(
     IE_diff_1 = Interoception - Exteroception,
-    IE_diff_2 = Interoception - nonself
+    IE_diff_2 = Interoception - nonself,
+    IE_diff_3 = Interoception - External
   )
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -127,6 +140,7 @@ run_tests <- function(diff_col) {
 
 res1 <- run_tests("IE_diff_1")
 res2 <- run_tests("IE_diff_2")
+res3 <- run_tests("IE_diff_3")
 
 # ── Print detailed tests ─────────────────────────────────────────────────────
 print_tests <- function(label, r) {
@@ -150,8 +164,9 @@ print_tests <- function(label, r) {
               fmt_p(r$t_verm$p.value), r$d_verm))
 }
 
-print_tests("IE_diff_1 : Interoception − Exteroception", res1)
-print_tests("IE_diff_2 : Interoception − Sensory-Motor",  res2)
+print_tests("IE_diff_1 : Interoception − Exteroception",        res1)
+print_tests("IE_diff_2 : Interoception − Sensory-Motor",        res2)
+print_tests("IE_diff_3 : Interoception − (Extero+SensMotor)", res3)
 
 # ── Step 4: Summary table ────────────────────────────────────────────────────
 cell_stat <- function(col, grp, ses) {
@@ -160,35 +175,41 @@ cell_stat <- function(col, grp, ses) {
 }
 
 cat(SEP, "\nSUMMARY TABLE\n", SEP, "\n", sep = "")
-cat(sprintf("  %-28s  %-18s  %-18s\n",
-            "", "IE_diff_1", "IE_diff_2"))
-cat(sprintf("  %-28s  %-18s  %-18s\n",
-            "", "(Intro − Extero)", "(Intro − SensMotor)"))
-cat(strrep("-", 70), "\n")
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
+            "", "IE_diff_1", "IE_diff_2", "IE_diff_3"))
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
+            "", "(Intro − Extero)", "(Intro − SensMotor)", "(Intro − Ext+SM)"))
+cat(strrep("-", 90), "\n")
 for (r in list(
     list("Placebo pre  (mean±SD)", "placebo", "ses-01"),
     list("Placebo post (mean±SD)", "placebo", "ses-02"),
     list("Verum pre    (mean±SD)", "verum",   "ses-01"),
     list("Verum post   (mean±SD)", "verum",   "ses-02"))) {
-  cat(sprintf("  %-28s  %-18s  %-18s\n", r[[1]],
+  cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n", r[[1]],
               cell_stat("IE_diff_1", r[[2]], r[[3]]),
-              cell_stat("IE_diff_2", r[[2]], r[[3]])))
+              cell_stat("IE_diff_2", r[[2]], r[[3]]),
+              cell_stat("IE_diff_3", r[[2]], r[[3]])))
 }
-cat(strrep("-", 70), "\n")
-cat(sprintf("  %-28s  %-18s  %-18s\n",
+cat(strrep("-", 90), "\n")
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
             "Session effect p",
-            fmt_p(res1$t_ses$p.value), fmt_p(res2$t_ses$p.value)))
-cat(sprintf("  %-28s  %-18s  %-18s\n",
+            fmt_p(res1$t_ses$p.value), fmt_p(res2$t_ses$p.value),
+            fmt_p(res3$t_ses$p.value)))
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
             "Drug × session p (t-test)",
-            fmt_p(res1$t_inter$p.value), fmt_p(res2$t_inter$p.value)))
-cat(sprintf("  %-28s  %-18s  %-18s\n",
+            fmt_p(res1$t_inter$p.value), fmt_p(res2$t_inter$p.value),
+            fmt_p(res3$t_inter$p.value)))
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
             "Drug × session p (ANOVA)",
-            fmt_p(res1$aov_inter_p), fmt_p(res2$aov_inter_p)))
-cat(sprintf("  %-28s  %-18s  %-18s\n",
+            fmt_p(res1$aov_inter_p), fmt_p(res2$aov_inter_p),
+            fmt_p(res3$aov_inter_p)))
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
             "Placebo pre→post p",
-            fmt_p(res1$t_plac$p.value), fmt_p(res2$t_plac$p.value)))
-cat(sprintf("  %-28s  %-18s  %-18s\n",
+            fmt_p(res1$t_plac$p.value), fmt_p(res2$t_plac$p.value),
+            fmt_p(res3$t_plac$p.value)))
+cat(sprintf("  %-28s  %-18s  %-18s  %-18s\n",
             "Verum pre→post p",
-            fmt_p(res1$t_verm$p.value), fmt_p(res2$t_verm$p.value)))
+            fmt_p(res1$t_verm$p.value), fmt_p(res2$t_verm$p.value),
+            fmt_p(res3$t_verm$p.value)))
 
 cat("\nDone.\n")
