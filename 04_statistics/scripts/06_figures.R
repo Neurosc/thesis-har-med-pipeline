@@ -5,6 +5,7 @@
 # Figure 3 (fig28): retreat effect (placebo only, pre vs post)
 # Figure 4 (fig29a/b): baseline balance panels
 # Figure 5 (fig_paired): paired pre→post lines for significant categories
+# Figure 6 (fig_paired_prepost_4panel): paired pre→post lines, all four categories
 #
 # Run from repo root:
 #   Rscript 04_statistics/scripts/06_figures.R
@@ -535,5 +536,24 @@ fig_paired    <- (paired_panels[[1]] | paired_panels[[2]]) +
                                             size = 12, family = "serif")))
 ggsave(OUT_FIG_PAIRED, fig_paired, width = 10, height = 5, dpi = 300, bg = "white")
 cat(sprintf("Saved PNG: %s\n", OUT_FIG_PAIRED))
+
+# ── Figure 6: Paired pre→post, all four categories (fig_paired_prepost_4panel) ──
+# Reuses make_paired_panel() verbatim → identical style, palette, geom layers,
+# within-group paired-t and between-group drug×session p annotations as Figure 5.
+# Panels in CAT_ORDER (same order as the raincloud figure), arranged 2×2:
+#   [Interoceptive Self ] [Exteroceptive Self]
+#   [Mental Self        ] [Sensory-Motor     ]
+cat("\n", SEP, "\nFIGURE 6 — Paired pre→post, 4 panels (fig_paired_prepost_4panel)\n",
+    SEP, "\n", sep = "")
+OUT_FIG_PAIRED4 <- file.path(FIGS_DIR, "fig_paired_prepost_4panel.png")
+
+paired_panels4 <- lapply(CAT_ORDER, make_paired_panel)
+fig_paired4    <- (paired_panels4[[1]] | paired_panels4[[2]]) /
+                  (paired_panels4[[3]] | paired_panels4[[4]]) +
+  plot_annotation(title = "Pre → Post AUC change by drug group",
+    theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
+                                            size = 12, family = "serif")))
+ggsave(OUT_FIG_PAIRED4, fig_paired4, width = 10, height = 10, dpi = 300, bg = "white")
+cat(sprintf("Saved PNG: %s\n", OUT_FIG_PAIRED4))
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
