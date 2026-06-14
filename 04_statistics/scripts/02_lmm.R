@@ -114,6 +114,8 @@ if (ATLAS_METHOD == "parcels") {
 
   KESKIN_CSV  <- file.path(TABLES_DIR, "keskin_auc_model_ready.csv")
   NONSELF_CSV <- file.path(TABLES_DIR, "nonself_model_ready.csv")
+  LABEL_KEY   <- file.path(REPO_ROOT, "02_timeseries_extraction", "data",
+                           "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt")
   OUT_DATA    <- file.path(TABLES_DIR, "model_ready.csv")
   OUT_FE      <- file.path(TABLES_DIR, "lmm_fixed_effects.csv")
   OUT_EMM     <- file.path(TABLES_DIR, "lmm_emm_contrasts.csv")
@@ -144,6 +146,29 @@ if (ATLAS_METHOD == "parcels") {
   cat(sprintf("Nonself rows     : %d  (%d unique parcels)\n",
               nrow(df_ns), length(unique(df_ns$glasser_id))))
 
+  # ── Restrict nonself to the CAB-NP somatomotor parcels ("Sensory-Motor") ─────
+  # Correction: the non-self reference is the ~99 CAB-NP somatomotor parcels
+  # (networks Visual1, Visual2, Somatomotor, Auditory), NOT the broad 267-parcel
+  # nonself set. This is parcel selection only — AUC is NOT recomputed. The
+  # self_layer label stays "nonself" so the figures' nonself->"Sensory-Motor"
+  # mapping (CAT_MAP in 06_figures.R) remains valid. The dropped parcels stay in
+  # nonself_model_ready.csv (upstream), recoverable later.
+  #
+  # Join key: glasser_id is the CAB-NP parcel index (1-360, L-first), which equals
+  # the label key's INDEX column — the SAME join used by DataFrame 2 in
+  # 01_build_dataframe.jl (glasser_net[INDEX]). NOT a label-name join.
+  if (!file.exists(LABEL_KEY))
+    stop("Input not found — CAB-NP label key: ", LABEL_KEY)
+  lk <- read.delim(LABEL_KEY, stringsAsFactors = FALSE)
+  SOMATOMOTOR_NETS <- c("Visual1", "Visual2", "Somatomotor", "Auditory")
+  sm_idx <- lk$INDEX[lk$INDEX >= 1 & lk$INDEX <= 360 &
+                       lk$NETWORK %in% SOMATOMOTOR_NETS]
+  n_ns_before <- length(unique(df_ns$glasser_id))
+  df_ns       <- df_ns[df_ns$glasser_id %in% sm_idx, ]
+  n_ns_after  <- length(unique(df_ns$glasser_id))
+  cat(sprintf("Nonself restricted to CAB-NP somatomotor (%s): %d -> %d unique parcels\n",
+              paste(SOMATOMOTOR_NETS, collapse = "/"), n_ns_before, n_ns_after))
+
   KEEP <- c("subject", "session", "group", "glasser_id", "roi_uid",
             "auc", "self_layer", "atlas_src")
   df   <- rbind(df_self[, KEEP], df_ns[, KEEP])
@@ -160,6 +185,21 @@ if (ATLAS_METHOD == "parcels") {
   cat(sprintf("Subjects: %d  |  ROI UIDs: %d  |  Total rows: %d\n",
               nlevels(df$subject), nlevels(df$roi_uid), nrow(df)))
   cat("\nRows per layer:\n"); print(table(df$self_layer))
+
+  # ── Parcels-per-category verification (unique glasser parcels per layer) ─────
+  # Expected after the CAB-NP fix: Interoception 14, Exteroception 16,
+  # Cognition 12, nonself (Sensory-Motor) ~99 (accept 90-110). If nonself is out
+  # of range the CAB-NP join failed: do NOT save model_ready.csv.
+  cat("\nUnique parcels per category:\n")
+  parc_counts <- sapply(LAYER_LEVELS, function(l)
+    length(unique(df$glasser_id[df$self_layer == l])))
+  for (l in LAYER_LEVELS) cat(sprintf("  %-15s %d\n", l, parc_counts[[l]]))
+  n_sm <- parc_counts[["nonself"]]
+  if (is.na(n_sm) || n_sm < 90 || n_sm > 110)
+    stop(sprintf(paste0("Sensory-Motor (nonself) = %s parcels, outside 90-110. ",
+                        "CAB-NP join likely failed — NOT saving model_ready.csv."),
+                 ifelse(is.na(n_sm), "NA", n_sm)))
+  cat(sprintf("[OK] Sensory-Motor (nonself) = %d parcels (within 90-110).\n", n_sm))
 
   write.csv(df, OUT_DATA, row.names = FALSE)
   cat(sprintf("\nSaved: %s\n", OUT_DATA))
