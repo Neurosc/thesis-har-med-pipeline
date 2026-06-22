@@ -50,12 +50,10 @@ from utils.subject_filter import get_included_subjects
 
 FMRIPREP_ROOT = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
 DENOISING_DIR = REPO_ROOT / "01_preprocessing" / "02_denoising" / "results"
-ATLAS_DIR     = REPO_ROOT / "02_timeseries_extraction" / "results" / "atlases"
 DATA_DIR      = REPO_ROOT / "02_timeseries_extraction" / "data"
 
 GLASSER_NII  = DATA_DIR / "glasser360MNI.nii.gz"
 CABNP_KEY    = DATA_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt"
-CATEGORY_TSV = ATLAS_DIR / "category_parcels.tsv"
 
 OUT_SELF    = REPO_ROOT / "02_timeseries_extraction" / "results" / "timeseries_self"
 OUT_NONSELF = REPO_ROOT / "02_timeseries_extraction" / "results" / "timeseries_nonself"
@@ -166,16 +164,18 @@ def load_nonself_layers():
     Returns dict {layer_name: [(parcel_id, glasser_label), ...]}.
 
     Source: CAB-NP label key (NETWORK column, cortical parcels only, INDEX 1-360).
-    Exclusion: parcels whose INDEX appears in category_parcels.tsv with
-    category Interoception / Exteroception / Cognition (Keskin self mapping).
+    Exclusion: Keskin 2025 self parcels (CAB-NP INDEX values, from category_parcels.tsv;
+    hardcoded here to avoid a server file dependency — 40 unique parcels across
+    14 Interoception + 16 Exteroception + 12 Cognition, 2 shared).
     """
-    cat_df = pd.read_csv(CATEGORY_TSV, sep="\t")
-    self_ids = set(
-        cat_df.loc[
-            cat_df["category"].isin({"Interoception", "Exteroception", "Cognition"}),
-            "roi_pos_id",
-        ]
-    )
+    self_ids = {
+        # Interoception (14)
+        40, 53, 78, 106, 110, 111, 113, 118, 120, 122, 243, 285, 288, 300,
+        # Exteroception (16)
+        50, 69, 109, 112, 117, 138, 197, 200, 227, 228, 237, 258, 262, 289, 296, 318,
+        # Cognition (12; 111 and 258 shared with Interoception/Exteroception)
+        32, 34, 61, 68, 85, 132, 150, 260, 287, 330,
+    }
 
     key_df = pd.read_csv(CABNP_KEY, sep="\t")
     cortical = key_df[
