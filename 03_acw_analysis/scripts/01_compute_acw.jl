@@ -62,8 +62,19 @@ elseif cfg.atlas_method == "parcels"
         "mental"        => joinpath(TS_BASE_M, "mental",        denoising_folder),
     ]
     csv_suffix = "_parcel_timeseries.csv"
+elseif cfg.atlas_method == "qinspheres"
+    TS_BASE_M  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results", "qinspheres")
+    atlas_dirs = [
+        "intero"   => joinpath(TS_BASE_M, "intero"),
+        "extero"   => joinpath(TS_BASE_M, "extero"),
+        "mental"   => joinpath(TS_BASE_M, "mental"),
+        "auditory" => joinpath(TS_BASE_M, "auditory"),
+        "motor"    => joinpath(TS_BASE_M, "motor"),
+        "visual"   => joinpath(TS_BASE_M, "visual"),
+    ]
+    csv_suffix = "_timeseries.csv"
 else
-    error("Unknown atlas_method '$(cfg.atlas_method)' in config.toml. Expected 'spheres' or 'parcels'.")
+    error("Unknown atlas_method '$(cfg.atlas_method)' in config.toml. Expected 'spheres', 'parcels', or 'qinspheres'.")
 end
 
 # ── Output directory ──────────────────────────────────────────────────────────
