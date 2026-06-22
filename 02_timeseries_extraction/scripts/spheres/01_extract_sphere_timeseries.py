@@ -55,9 +55,17 @@ DATA_DIR      = REPO_ROOT / "02_timeseries_extraction" / "data"
 GLASSER_NII  = DATA_DIR / "glasser360MNI.nii.gz"
 CABNP_KEY    = DATA_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt"
 
-OUT_SELF    = REPO_ROOT / "02_timeseries_extraction" / "results" / "timeseries_self"
-OUT_NONSELF = REPO_ROOT / "02_timeseries_extraction" / "results" / "timeseries_nonself"
-LOG_PATH    = REPO_ROOT / "02_timeseries_extraction" / "results" / "_sphere_extraction_log.tsv"
+OUT_ROOT = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
+LOG_PATH = OUT_ROOT / "_sphere_extraction_log.tsv"
+
+LAYER_DIR = {
+    "Interoception": "intero",
+    "Exteroception": "extero",
+    "Cognition":     "mental",
+    "Visual":        "visual",
+    "Motor":         "motor",
+    "Auditory":      "auditory",
+}
 
 SUBJECTS  = get_included_subjects()
 SESSIONS  = ["ses-01", "ses-02"]
@@ -221,10 +229,8 @@ def _append_log(row):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    for layer in SELF_LAYERS:
-        (OUT_SELF / layer).mkdir(parents=True, exist_ok=True)
-    for layer in NONSELF_NETWORKS:
-        (OUT_NONSELF / layer).mkdir(parents=True, exist_ok=True)
+    for dirname in LAYER_DIR.values():
+        (OUT_ROOT / dirname).mkdir(parents=True, exist_ok=True)
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     print("Loading nonself layer definitions...")
@@ -254,11 +260,11 @@ def main():
 
             # Collect expected output paths
             self_csvs = {
-                lay: OUT_SELF / lay / f"{sub}_{ses}_{lay}_timeseries.csv"
+                lay: OUT_ROOT / LAYER_DIR[lay] / f"{sub}_{ses}_{LAYER_DIR[lay]}_timeseries.csv"
                 for lay in SELF_LAYERS
             }
             nonself_csvs = {
-                lay: OUT_NONSELF / lay / f"{sub}_{ses}_{lay}_timeseries.csv"
+                lay: OUT_ROOT / LAYER_DIR[lay] / f"{sub}_{ses}_{LAYER_DIR[lay]}_timeseries.csv"
                 for lay in NONSELF_NETWORKS
             }
             pending_self    = [lay for lay, p in self_csvs.items()    if not p.exists()]
