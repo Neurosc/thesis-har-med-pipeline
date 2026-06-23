@@ -65,9 +65,15 @@ def _append_log(row: dict) -> None:
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    subjects = get_included_subjects()          # 35 included subjects
+    # Override subject list — set to None for the standard 35-subject run.
+    # Currently set to the four previously excluded subjects (sub-06, sub-08,
+    # sub-26, sub-36) to generate their denoised BOLDs. sub-12 stays excluded.
+    # Existing outputs are skipped automatically. Reset to None when done.
+    SUBJECTS_OVERRIDE = ["sub-06", "sub-08", "sub-26", "sub-36"]
+
+    subjects = SUBJECTS_OVERRIDE if SUBJECTS_OVERRIDE is not None else get_included_subjects()
     runs     = [(s, ses) for s in subjects for ses in SESSIONS]
-    n_total  = len(runs)                        # 70
+    n_total  = len(runs)
 
     print(f"Batch denoising: {len(subjects)} subjects × {len(SESSIONS)} sessions "
           f"= {n_total} runs")
