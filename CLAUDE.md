@@ -46,6 +46,7 @@ Scripts not yet updated (pending confirmation of scope): timeseries extraction
 - VPN required: Global Protect
 - SSH access: `ssh jkokino@10.156.156.21`
 - Project root on server: `/BICNAS2/group-northoff/jkokino/`
+- Code repository on server: `/BICNAS2/group-northoff/jkokino/codes/har_med_codes/`
 
 ### Data paths on server
 
@@ -255,95 +256,118 @@ neural timescales. *Imaging Neuroscience*, 2.
 
 ## Statistics Pipeline (04_statistics)
 
-### Script inventory (both atlas methods via config.toml)
+### Active pipeline: two metrics, parallel structure (parcels_NoGSR)
+The current analysis lives in `04_statistics/scripts/parcels_NoGSR/`, split by metric.
+**INT** (ACW-AUC, intrinsic neural timescale) and **SampEn** (sample entropy) run the
+**same** self-vs-nonself / pre-vs-post / drug-group design — each with **two LMMs**
+(category-averaged + per-parcel) plus a figures script. All scripts are self-contained,
+hardcoded to the `parcels_NoGSR` tag (they do NOT read config.toml). **See the folder
+`README.md` for the full table/figure index and provenance caveats.**
 ```
-04_statistics/scripts/
-├── 01_build_dataframe.jl      Julia — reads JLD2s, exclusions, writes CSVs
-├── 02_lmm.R                   R    — main LMM (no G1), sensitivity analysis (±2.5 SD trim)
-├── 03_per_category.R          R    — per-category LMMs + Extero vs nonself contrast (parcels)
-├── 04_qc_auc_distribution.R   R    — AUC distribution QC plots (3 figures)
-├── 05_qc_baseline_balance.R   R    — baseline balance: Welch t + MW + Cohen's d
-├── 06_figures.R               R    — thesis figures (raincloud, delta, retreat, baseline, paired)
-└── archive_scripts/           old exploratory scripts (do not delete)
+04_statistics/scripts/parcels_NoGSR/
+├── README.md                       index: what's where, run order, figure→analysis map, caveats
+├── intrinsic_timescale/            INT (ACW-AUC)
+│   ├── 01_build_dataframe.jl       per-category + nonself JLD2s → int_tables/glasser_full_dataframe.csv
+│   ├── 02_lmm_category_avg.R       LMM #1 — category-averaged: pre→post + drug effect + diagnostics
+│   ├── 03_lmm_per_parcel.R         LMM #2 — one fit per parcel → perparcel_drug_effect.csv
+│   └── 04_figures.R                12 INT_*.png figures + descriptive_pvalues.csv
+├── sample_entropy/                 SampEn (dataframe is a FROZEN artifact — see below)
+│   ├── 01_lmm_category_avg.R       LMM #1 — category-averaged
+│   ├── 02_lmm_per_parcel.R         LMM #2 — per-parcel
+│   └── 03_figures.R                12 SampEn_*.png figures + descriptive_pvalues.csv
+└── _old/                           archived unused experiments (detrend_bandpass, compute rewrite)
 ```
+Outputs go to metric-tagged folders under `04_statistics/results/parcels_NoGSR/`:
+`int_tables/` + `int_figures/`, `sampen_tables/` + `sampen_figures/`, and
+`_old_tables/` (superseded config-driven tables, archived).
 
-### Data directory
+### Run order (parcels_NoGSR)
 ```
-04_statistics/data/
-├── keskin_auc_model_ready.csv        ARCHIVAL — old atlas IDs, NOT pipeline input
-└── nonself_g1_model_ready_316.csv    ARCHIVAL — old sphere IDs, NOT pipeline input
+julia   03_acw_analysis/scripts/01_compute_acw.jl                          # config.toml = parcels + NoGSR
+julia   04_statistics/scripts/parcels_NoGSR/intrinsic_timescale/01_build_dataframe.jl
+Rscript 04_statistics/scripts/parcels_NoGSR/intrinsic_timescale/02_lmm_category_avg.R
+Rscript 04_statistics/scripts/parcels_NoGSR/intrinsic_timescale/03_lmm_per_parcel.R
+Rscript 04_statistics/scripts/parcels_NoGSR/intrinsic_timescale/04_figures.R
+# SampEn (no build step — sampen_full_dataframe.csv is frozen):
+Rscript 04_statistics/scripts/parcels_NoGSR/sample_entropy/01_lmm_category_avg.R
+Rscript 04_statistics/scripts/parcels_NoGSR/sample_entropy/02_lmm_per_parcel.R
+Rscript 04_statistics/scripts/parcels_NoGSR/sample_entropy/03_figures.R
 ```
-G1 lookup archived at: `_old/g1_archive/glasser_g1_lookup.csv`
+The dataframes already exist locally, so re-running only the LMM + figures scripts
+regenerates every table and figure. On Windows, Rscript is at
+`C:\Program Files\R\R-4.6.0\bin\Rscript.exe` (not on PATH).
 
-### Output structure (identical across all 4 tags)
-```
-04_statistics/results/{tag}/         tag = {atlas_method}_{denoising_method}
-├── tables/
-│   analysis_long_format_auc.csv      raw long format (includes self_layer column)
-│   model_ready.csv                   combined self+nonself, model-ready
-│   lmm_fixed_effects.csv             primary LMM fixed-effects table
-│   lmm_emm_contrasts.csv             self-layer vs nonself gap EMM contrasts
-│   lmm_flattening.csv                flattening contrasts per layer
-│   per_category_drug_session.csv     per-category drug×session β
-│   per_category_simple_effects.csv   per-category simple effects
-│   baseline_balance_pooled.csv       pooled baseline Welch/MW/d
-│   baseline_balance_per_category.csv per-category baseline tests
-│   (parcels only) keskin_auc_model_ready.csv, nonself_model_ready.csv
-└── figures/  fig24_lmm_diagnostics.png, fig_lmm_diagnostics_trimmed.png,
-              fig25_raincloud_per_category.png, fig27_delta_plot_per_category.png,
-              fig28_retreat_effect_per_category.png,
-              fig29a_baseline_balance_pooled.png, fig29b_baseline_balance_per_category.png,
-              lmm_paired_prepost.png, AUC QC figures
-```
+### LMM #1 — category-averaged (`0X_lmm_category_avg.R`, the LMM actually used)
+- Loads `<metric>_full_dataframe.csv`, drops the **58 low-tSNR parcels** in
+  `excluded_rois_low_tsnr.tsv` (REPO ROOT, matched on roi_pos_id)
+- **Averages the metric across parcels within each category, per subject × session**
+- Model: `value ~ session * group * self_layer + (1 | subject)` (value = auc or sampen)
+  - random intercept for subject only; self_layer = **sum-to-zero contrasts** (contr.sum)
+  - group ref = placebo, session ref = ses-01; lmer REML, bobyqa, Satterthwaite df
+- emmeans: pre→post change per arm; **drug effect** = (verum pre→post) − (placebo pre→post)
+  per layer; Type III 3-way `session:group:self_layer` F-test
+- The 4 per-layer drug-effect contrasts are corrected as one family: `catavg_drug_effect.csv`
+  carries raw `p` + `p_holm` (Holm-Bonferroni) + `p_fdr` (Benjamini-Hochberg). The omnibus
+  F-tests are single tests and are **not** corrected.
+- Outputs (`<metric>_tables/`): `catavg_fixed_effects.csv`, `catavg_prepost_by_arm.csv`,
+  `catavg_drug_effect.csv` (drug effect, raw + Holm + FDR), `catavg_3way_interaction_Ftest.csv`;
+  diagnostics PNG → `<metric>_figures/<METRIC>_QC_lmm_diagnostics.png`
 
-### LMM formula (identical for both atlas methods)
-```
-auc ~ group * session * self_layer + (1 + session | subject) + (1 | roi_uid)
-self_layer: nonself (ref), Interoception, Exteroception, Cognition
-Parcels: roi_uid = paste0("self_"|"nonself_", glasser_id)
-Spheres: roi_uid = paste0("self_"|"nonself_", sphere_position_id)
-```
-Fallback (convergence failure): `(1 | subject) + (1 | roi_uid)`
+### LMM #2 — per-parcel (`0X_lmm_per_parcel.R`)
+- One independent `value ~ group * session + (1 | subject)` fit per parcel; extracts the
+  group:session (drug-effect) term. Adds `p_fdr` = Benjamini-Hochberg FDR across all parcels.
+- Output: `<metric>_tables/perparcel_drug_effect.csv` (columns incl. `p_value`, `p_fdr`)
+
+### Figures (`0X_figures.R`)
+- Reads `<metric>_full_dataframe.csv` + `excluded_rois_low_tsnr.tsv` +
+  `catavg_drug_effect.csv` + `perparcel_drug_effect.csv`; computes its own paired-t /
+  baseline p-values → `descriptive_pvalues.csv`
+- 12 PNGs named `<METRIC>_<analysis>_<what>.png` (METRIC = INT | SampEn), grouped by the
+  three analyses **selfVSnonself / retreat / drug** plus overview/QC. The two LMMs appear as
+  `<M>_drug_catavg_significance.png` (LMM #1) and `<M>_drug_perparcel_forest.png` (LMM #2).
+  Category labels: Interoception→Interoceptive Self, Exteroception→Exteroceptive Self,
+  Cognition→Mental Self, nonself→Sensory-Motor. Full map in the folder `README.md`.
+
+### ⚠ SampEn dataframe is FROZEN (provenance lost)
+`sampen_tables/sampen_full_dataframe.csv` came from an earlier build step whose script no
+longer exists; its parcel counts (nonself 100 / Intero 11 / Cognition 10) **do not match**
+the current per-run SampEn CSVs in `03_acw_analysis/results/sampen/` (320 / 14 / 12, same
+as INT). It is preserved verbatim (it is what the SampEn results come from) and **not**
+rebuilt. Its nonself layer is labelled `somatomotor` but is **not** the CAB-NP Somatomotor
+network — a misnomer of unknown origin. INT nonself = all ~304 non-self parcels (also
+labelled "Sensory-Motor" in figures). So INT and SampEn use different nonself references.
+
+### Older config-driven generic scripts (SUPERSEDED for parcels_NoGSR)
+`04_statistics/scripts/{01_build_dataframe.jl, 02_lmm.R, 03_per_category.R,
+04_qc_auc_distribution.R, 05_qc_baseline_balance.R, 06_figures.R}` are the previous
+config.toml-driven pipeline. Their LMM was **roi-level**:
+`auc ~ group*session*self_layer + (1 + session | subject) + (1 | roi_uid)`, treatment
+contrasts (nonself = ref), ±2.5 SD sensitivity trim. Retained for reference and for other
+tags (spheres / GSR, which still use these generic scripts), but NOT what the parcels_NoGSR
+run uses — the aggregated `intrinsic_timescale/02_lmm_category_avg.R` model replaces them.
 
 ### Self parcel atlas (Keskin et al. 2025, Glasser MMP1.0)
 - 40 parcels total: 14 interoceptive + 16 exteroceptive + 12 mental (2 shared)
 - Shared: parcel 111 (L_AVI) = Interoceptive + Mental; parcel 258 (R_6r) = Exteroceptive + Mental
 - Metadata: `02_timeseries_extraction/results/atlases/glasser_self_metadata.tsv`
-- tSNR exclusion: `99_QC/03_acw_qc/results/tsnr/excluded_rois_low_tsnr.tsv` (58 parcels, tSNR < 30)
-- NaN exclusion: dynamic detection in 01_build_dataframe.jl (not CSV-based)
-
-### Sphere atlas
-- Self: 37 ROIs; Nonself: 316 ROIs; position IDs are string integers ("1".."37"/"316")
-- Self ROI layer assignment: `_old/Thesis/01_atlases/self_coordinates.txt` (ROI_Number→Layer)
-  - Layer split (Qin 2020): 11 Interoception, 14 Exteroception, 12 Cognition
-- 360 NaN values in nonself AUC (1.6% of 22,120 obs, 45 ROIs, 55/70 runs); kept in output — lme4 applies listwise deletion
-- No tSNR exclusion for spheres (tSNR list is Glasser parcel-specific)
-- No G1 covariate for spheres
+- tSNR exclusion list: `excluded_rois_low_tsnr.tsv` at **REPO ROOT** (58 parcels, tSNR < 30);
+  every LMM and figures script (both metrics) drops these by roi_pos_id
 
 ### JLD2 input paths
 Parcels: `03_acw_analysis/results/parcels_{DENOISING}/{interoceptive,exteroceptive,mental,nonself}/{sub}_{ses}.jld2`
-Spheres: `03_acw_analysis/results/spheres_{DENOISING}/{self,nonself}/{sub}_{ses}.jld2`
 Variables: `parcel_ids` (Vector{String}), `acw_results` ([1]=AUC, [2]=τ)
 
-### Run order (same for both atlas methods)
-```
-julia 04_statistics/scripts/01_build_dataframe.jl
-Rscript 04_statistics/scripts/02_lmm.R
-Rscript 04_statistics/scripts/03_per_category.R
-Rscript 04_statistics/scripts/04_qc_auc_distribution.R
-Rscript 04_statistics/scripts/05_qc_baseline_balance.R
-Rscript 04_statistics/scripts/06_figures.R
-```
-Switch `config.toml` `atlas_method` (parcels|spheres) and `denoising_method` (NoGSR|GSR); re-run all 6 for each combination.
-
 ### Design decisions
-- **G1 gradient covariate: DROPPED** — archived in `_old/g1_archive/`; no reference anywhere in active scripts
-- **Sphere pipeline: IMPLEMENTED** — all 6 scripts branch on `atlas_method` via config.toml
-- **Sphere LMM: 4-level self_layer** (nonself, Interoception, Exteroception, Cognition) — mirrors parcel branch exactly; layers from Qin 2020 self_coordinates.txt
-- **Output filenames: UNIFIED** — `model_ready.csv`, `lmm_fixed_effects.csv`, `lmm_emm_contrasts.csv`, `lmm_flattening.csv`, `lmm_paired_prepost.png` for all 4 tags; old glasser_self_* and sphere_* prefixes removed
-- **Sensitivity analysis**: residual trimming ±2.5 SD retained in 02_lmm.R for both atlas methods
-- **tSNR exclusion**: parcels only (58 Glasser parcels with tSNR < 30 excluded)
-- **NaN exclusion**: parcels — dynamic (parcel-level or obs-level); spheres — NaN kept, lme4 handles
+- **LMM = category-averaged**: the metric averaged across parcels within category before
+  fitting; random effect `(1 | subject)` only. This is what
+  `intrinsic_timescale/02_lmm_category_avg.R` (and its SampEn mirror) fits and what the
+  reported drug-effect / retreat results come from.
+- **G1 gradient covariate: DROPPED** — archived in `_old/g1_archive/`; no reference in active scripts
+- **tSNR exclusion**: 58 Glasser parcels (tSNR < 30) dropped via repo-root `excluded_rois_low_tsnr.tsv`
+- **NaN / non-finite AUC**: dropped in `intrinsic_timescale/01_build_dataframe.jl`
+- **Local Windows runs are OK** for this dataset: timeseries CSVs, Julia 1.12, and R 4.6.0
+  are all present locally, and the full ACW → dataframe → LMM → figures chain runs on
+  Windows. (Raw NIfTI denoising and parcel timeseries extraction still require the server.)
 
 ## Things NOT to redo
 - Do not reapply respiratory filter (empirically tested, not needed)
@@ -366,5 +390,8 @@ Switch `config.toml` `atlas_method` (parcels|spheres) and `denoising_method` (No
   - Always save plots to files with `plt.savefig()`, never use `plt.show()`
 - Do NOT push to feature branches without explicit request
 - Do NOT modify fMRIPrep outputs
-- Do NOT load real data on Windows during development
+- Running real data on Windows IS fine now — the parcel timeseries CSVs, Julia 1.12, and
+  R 4.6.0 are all local, and the ACW → dataframe → LMM → figures chain runs locally.
+  (Earlier guidance said never load real data on Windows; that no longer applies. Only the
+  raw-NIfTI denoising and timeseries-extraction steps still need the server.)
 - Do NOT use the AROMA-denoised BOLD file (`desc-smoothAROMAnonaggr_bold.nii.gz`)
