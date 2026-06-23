@@ -17,15 +17,15 @@ tSNR exclusion NOT applied — to be recalculated for sphere-based extraction):
   Motor     Somatomotor network parcels
   Auditory  Auditory network parcels
 
-35 subjects × 2 sessions × 6 layers = 420 CSVs total.
+Default run: 35 included subjects × 2 sessions × 6 layers = 420 CSVs.
+To target a specific subject list set SUBJECTS_OVERRIDE below; set to None
+to restore the standard 35-subject run.
 
 Outputs
 -------
-  02_timeseries_extraction/results/timeseries_self/{Layer}/
-      sub-XX_ses-YY_{Layer}_timeseries.csv   (rows=timepoints, cols=ROI_Number)
-  02_timeseries_extraction/results/timeseries_nonself/{Layer}/
-      sub-XX_ses-YY_{Layer}_timeseries.csv   (rows=timepoints, cols=parcel_id)
-  02_timeseries_extraction/results/_sphere_extraction_log.tsv
+  02_timeseries_extraction/results/qinspheres/{layer}/
+      sub-XX_ses-YY_{layer}_timeseries.csv   (rows=timepoints, cols=ROI_Number)
+  02_timeseries_extraction/results/qinspheres/_sphere_extraction_log.tsv
 
 Run on server:
   conda activate fmri
@@ -67,7 +67,13 @@ LAYER_DIR = {
     "Auditory":      "auditory",
 }
 
-SUBJECTS  = get_included_subjects()
+# Override subject list — set to None for the standard 35-subject run.
+# Currently set to the four previously excluded subjects (sub-06, sub-08, sub-26,
+# sub-36) so their timeseries can be extracted. sub-12 remains excluded.
+# Reset to None when this one-off run is complete.
+SUBJECTS_OVERRIDE = ["sub-06", "sub-08", "sub-26", "sub-36"]
+
+SUBJECTS  = SUBJECTS_OVERRIDE if SUBJECTS_OVERRIDE is not None else get_included_subjects()
 SESSIONS  = ["ses-01", "ses-02"]
 RADIUS_MM = 4.0
 
