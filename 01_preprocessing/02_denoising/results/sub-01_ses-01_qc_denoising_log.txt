@@ -1,0 +1,16 @@
+
+─── Denoising QC: sub-01 ses-01 ───
+
+Mean DVARS:
+  Pre-denoising:        47.451
+  Post-denoising -GSR:  19.096 (59.8% reduction)
+  Post-denoising +GSR:  18.939 (60.1% reduction)
+
+FD-DVARS Pearson correlation:
+  Pre-denoising:        r = 0.203
+  Post-denoising -GSR:  r = -0.113
+  Post-denoising +GSR:  r = -0.111
+
+Interpretation:
+  - Lower DVARS post-denoising indicates noise reduction
+  - Lower FD-DVARS coupling indicates motion-related variance was successfully removed

@@ -1,0 +1,8 @@
+
+─── Denoising summary: sub-01_ses-01 ───
+Total frames: 240
+High-motion frames censored: 53 (22.1%)
+Number of nuisance regressors: 14 (no GSR) or 15 (with GSR) + 53 spike regressors
+Bandpass: 0.01–0.1 Hz via Lomb-Scargle frequency mask (oversample_fac=8, no Butterworth)
+Output: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/01_denoising/results/sub-01_ses-01_task-rest_desc-denoisedGSR_bold.nii.gz
+Output: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/01_denoising/results/sub-01_ses-01_task-rest_desc-denoisedNoGSR_bold.nii.gz
