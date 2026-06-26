@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
 """
-Sphere-based timeseries extraction — DMT-MED dataset.
+Sphere-based timeseries extraction — DMT-MED dataset (three denoising pipelines).
 
 Extracts mean BOLD timeseries for all six self/nonself layers using 4mm-radius
-sphere ROIs in native BOLD space (NoGSR only).
+sphere ROIs in native BOLD space, from EACH of the three denoising pipelines
+(detrend, glm, maximal), so the downstream ACW/SampEn robustness analysis can
+compare across denoising choice.
 
 Self layers  (Qin et al. 2020 MNI coordinates, 37 ROIs, 11/14/12 per layer):
-  Interoception
-  Exteroception
-  Cognition
-
+  Interoception · Exteroception · Cognition
 Nonself layers (CAB-NP Glasser network parcels; centroids computed from
-glasser360MNI.nii.gz; self-overlapping parcels excluded via category_parcels.tsv;
-tSNR exclusion NOT applied — to be recalculated for sphere-based extraction):
-  Visual    Visual1 + Visual2 network parcels
-  Motor     Somatomotor network parcels
-  Auditory  Auditory network parcels
+glasser360MNI.nii.gz; self-overlapping parcels excluded):
+  Visual (Visual1+Visual2) · Motor (Somatomotor) · Auditory
 
-Default run: 35 included subjects × 2 sessions × 6 layers = 420 CSVs.
-To target a specific subject list set SUBJECTS_OVERRIDE below; set to None
-to restore the standard 35-subject run.
+Sample: 39 subjects (get_pipeline_subjects, all minus sub-12) × 2 sessions, to
+match the three-pipeline denoising. The 35-subject inclusion filter is applied
+later at the statistics stage.
+Per pipeline: 39 × 2 × 6 = 468 CSVs; three pipelines = 1404 CSVs.
 
-Outputs
--------
-  02_timeseries_extraction/results/qinspheres/{layer}/
-      sub-XX_ses-YY_{layer}_timeseries.csv   (rows=timepoints, cols=ROI_Number)
-  02_timeseries_extraction/results/qinspheres/_sphere_extraction_log.tsv
+Inputs  : 01_denoising/results/{pipeline}/sub-XX_ses-YY_task-rest_desc-{pipeline}_bold.nii.gz
+Outputs : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/
+              sub-XX_ses-YY_{layer}_timeseries.csv   (rows=timepoints, cols=ROI_Number)
+          02_timeseries_extraction/results/qinspheres/_sphere_extraction_log.tsv
+
+Idempotent: skips a run whose 6 layer CSVs already exist.
 
 Run on server:
   conda activate fmri
@@ -44,7 +42,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from utils.subject_filter import get_included_subjects
+from utils.subject_filter import get_pipeline_subjects
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +56,9 @@ CABNP_KEY    = ATLAS_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGS
 OUT_ROOT = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
 LOG_PATH = OUT_ROOT / "_sphere_extraction_log.tsv"
 
+# The three denoising pipelines to extract from (folder + desc- tag use the same name).
+PIPELINES = ["detrend", "glm", "maximal"]
+
 LAYER_DIR = {
     "Interoception": "intero",
     "Exteroception": "extero",
@@ -67,15 +68,11 @@ LAYER_DIR = {
     "Auditory":      "auditory",
 }
 
-# Override subject list — set to None for the standard 35-subject run.
-# (A one-off override for the four previously excluded subjects has been reset.)
-SUBJECTS_OVERRIDE = None
-
-SUBJECTS  = SUBJECTS_OVERRIDE if SUBJECTS_OVERRIDE is not None else get_included_subjects()
+SUBJECTS  = get_pipeline_subjects()   # 39 (all minus sub-12)
 SESSIONS  = ["ses-01", "ses-02"]
 RADIUS_MM = 4.0
 
-LOG_COLS = ["subject", "session", "layer", "n_rois", "n_timepoints",
+LOG_COLS = ["pipeline", "subject", "session", "layer", "n_rois", "n_timepoints",
             "status", "elapsed_sec", "timestamp"]
 
 # ─── Self ROI definitions (Qin et al. 2020, coordinates from 01_create_self_atlas.sh)
@@ -176,8 +173,8 @@ def load_nonself_layers():
     Returns dict {layer_name: [(parcel_id, glasser_label), ...]}.
 
     Source: CAB-NP label key (NETWORK column, cortical parcels only, INDEX 1-360).
-    Exclusion: Keskin 2025 self parcels (CAB-NP INDEX values, from category_parcels.tsv;
-    hardcoded here to avoid a server file dependency — 40 unique parcels across
+    Exclusion: Keskin 2025 self parcels (CAB-NP INDEX values; hardcoded here to
+    avoid a server file dependency — 40 unique parcels across
     14 Interoception + 16 Exteroception + 12 Cognition, 2 shared).
     """
     self_ids = {
@@ -230,11 +227,124 @@ def _append_log(row):
             writer.writeheader()
         writer.writerow(row)
 
+# ─── Per-run extraction ───────────────────────────────────────────────────────
+
+def process_run(pipeline, sub, ses, prefix, nonself_layers, all_centroids):
+    """Extract all 6 layers for one (pipeline, subject, session).
+
+    Returns "done" | "skipped" | "failed".
+    """
+    out_dir = OUT_ROOT / pipeline
+
+    self_csvs = {
+        lay: out_dir / LAYER_DIR[lay] / f"{sub}_{ses}_{LAYER_DIR[lay]}_timeseries.csv"
+        for lay in SELF_LAYERS
+    }
+    nonself_csvs = {
+        lay: out_dir / LAYER_DIR[lay] / f"{sub}_{ses}_{LAYER_DIR[lay]}_timeseries.csv"
+        for lay in NONSELF_NETWORKS
+    }
+    pending_self    = [lay for lay, p in self_csvs.items()    if not p.exists()]
+    pending_nonself = [lay for lay, p in nonself_csvs.items() if not p.exists()]
+
+    if not pending_self and not pending_nonself:
+        print(f"{prefix} ... SKIPPED (all 6 layers exist)")
+        return "skipped"
+
+    # Denoised BOLD for this pipeline: results/{pipeline}/..._desc-{pipeline}_bold.nii.gz
+    bold = DENOISING_DIR / pipeline / f"{sub}_{ses}_task-rest_desc-{pipeline}_bold.nii.gz"
+    t0 = time.time()
+    try:
+        if not bold.exists():
+            raise FileNotFoundError(f"BOLD not found: {bold}")
+
+        print(f"{prefix} loading BOLD...")
+        bold_img    = nib.load(str(bold))
+        bold_data   = bold_img.get_fdata()
+        bold_affine = bold_img.affine
+        shape       = bold_data.shape[:3]
+        n_tp        = bold_data.shape[3]
+        vox_sizes   = tuple(float(v) for v in bold_img.header.get_zooms()[:3])
+        print(f"  shape={bold_data.shape}  vox={vox_sizes}")
+
+        offsets = sphere_offsets(RADIUS_MM, vox_sizes)
+
+        # ── Self layers ────────────────────────────────────────────
+        for layer in pending_self:
+            csv_out = self_csvs[layer]
+            rois = [(roi_id, name, x, y, z)
+                    for roi_id, name, x, y, z, lyr in SELF_ROIS
+                    if lyr == layer]
+
+            ts_dict = {}
+            for roi_id, name, x, y, z in rois:
+                center = mni_to_ijk((x, y, z), bold_affine)
+                ts = extract_sphere_ts(bold_data, center, offsets, shape)
+                if ts is None:
+                    print(f"    Warning: {name} (ROI {roi_id}) no in-bounds voxels")
+                else:
+                    ts_dict[roi_id] = ts
+
+            df = pd.DataFrame(ts_dict)
+            df.index.name = "Timepoint"
+            df.to_csv(str(csv_out))
+            print(f"  {layer}: {len(ts_dict)} ROIs → {csv_out.name}")
+
+            _append_log({
+                "pipeline": pipeline, "subject": sub, "session": ses, "layer": layer,
+                "n_rois": len(ts_dict), "n_timepoints": n_tp, "status": "DONE",
+                "elapsed_sec": f"{time.time() - t0:.1f}",
+                "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+            })
+
+        # ── Nonself layers ─────────────────────────────────────────
+        for layer in pending_nonself:
+            csv_out = nonself_csvs[layer]
+            parcels = nonself_layers[layer]
+
+            ts_dict = {}
+            for pid, pname in parcels:
+                if pid not in all_centroids:
+                    continue
+                center = mni_to_ijk(all_centroids[pid], bold_affine)
+                ts = extract_sphere_ts(bold_data, center, offsets, shape)
+                if ts is None:
+                    print(f"    Warning: {pname} (parcel {pid}) no in-bounds voxels")
+                else:
+                    ts_dict[pid] = ts
+
+            df = pd.DataFrame(ts_dict)
+            df.index.name = "Timepoint"
+            df.to_csv(str(csv_out))
+            print(f"  {layer}: {len(ts_dict)} parcels → {csv_out.name}")
+
+            _append_log({
+                "pipeline": pipeline, "subject": sub, "session": ses, "layer": layer,
+                "n_rois": len(ts_dict), "n_timepoints": n_tp, "status": "DONE",
+                "elapsed_sec": f"{time.time() - t0:.1f}",
+                "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+            })
+
+        print(f"  Done in {time.time() - t0:.0f}s")
+        return "done"
+
+    except Exception as exc:
+        print(f"  ERROR: {exc}")
+        _append_log({
+            "pipeline": pipeline, "subject": sub, "session": ses, "layer": "ALL",
+            "n_rois": "", "n_timepoints": "", "status": f"FAILED: {exc}",
+            "elapsed_sec": f"{time.time() - t0:.1f}",
+            "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+        })
+        return "failed"
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    for dirname in LAYER_DIR.values():
-        (OUT_ROOT / dirname).mkdir(parents=True, exist_ok=True)
+    # Create per-pipeline × per-layer output dirs
+    for pipeline in PIPELINES:
+        for dirname in LAYER_DIR.values():
+            (OUT_ROOT / pipeline / dirname).mkdir(parents=True, exist_ok=True)
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     print("Loading nonself layer definitions...")
@@ -251,125 +361,30 @@ def main():
     all_centroids = compute_centroids(glasser_data, glasser_affine, all_nonself_ids)
     del glasser_data
 
-    n_runs = len(SUBJECTS) * len(SESSIONS)
-    print(f"\nExtraction: {len(SUBJECTS)} subjects × {len(SESSIONS)} sessions = {n_runs} runs")
+    n_per_pipeline = len(SUBJECTS) * len(SESSIONS)
+    n_runs = len(PIPELINES) * n_per_pipeline
+    print(f"\nExtraction: {len(PIPELINES)} pipelines × {len(SUBJECTS)} subjects × "
+          f"{len(SESSIONS)} sessions = {n_runs} runs")
+    print(f"Pipelines: {PIPELINES}")
     print(f"Layers: {SELF_LAYERS} (self) + {list(NONSELF_NETWORKS)} (nonself)\n")
 
     n_completed = n_skipped = n_failed = 0
     failed_runs = []
 
-    for run_idx, sub in enumerate(SUBJECTS, start=1):
-        for ses in SESSIONS:
-            prefix = f"[{run_idx:03d}/{len(SUBJECTS)}] {sub} {ses}"
-
-            # Collect expected output paths
-            self_csvs = {
-                lay: OUT_ROOT / LAYER_DIR[lay] / f"{sub}_{ses}_{LAYER_DIR[lay]}_timeseries.csv"
-                for lay in SELF_LAYERS
-            }
-            nonself_csvs = {
-                lay: OUT_ROOT / LAYER_DIR[lay] / f"{sub}_{ses}_{LAYER_DIR[lay]}_timeseries.csv"
-                for lay in NONSELF_NETWORKS
-            }
-            pending_self    = [lay for lay, p in self_csvs.items()    if not p.exists()]
-            pending_nonself = [lay for lay, p in nonself_csvs.items() if not p.exists()]
-
-            if not pending_self and not pending_nonself:
-                print(f"{prefix} ... SKIPPED (all 6 layers exist)")
-                n_skipped += 1
-                continue
-
-            bold = DENOISING_DIR / f"{sub}_{ses}_task-rest_desc-denoisedNoGSR_bold.nii.gz"
-            t0 = time.time()
-            try:
-                if not bold.exists():
-                    raise FileNotFoundError(f"BOLD not found: {bold}")
-
-                print(f"{prefix} loading BOLD...")
-                bold_img    = nib.load(str(bold))
-                bold_data   = bold_img.get_fdata()
-                bold_affine = bold_img.affine
-                shape       = bold_data.shape[:3]
-                n_tp        = bold_data.shape[3]
-                vox_sizes   = tuple(float(v) for v in bold_img.header.get_zooms()[:3])
-                print(f"  shape={bold_data.shape}  vox={vox_sizes}")
-
-                offsets = sphere_offsets(RADIUS_MM, vox_sizes)
-
-                # ── Self layers ────────────────────────────────────────────
-                for layer in pending_self:
-                    csv_out = self_csvs[layer]
-                    rois = [(roi_id, name, x, y, z)
-                            for roi_id, name, x, y, z, lyr in SELF_ROIS
-                            if lyr == layer]
-
-                    ts_dict = {}
-                    for roi_id, name, x, y, z in rois:
-                        center = mni_to_ijk((x, y, z), bold_affine)
-                        ts = extract_sphere_ts(bold_data, center, offsets, shape)
-                        if ts is None:
-                            print(f"    Warning: {name} (ROI {roi_id}) no in-bounds voxels")
-                        else:
-                            ts_dict[roi_id] = ts
-
-                    df = pd.DataFrame(ts_dict)
-                    df.index.name = "Timepoint"
-                    df.to_csv(str(csv_out))
-                    print(f"  {layer}: {len(ts_dict)} ROIs → {csv_out.name}")
-
-                    _append_log({
-                        "subject": sub, "session": ses, "layer": layer,
-                        "n_rois": len(ts_dict), "n_timepoints": n_tp,
-                        "status": "DONE",
-                        "elapsed_sec": f"{time.time() - t0:.1f}",
-                        "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
-                    })
-
-                # ── Nonself layers ─────────────────────────────────────────
-                for layer in pending_nonself:
-                    csv_out = nonself_csvs[layer]
-                    parcels = nonself_layers[layer]
-
-                    ts_dict = {}
-                    for pid, pname in parcels:
-                        if pid not in all_centroids:
-                            continue
-                        center = mni_to_ijk(all_centroids[pid], bold_affine)
-                        ts = extract_sphere_ts(bold_data, center, offsets, shape)
-                        if ts is None:
-                            print(f"    Warning: {pname} (parcel {pid}) no in-bounds voxels")
-                        else:
-                            ts_dict[pid] = ts
-
-                    df = pd.DataFrame(ts_dict)
-                    df.index.name = "Timepoint"
-                    df.to_csv(str(csv_out))
-                    print(f"  {layer}: {len(ts_dict)} parcels → {csv_out.name}")
-
-                    _append_log({
-                        "subject": sub, "session": ses, "layer": layer,
-                        "n_rois": len(ts_dict), "n_timepoints": n_tp,
-                        "status": "DONE",
-                        "elapsed_sec": f"{time.time() - t0:.1f}",
-                        "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
-                    })
-
-                elapsed = time.time() - t0
-                print(f"  Done in {elapsed:.0f}s")
-                n_completed += 1
-
-            except Exception as exc:
-                elapsed = time.time() - t0
-                print(f"  ERROR: {exc}")
-                _append_log({
-                    "subject": sub, "session": ses, "layer": "ALL",
-                    "n_rois": "", "n_timepoints": "",
-                    "status": f"FAILED: {exc}",
-                    "elapsed_sec": f"{elapsed:.1f}",
-                    "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
-                })
-                n_failed += 1
-                failed_runs.append(f"{sub}_{ses}: {exc}")
+    for pipeline in PIPELINES:
+        print(f"\n{'='*60}\nPIPELINE: {pipeline}\n{'='*60}")
+        for run_idx, sub in enumerate(SUBJECTS, start=1):
+            for ses in SESSIONS:
+                prefix = f"[{pipeline}][{run_idx:03d}/{len(SUBJECTS)}] {sub} {ses}"
+                status = process_run(pipeline, sub, ses, prefix,
+                                     nonself_layers, all_centroids)
+                if status == "done":
+                    n_completed += 1
+                elif status == "skipped":
+                    n_skipped += 1
+                else:
+                    n_failed += 1
+                    failed_runs.append(f"{pipeline} {sub}_{ses}")
 
     print(f"\n─── Extraction summary ───")
     print(f"Total runs:  {n_runs}")

@@ -66,11 +66,15 @@ fMRIPrep BOLD ──▶ 01 denoise (NoGSR) ──▶ 02 extract 6-layer sphere t
 
 - **Server steps** (raw/denoised NIfTIs only exist there):
   1. `01_denoising/` — three NoGSR pipelines → `results/{detrend,glm,maximal}/…desc-<pipeline>_bold.nii.gz`.
-  2. `02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py` — writes the
-     6-layer CSVs to `02_timeseries_extraction/results/qinspheres/{layer}/`.
+  2. `02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py` — extracts the
+     6-layer CSVs from **all three** denoising pipelines (n=39 subjects) to
+     `results/qinspheres/{detrend,glm,maximal}/{layer}/`. CSVs are committed to git.
 - **Local steps** (timeseries CSVs are committed to the repo, so these run on Windows):
   3a. `03_acw_analysis/scripts/01_compute_acw.jl` — ACW → `results/qinspheres_NoGSR/`.
   3b. `03_acw_analysis/scripts/02_compute_sampen.py` — SampEn → `results/sampen_qinspheres/`.
+  ⚠ ACW + SampEn still read the **old flat** `qinspheres/{layer}/` layout (now archived) —
+  they must be **repointed** to the per-pipeline structure (pick a pipeline, e.g. `maximal`,
+  or loop all three). Pending step; do not re-run them until repointed.
 
 ### Run order
 ```
@@ -91,9 +95,9 @@ thesis-har-med-pipeline/
 ├── utils/                         subject_filter, motion_qc, thesis_style, config_loader.{py,jl,R}
 ├── 01_denoising/                 denoise_pipelines.py + 00_test_one_subject/01_denoise_all (3 NoGSR pipelines)
 ├── 02_timeseries_extraction/
-│   ├── data/                      glasser360MNI.nii.gz, CAB-NP label key  (extraction inputs)
-│   ├── scripts/01_extract_sphere_timeseries.py
-│   └── results/qinspheres/{intero,extero,mental,visual,motor,auditory}/   70 CSVs each
+│   ├── atlases/                   glasser360MNI + CAB-NP key (inputs) + self/nonself coords + metadata
+│   ├── scripts/01_extract_sphere_timeseries.py   (extracts from all 3 denoising pipelines)
+│   └── results/qinspheres/{detrend,glm,maximal}/{layer}/   39×2 CSVs each (committed)
 ├── 03_acw_analysis/
 │   ├── scripts/01_compute_acw.jl          (ACW)
 │   ├── scripts/02_compute_sampen.py       (SampEn)
