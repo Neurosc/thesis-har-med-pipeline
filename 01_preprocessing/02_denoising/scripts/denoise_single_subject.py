@@ -82,8 +82,7 @@ def main():
     mask_flat = nib.load(mask_path).get_fdata().astype(bool).ravel()
 
     out_data = nib.load(result["out_path"]).get_fdata(dtype=np.float32)
-    pre_std  = result["post_std"]   # rough proxy
-    sanity_check(f"{SUBJECT} {SESSION} {pipeline}", out_data, pre_std, mask_flat)
+    sanity_check(f"{SUBJECT} {SESSION} {pipeline}", out_data, mask_flat)
 
 
 if __name__ == "__main__":

@@ -234,14 +234,13 @@ def _cbig_lomb_scargle_bandpass(
 # ─── Sanity check ─────────────────────────────────────────────────────────────
 
 def sanity_check(label: str, post_data: np.ndarray,
-                 pre_std: float, mask_flat: np.ndarray) -> None:
+                 mask_flat: np.ndarray) -> None:
     """Print structured sanity-check block for one denoised output."""
     n_times  = post_data.shape[3]
     masked   = post_data.reshape(-1, n_times).astype(np.float64)[mask_flat]
     post_std = float(np.std(masked))
     abs_mean = float(np.abs(np.mean(masked)))
     nan_inf  = bool(np.isnan(masked).any() or np.isinf(masked).any())
-    exploded = post_std > 10 * pre_std
     n_zero_var = int(np.sum(np.std(masked, axis=1) == 0))
     bad_mean = abs_mean > 100
 
@@ -250,17 +249,12 @@ def sanity_check(label: str, post_data: np.ndarray,
 
     print(f"\n─── Sanity check: {label} ───")
     print(f"{'Output shape:':<30} {post_data.shape}")
+    print(f"{'Post-denoise std:':<30} {post_std:.2f}  (informational)")
 
     if nan_inf:
         print(f"{'NaN/Inf check:':<30} {_fail('FAIL: output contains NaN/Inf values')}")
     else:
         print(f"{'NaN/Inf check:':<30} PASSED")
-
-    if exploded:
-        print(f"{'Std magnitude check:':<30} "
-              f"{_fail(f'FAIL: post std ({post_std:.1f}) > 10x pre ({pre_std:.1f})')}")
-    else:
-        print(f"{'Std magnitude check:':<30} PASSED (post={post_std:.1f}, pre={pre_std:.1f})")
 
     if n_zero_var > 0:
         print(f"{'Voxel variance check:':<30} "
