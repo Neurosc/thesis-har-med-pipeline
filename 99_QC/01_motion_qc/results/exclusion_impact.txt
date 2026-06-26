@@ -1,0 +1,26 @@
+Exclusion impact analysis
+Bad-run criterion: > 50.0% frames censored
+
+FD threshold = 0.3 mm
+  Total runs flagged (>50.0% censored): 6
+  Subjects with ≥1 bad run: 5
+    sub-06 ses-01  51.2% censored  (mean FD 0.350 mm)
+    sub-08 ses-02  50.4% censored  (mean FD 0.485 mm)
+    sub-12 ses-01  80.8% censored  (mean FD 0.482 mm)
+    sub-12 ses-02  85.8% censored  (mean FD 0.485 mm)
+    sub-26 ses-01  56.2% censored  (mean FD 0.353 mm)
+    sub-36 ses-02  52.1% censored  (mean FD 0.313 mm)
+
+  < 10%: 19 run(s)
+  10–25%: 27 run(s)
+  25–50%: 28 run(s)
+  > 50%: 6 run(s)
+
+FD threshold = 0.5 mm
+  Total runs flagged (>50.0% censored): 0
+  Subjects with ≥1 bad run: 0
+
+  < 10%: 70 run(s)
+  10–25%: 7 run(s)
+  25–50%: 3 run(s)
+  > 50%: 0 run(s)

@@ -1,0 +1,11 @@
+─── DVARS comparison: sub-37 ses-02 ───
+
+Mean DVARS:
+  Raw:                47.545
+  Post -GSR:          17.793 (62.6% reduction)
+  Post +GSR:          17.660 (62.9% reduction)
+
+FD-DVARS Pearson correlation:
+  Raw:                r = 0.278
+  Post -GSR:          r = -0.170
+  Post +GSR:          r = -0.166

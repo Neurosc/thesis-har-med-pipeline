@@ -44,8 +44,8 @@ DENOISED_ROOT = REPO_ROOT / "01_preprocessing" / "02_denoising" / "results"
 OUT_DIR       = Path(__file__).resolve().parents[1] / "figures"
 LOG_DIR       = Path(__file__).resolve().parents[1] / "results"
 
-SUB = "sub-21"
-SES = "ses-01"
+SUB = "sub-12"
+SES = "ses-02"
 TR  = 1.8
 
 TAG      = f"{SUB}_{SES}_task-rest"

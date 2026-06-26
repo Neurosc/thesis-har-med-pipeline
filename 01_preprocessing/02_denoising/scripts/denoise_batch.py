@@ -69,7 +69,7 @@ def main():
     # Currently set to the four previously excluded subjects (sub-06, sub-08,
     # sub-26, sub-36) to generate their denoised BOLDs. sub-12 stays excluded.
     # Existing outputs are skipped automatically. Reset to None when done.
-    SUBJECTS_OVERRIDE = ["sub-06", "sub-08", "sub-26", "sub-36"]
+    SUBJECTS_OVERRIDE = [ "sub-12"]
 
     subjects = SUBJECTS_OVERRIDE if SUBJECTS_OVERRIDE is not None else get_included_subjects()
     runs     = [(s, ses) for s in subjects for ses in SESSIONS]
