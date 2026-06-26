@@ -134,12 +134,37 @@ pull. **Caveat:** git-ignored binaries (`*.nii.gz` atlases, the MNI template,
 
 ## Methodology decisions (still in force)
 
-### Denoising (Goldberg et al. 2024)
-- Volumetric MNI only. Single GLM: WM mean, CSF mean, 6 motion + 6 derivatives,
-  spike regressors for FD>0.3mm frames. **NoGSR only** (GSR retired).
-- Lomb-Scargle interpolation of censored frames (port of CBIG_preproc_censor.m).
-- Bandpass 0.01–0.1 Hz via frequency-domain masking inside LS (no Butterworth).
-- Scripts: `01_preprocessing/02_denoising/scripts/denoise_{core,batch,single_subject}.py`.
+### Denoising — three parallel pipelines (robustness design)
+To show the final results are robust to denoising choice, the same data is denoised
+three independent ways (all volumetric MNI, all **NoGSR**). One parameterized core
+(`denoise_core.PIPELINE_PRESETS`) drives all three; pick with `--pipeline`:
+
+| Pipeline | Detrend | WM+CSF | Motion 6+6 | FD>0.3 censor | LS interp | Bandpass |
+|----------|:------:|:------:|:----------:|:-------------:|:---------:|:--------:|
+| `detrend` (Keskin 2025) | polort 1 | – | – | – | – | – |
+| `glm` | polort 1 | ✓ | ✓ | – | – | – |
+| `maximal` (Goldberg 2024) | polort 1 | ✓ | ✓ | ✓ | ✓ | 0.01–0.1 Hz |
+
+- **Common sample = n=39** (all subjects minus `sub-12`): keeps the 4 high-motion
+  subjects (06/08/26/36) so only denoising varies. Uses
+  `utils/subject_filter.py:get_pipeline_subjects()` — the legacy `get_included_subjects()`
+  (n=35) is **untouched** and still drives ACW/SampEn/stats. Motion for the 4 kept
+  subjects is a **stats-stage** concern (carry mean FD / percent-censored as covariates,
+  and/or a drop-those-4 sensitivity analysis) — NOT handled at denoising.
+- `maximal` is identical denoising to the retired flat `desc-denoisedNoGSR` outputs;
+  re-running only extends the sample to n=39 and writes the new folder/naming.
+- LS interpolation = port of CBIG_preproc_censor.m; bandpass via frequency-domain mask
+  inside LS (no Butterworth).
+- Outputs: `results/{detrend,glm,maximal}/sub-XX_ses-YY_task-rest_desc-<pipeline>_bold.nii.gz`
+  + per-pipeline `_batch_log.tsv`. Run: `denoise_batch.py --pipeline {detrend|glm|maximal}`
+  (server); test one run with `denoise_single_subject.py --pipeline <p>`.
+- **FPC/FPCsq are NOT denoising regressors.** An earlier spec listed "FPC+FPCsq" for
+  the maximal pipeline; they are actually subject×session motion-quality covariates
+  (`pcf_diff`, `pcf_sq_diff` from percent-censored-frames) for the statistics-stage
+  residualization model — one scalar per run, so they cannot be per-timepoint GLM
+  regressors. Deferred to the (later) statistics step.
+- Legacy flat `results/*_desc-denoisedGSR/NoGSR_bold.nii.gz`: obsolete; flagged for
+  archival to `_archive/` later (not deleted in the denoising task).
 
 ### FD & censoring
 - Standard Power 2012 FD (fMRIPrep), 1-TR backward differences, 50mm rotation sphere.

@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
 """
-Batch denoising pipeline for all included subjects (35 × 2 sessions = 70 runs).
+Batch denoising — runs ONE of the three pipelines over the n=39 sample.
 
-Loops over all included subjects (sub-06, sub-08, sub-12, sub-26, sub-36 excluded)
-and both sessions, calling denoise_run() from denoise_core.py for each run.
+Three pipelines (select with --pipeline): detrend | glm | maximal. All share the
+same sample of 39 subjects (all minus sub-12) × 2 sessions = 78 runs, so the only
+thing that differs between them is the denoising. See denoise_core.PIPELINE_PRESETS.
 
 Usage (on server):
   conda activate fmri
-  python 01_preprocessing/02_denoising/scripts/denoise_batch.py
+  python 01_preprocessing/02_denoising/scripts/denoise_batch.py --pipeline detrend
+  python 01_preprocessing/02_denoising/scripts/denoise_batch.py --pipeline glm
+  python 01_preprocessing/02_denoising/scripts/denoise_batch.py --pipeline maximal
 
-Outputs
+Outputs (one self-identifying folder per pipeline)
 -------
-  01_preprocessing/02_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedGSR_bold.nii.gz
-  01_preprocessing/02_denoising/results/sub-XX_ses-YY_task-rest_desc-denoisedNoGSR_bold.nii.gz
-  01_preprocessing/02_denoising/results/_batch_log.tsv   (appended after each run)
+  01_preprocessing/02_denoising/results/<pipeline>/
+      sub-XX_ses-YY_task-rest_desc-<pipeline>_bold.nii.gz
+      _batch_log.tsv   (appended after each run)
 
-Existing outputs are skipped (both GSR and NoGSR must exist to skip).
+Existing outputs are skipped.
 """
 
 import sys
 import time
+import argparse
 import datetime
 import csv
 from pathlib import Path
@@ -28,32 +32,31 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (
-    denoise_run, build_output_paths,
+    denoise_run, build_output_path, PIPELINE_PRESETS,
     TR, FD_THRESH, BP_LOW, BP_HIGH, LS_OVERSAMPLE_FAC,
 )
-from utils.subject_filter import get_included_subjects
+from utils.subject_filter import get_pipeline_subjects
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-OUT_DIR  = Path(__file__).resolve().parents[1] / "results"
-LOG_PATH = OUT_DIR / "_batch_log.tsv"
+RESULTS_ROOT = Path(__file__).resolve().parents[1] / "results"
 
 SESSIONS = ["ses-01", "ses-02"]
 
 LOG_COLS = [
-    "subject", "session", "n_frames", "n_censored", "pct_censored",
-    "post_std_GSR", "post_std_NoGSR", "status", "elapsed_seconds", "timestamp",
+    "subject", "session", "pipeline", "n_frames", "n_censored", "pct_censored",
+    "post_std", "status", "elapsed_seconds", "timestamp",
 ]
 
 
 # ─── Log helper ──────────────────────────────────────────────────────────────
 
-def _append_log(row: dict) -> None:
-    write_header = not LOG_PATH.exists()
-    with LOG_PATH.open("a", newline="") as fh:
+def _append_log(log_path: Path, row: dict) -> None:
+    write_header = not log_path.exists()
+    with log_path.open("a", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=LOG_COLS, delimiter="\t")
         if write_header:
             writer.writeheader()
@@ -63,24 +66,29 @@ def _append_log(row: dict) -> None:
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--pipeline", required=True, choices=list(PIPELINE_PRESETS),
+                        help="Which denoising pipeline to run.")
+    args = parser.parse_args()
+    pipeline = args.pipeline
 
-    # Override subject list — set to None for the standard 35-subject run.
-    # Currently set to the four previously excluded subjects (sub-06, sub-08,
-    # sub-26, sub-36) to generate their denoised BOLDs. sub-12 stays excluded.
-    # Existing outputs are skipped automatically. Reset to None when done.
-    SUBJECTS_OVERRIDE = [ "sub-12"]
+    out_dir  = RESULTS_ROOT / pipeline
+    log_path = out_dir / "_batch_log.tsv"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    subjects = SUBJECTS_OVERRIDE if SUBJECTS_OVERRIDE is not None else get_included_subjects()
+    subjects = get_pipeline_subjects()          # n = 39 (all minus sub-12)
     runs     = [(s, ses) for s in subjects for ses in SESSIONS]
     n_total  = len(runs)
+    desc     = PIPELINE_PRESETS[pipeline]["desc"]
 
-    print(f"Batch denoising: {len(subjects)} subjects × {len(SESSIONS)} sessions "
-          f"= {n_total} runs")
+    print(f"Batch denoising — pipeline '{pipeline}'")
+    print(f"Sample: {len(subjects)} subjects × {len(SESSIONS)} sessions = {n_total} runs")
+    print(f"Steps: {PIPELINE_PRESETS[pipeline]}")
     print(f"Parameters: TR={TR}s  FD>{FD_THRESH}mm  BP={BP_LOW}–{BP_HIGH}Hz  "
           f"LS_ofac={LS_OVERSAMPLE_FAC}")
-    print(f"Output dir: {OUT_DIR}")
-    print(f"Log:        {LOG_PATH}\n")
+    print(f"Output dir: {out_dir}")
+    print(f"Log:        {log_path}\n")
 
     n_completed = 0
     n_skipped   = 0
@@ -89,12 +97,11 @@ def main():
     batch_start = time.time()
 
     for run_idx, (subject, session) in enumerate(runs, start=1):
-        out = build_output_paths(subject, session, OUT_DIR)
-        prefix = f"[{run_idx:02d}/{n_total}] {subject} {session}"
+        out_path = build_output_path(subject, session, out_dir, desc)
+        prefix   = f"[{run_idx:02d}/{n_total}] {subject} {session}"
 
-        # Skip if both outputs already exist
-        if out["gsr"].exists() and out["nogsr"].exists():
-            print(f"{prefix} ... SKIPPED (outputs exist)")
+        if out_path.exists():
+            print(f"{prefix} ... SKIPPED (output exists)")
             n_skipped += 1
             continue
 
@@ -104,43 +111,43 @@ def main():
                 subject       = subject,
                 session       = session,
                 fmriprep_root = FMRIPREP_ROOT,
-                output_dir    = OUT_DIR,
+                output_dir    = out_dir,
+                pipeline      = pipeline,
                 verbose       = False,
             )
             elapsed = time.time() - t0
             print(f"{prefix} ... DONE in {elapsed:.0f}s  "
                   f"censored={result['n_censored']}/{result['n_frames']} "
                   f"({result['pct_censored']:.1f}%)  "
-                  f"std+GSR={result['post_std_GSR']:.2f}  "
-                  f"std-GSR={result['post_std_NoGSR']:.2f}")
-            _append_log({
-                "subject":        subject,
-                "session":        session,
-                "n_frames":       result["n_frames"],
-                "n_censored":     result["n_censored"],
-                "pct_censored":   f"{result['pct_censored']:.2f}",
-                "post_std_GSR":   f"{result['post_std_GSR']:.4f}",
-                "post_std_NoGSR": f"{result['post_std_NoGSR']:.4f}",
-                "status":         "DONE",
+                  f"post_std={result['post_std']:.2f}")
+            _append_log(log_path, {
+                "subject":         subject,
+                "session":         session,
+                "pipeline":        pipeline,
+                "n_frames":        result["n_frames"],
+                "n_censored":      result["n_censored"],
+                "pct_censored":    f"{result['pct_censored']:.2f}",
+                "post_std":        f"{result['post_std']:.4f}",
+                "status":          "DONE",
                 "elapsed_seconds": f"{elapsed:.1f}",
-                "timestamp":      datetime.datetime.now().isoformat(timespec="seconds"),
+                "timestamp":       datetime.datetime.now().isoformat(timespec="seconds"),
             })
             n_completed += 1
 
         except Exception as exc:
             elapsed = time.time() - t0
             print(f"{prefix} ... FAILED in {elapsed:.0f}s  ERROR: {exc}")
-            _append_log({
-                "subject":        subject,
-                "session":        session,
-                "n_frames":       "",
-                "n_censored":     "",
-                "pct_censored":   "",
-                "post_std_GSR":   "",
-                "post_std_NoGSR": "",
-                "status":         f"FAILED: {exc}",
+            _append_log(log_path, {
+                "subject":         subject,
+                "session":         session,
+                "pipeline":        pipeline,
+                "n_frames":        "",
+                "n_censored":      "",
+                "pct_censored":    "",
+                "post_std":        "",
+                "status":          f"FAILED: {exc}",
                 "elapsed_seconds": f"{elapsed:.1f}",
-                "timestamp":      datetime.datetime.now().isoformat(timespec="seconds"),
+                "timestamp":       datetime.datetime.now().isoformat(timespec="seconds"),
             })
             n_failed += 1
             failed_runs.append(f"{subject} {session}")
@@ -150,8 +157,8 @@ def main():
     m = int((total_elapsed % 3600) // 60)
 
     print(f"\n{'─'*55}")
-    print(f"Batch complete: {n_completed} completed, {n_skipped} skipped, "
-          f"{n_failed} failed  /  Total elapsed: {h}h {m}m")
+    print(f"Pipeline '{pipeline}' complete: {n_completed} completed, "
+          f"{n_skipped} skipped, {n_failed} failed  /  Total elapsed: {h}h {m}m")
     if failed_runs:
         print(f"Failed runs:")
         for r in failed_runs:

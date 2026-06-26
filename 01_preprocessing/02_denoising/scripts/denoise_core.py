@@ -1,10 +1,24 @@
 """
 Core denoising pipeline — shared between denoise_single_subject.py and denoise_batch.py.
 
-Implements Goldberg et al. (2024) strategy:
-  - Single GLM: WM, CSF, 6 motion + 6 derivatives + spike regressors (+/- GSR)
-  - CBIG Lomb-Scargle interpolation + bandpass 0.01–0.1 Hz (Power et al. 2014 Eq. 3-4)
-    Bandpass via frequency-domain masking (no Butterworth).
+One parameterized core drives three independent denoising pipelines (selected by the
+`pipeline` argument) so the final results can be shown robust to denoising choice:
+
+  - "detrend" (Keskin et al. 2025 style): polynomial detrend only. No nuisance GLM,
+    no censoring, no interpolation, no bandpass.
+  - "glm": full nuisance GLM (WM, CSF, 6 motion + 6 derivatives) on detrended BOLD.
+    No censoring, no interpolation, no bandpass.
+  - "maximal" (Goldberg et al. 2024): the "glm" regressors PLUS FD>0.3 frame censoring,
+    CBIG Lomb-Scargle interpolation, and bandpass 0.01–0.1 Hz (frequency-domain mask).
+
+All three are NoGSR by default. The step toggles for each pipeline live in
+PIPELINE_PRESETS below.
+
+NOTE: an earlier spec mentioned adding "FPC/FPCsq" regressors to the maximal pipeline.
+Those turned out to be subject×session-level motion-quality covariates (pcf_diff,
+pcf_sq_diff) for the statistics-stage residualization model — one scalar per run, NOT
+per-timepoint nuisance regressors — so they are NOT added here. They belong to the
+later statistics step.
 """
 
 import gc
@@ -40,6 +54,17 @@ DERIV_COLS  = [
 ]
 GSR_COL = "global_signal"
 
+# ─── Pipeline presets (one parameterized core, three pipelines) ──────────────
+# Each preset toggles the steps in the denoising step-matrix. desc = filename tag.
+PIPELINE_PRESETS = {
+    "detrend": dict(desc="detrend", detrend_order=1,
+                    do_nuisance=False, do_censor=False, do_ls=False, do_gsr=False),
+    "glm":     dict(desc="glm",     detrend_order=1,
+                    do_nuisance=True,  do_censor=False, do_ls=False, do_gsr=False),
+    "maximal": dict(desc="maximal", detrend_order=1,
+                    do_nuisance=True,  do_censor=True,  do_ls=True,  do_gsr=False),
+}
+
 _RED   = "\033[91m"
 _RESET = "\033[0m"
 
@@ -57,22 +82,29 @@ def build_fmriprep_paths(subject: str, session: str, fmriprep_root: Path) -> dic
     }
 
 
-def build_output_paths(subject: str, session: str, output_dir: Path) -> dict:
-    """Return dict of denoised NIfTI output paths for one subject-session."""
+def build_output_path(subject: str, session: str, output_dir: Path, desc: str) -> Path:
+    """Return the denoised NIfTI output path for one subject-session × pipeline.
+
+    desc is the pipeline tag ("detrend" | "glm" | "maximal"), embedded in the
+    filename so the file is self-identifying even if moved.
+    """
     tag = f"{subject}_{session}_{TASK}"
-    return {
-        "gsr":   output_dir / f"{tag}_desc-denoisedGSR_bold.nii.gz",
-        "nogsr": output_dir / f"{tag}_desc-denoisedNoGSR_bold.nii.gz",
-    }
+    return output_dir / f"{tag}_desc-{desc}_bold.nii.gz"
 
 
 # ─── GLM helpers ─────────────────────────────────────────────────────────────
 
-def _detrend(X: np.ndarray) -> np.ndarray:
-    """Remove mean + linear trend from each column of X."""
+def _poly_detrend(X: np.ndarray, order: int = 1) -> np.ndarray:
+    """Remove a polynomial trend (intercept + up to `order`) from each column of X.
+
+    order=1 → mean + linear (the previous _detrend behaviour); order=2 adds a
+    quadratic term, etc. Time is centred and scaled to ~[-1, 1] for conditioning.
+    """
     n = X.shape[0]
     t = np.arange(n, dtype=np.float64) - (n - 1) / 2.0
-    D = np.column_stack([np.ones(n), t])
+    scale = t.max() if t.max() > 0 else 1.0
+    t = t / scale
+    D = np.column_stack([t ** p for p in range(order + 1)])
     betas, _, _, _ = np.linalg.lstsq(D, X, rcond=None)
     return X - D @ betas
 
@@ -89,8 +121,14 @@ def _build_regressors(
     confounds_df: pd.DataFrame,
     spike_idx: np.ndarray,
     include_gsr: bool,
+    include_spikes: bool = True,
 ) -> np.ndarray:
-    """Assemble (n_times, n_regressors) nuisance matrix; NaNs → 0."""
+    """Assemble (n_times, n_regressors) nuisance matrix; NaNs → 0.
+
+    WM + CSF + 6 motion + 6 derivatives, optionally + GSR, optionally + spike
+    regressors (one-hot per censored frame). Spike regressors are only added when
+    `include_spikes` is True (i.e. the "maximal" pipeline that censors).
+    """
     cols = WM_CSF_COLS + MOTION_COLS + DERIV_COLS
     if include_gsr:
         cols = cols + [GSR_COL]
@@ -98,7 +136,7 @@ def _build_regressors(
     X = confounds_df[cols].to_numpy(dtype=np.float64)
     X = np.where(np.isnan(X), 0.0, X)
 
-    if len(spike_idx) > 0:
+    if include_spikes and len(spike_idx) > 0:
         n_times = X.shape[0]
         spikes  = np.zeros((n_times, len(spike_idx)), dtype=np.float64)
         for k, frame in enumerate(spike_idx):
@@ -245,48 +283,13 @@ def sanity_check(label: str, post_data: np.ndarray,
 
 # ─── Main denoising function ──────────────────────────────────────────────────
 
-def denoise(
-    bold_data: np.ndarray,
-    mask_flat: np.ndarray,
-    confounds_df: pd.DataFrame,
+def _run_ls_interp_bandpass(
+    residuals: np.ndarray,
     spike_idx: np.ndarray,
-    include_gsr: bool,
+    n_times: int,
     verbose: bool = True,
 ) -> np.ndarray:
-    """
-    Denoise one run inside the brain mask.
-
-    Steps
-    -----
-    1. Build & prepare regressor matrix (NaN→0, detrend, z-score)
-    2. Detrend BOLD (mean + linear trend per voxel)
-    3. GLM regression; output = residuals
-    4. CBIG LS interpolation + bandpass (batched ~5000 vox/batch)
-
-    Returns (nx, ny, nz, n_times) float32; zeros outside mask.
-    """
-    n_times = bold_data.shape[3]
-    bold_2d = bold_data.reshape(-1, n_times).astype(np.float64)
-    Y       = bold_2d[mask_flat]
-
-    if verbose:
-        print(f"  [Stage 1] Raw BOLD std:                    {Y.std():.2f}")
-
-    X = _build_regressors(confounds_df, spike_idx, include_gsr)
-    X = _detrend(X)
-    X = _standardize(X)
-
-    Y_det = _detrend(Y.T).T
-
-    if verbose:
-        print(f"  [Stage 2] Post-detrend std:                {Y_det.std():.2f}")
-
-    betas, _, _, _ = np.linalg.lstsq(X, Y_det.T, rcond=None)
-    residuals = Y_det - (X @ betas).T
-
-    if verbose:
-        print(f"  [Stage 3] Post-GLM residuals std:          {residuals.std():.2f}")
-
+    """CBIG Lomb-Scargle interpolation + bandpass over all voxels (batched)."""
     good_idx  = np.setdiff1d(np.arange(n_times), spike_idx)
     n_good    = len(good_idx)
     n_interp  = len(spike_idx)
@@ -332,8 +335,69 @@ def denoise(
         print(f"  [Stage 4] Post-LS full-spectrum std:       {stage4_std:.2f}  (batch-1 sample)")
         print(f"  [Stage 5] Post-LS+bandpass std:            {filtered.std():.2f}")
 
+    return filtered
+
+
+def denoise(
+    bold_data: np.ndarray,
+    mask_flat: np.ndarray,
+    confounds_df: pd.DataFrame,
+    spike_idx: np.ndarray,
+    config: dict,
+    verbose: bool = True,
+) -> np.ndarray:
+    """
+    Denoise one run inside the brain mask, following the given pipeline preset.
+
+    `config` is one of PIPELINE_PRESETS values:
+      detrend_order : polynomial detrend order applied to BOLD (and regressors)
+      do_nuisance   : run the WM/CSF/motion GLM (False = detrend-only pipeline)
+      do_censor     : add spike regressors for FD>thresh frames (maximal only)
+      do_ls         : CBIG Lomb-Scargle interpolation + bandpass (maximal only)
+      do_gsr        : add the global-signal regressor
+
+    Returns (nx, ny, nz, n_times) float32; zeros outside mask.
+    """
+    detrend_order = config["detrend_order"]
+    n_times = bold_data.shape[3]
+    bold_2d = bold_data.reshape(-1, n_times).astype(np.float64)
+    Y       = bold_2d[mask_flat]
+
+    if verbose:
+        print(f"  [Stage 1] Raw BOLD std:                    {Y.std():.2f}")
+
+    # Polynomial detrend of BOLD (per voxel). Applied in every pipeline.
+    Y_det = _poly_detrend(Y.T, detrend_order).T
+
+    if verbose:
+        print(f"  [Stage 2] Post-detrend std:                {Y_det.std():.2f}")
+
+    if not config["do_nuisance"]:
+        # "detrend" pipeline — detrend only, no GLM / censoring / interpolation.
+        result = Y_det
+        if verbose:
+            print("  [detrend pipeline] no nuisance GLM applied")
+    else:
+        X = _build_regressors(
+            confounds_df, spike_idx,
+            include_gsr    = config["do_gsr"],
+            include_spikes = config["do_censor"],
+        )
+        X = _poly_detrend(X, detrend_order)
+        X = _standardize(X)
+
+        betas, _, _, _ = np.linalg.lstsq(X, Y_det.T, rcond=None)
+        result = Y_det - (X @ betas).T
+
+        if verbose:
+            print(f"  [Stage 3] Post-GLM residuals std:          {result.std():.2f}  "
+                  f"({X.shape[1]} regressors)")
+
+        if config["do_ls"]:
+            result = _run_ls_interp_bandpass(result, spike_idx, n_times, verbose)
+
     out_2d = np.zeros_like(bold_2d)
-    out_2d[mask_flat] = filtered
+    out_2d[mask_flat] = result
     return out_2d.reshape(bold_data.shape).astype(np.float32)
 
 
@@ -344,31 +408,36 @@ def denoise_run(
     session: str,
     fmriprep_root: Path,
     output_dir: Path,
+    pipeline: str,
     verbose: bool = True,
 ) -> dict:
     """
-    Run the full denoising pipeline for one subject-session.
+    Run one denoising pipeline for one subject-session.
 
-    Loads data, runs GLM + LS interpolation + bandpass for both +GSR and -GSR,
-    saves NIfTI outputs, frees memory.
+    Loads data, applies the selected pipeline preset, saves the NIfTI output,
+    frees memory.
 
     Parameters
     ----------
     subject      : e.g. "sub-01"
     session      : e.g. "ses-01"
     fmriprep_root: root of fMRIPrep derivatives directory
-    output_dir   : directory to write denoised NIfTI files
-    verbose      : print 5-stage diagnostics (True for single-subject, False for batch)
+    output_dir   : directory to write the denoised NIfTI (one per pipeline)
+    pipeline     : "detrend" | "glm" | "maximal"
+    verbose      : print stage diagnostics (True for single-subject, False for batch)
 
     Returns
     -------
-    dict with keys: n_frames, n_censored, pct_censored,
-                    post_std_GSR, post_std_NoGSR, gsr_path, nogsr_path
+    dict with keys: pipeline, n_frames, n_censored, pct_censored, post_std, out_path
     """
+    if pipeline not in PIPELINE_PRESETS:
+        raise ValueError(f"Unknown pipeline '{pipeline}'. "
+                         f"Expected one of {list(PIPELINE_PRESETS)}.")
+    config = PIPELINE_PRESETS[pipeline]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    paths = build_fmriprep_paths(subject, session, fmriprep_root)
-    out   = build_output_paths(subject, session, output_dir)
+    paths    = build_fmriprep_paths(subject, session, fmriprep_root)
+    out_path = build_output_path(subject, session, output_dir, config["desc"])
 
     if verbose:
         print(f"Loading BOLD:      {paths['bold']}")
@@ -386,6 +455,7 @@ def denoise_run(
         print(f"Loading confounds: {paths['confounds']}")
     confounds_df = pd.read_csv(paths["confounds"], sep="\t")
 
+    # FD / censoring is always computed for logging; only USED when config["do_censor"].
     fd        = compute_custom_fd(confounds_df, tr=TR, backward_diff_n=1, verbose=False)
     spike_idx = np.where(~np.isnan(fd) & (fd > FD_THRESH))[0]
 
@@ -394,39 +464,27 @@ def denoise_run(
     pct        = 100.0 * n_censored / n_frames
 
     if verbose:
-        print(f"\nRunning +GSR pipeline...")
-    gsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx,
-                        include_gsr=True, verbose=verbose)
-    nib.save(nib.Nifti1Image(gsr_data, affine, header), out["gsr"])
+        print(f"\nRunning '{pipeline}' pipeline "
+              f"(censoring {'ON' if config['do_censor'] else 'OFF'})...")
+    data = denoise(bold_data, mask_flat, confounds_df, spike_idx,
+                   config=config, verbose=verbose)
+    nib.save(nib.Nifti1Image(data, affine, header), out_path)
     if verbose:
-        print(f"  Saved: {out['gsr']}")
+        print(f"  Saved: {out_path}")
 
-    post_std_GSR = float(np.std(
-        gsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]
-    ))
-
-    if verbose:
-        print(f"\nRunning -GSR pipeline...")
-    nogsr_data = denoise(bold_data, mask_flat, confounds_df, spike_idx,
-                          include_gsr=False, verbose=verbose)
-    nib.save(nib.Nifti1Image(nogsr_data, affine, header), out["nogsr"])
-    if verbose:
-        print(f"  Saved: {out['nogsr']}")
-
-    post_std_NoGSR = float(np.std(
-        nogsr_data.reshape(-1, n_frames).astype(np.float64)[mask_flat]
+    post_std = float(np.std(
+        data.reshape(-1, n_frames).astype(np.float64)[mask_flat]
     ))
 
     # Free large arrays immediately
-    del bold_data, gsr_data, nogsr_data
+    del bold_data, data
     gc.collect()
 
     return {
-        "n_frames":       n_frames,
-        "n_censored":     n_censored,
-        "pct_censored":   pct,
-        "post_std_GSR":   post_std_GSR,
-        "post_std_NoGSR": post_std_NoGSR,
-        "gsr_path":       out["gsr"],
-        "nogsr_path":     out["nogsr"],
+        "pipeline":     pipeline,
+        "n_frames":     n_frames,
+        "n_censored":   n_censored,
+        "pct_censored": pct,
+        "post_std":     post_std,
+        "out_path":     out_path,
     }

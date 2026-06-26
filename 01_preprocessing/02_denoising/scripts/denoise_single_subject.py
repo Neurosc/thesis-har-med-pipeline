@@ -1,33 +1,27 @@
 #!/usr/bin/env python3
 """
-Single-subject denoising pipeline for DMT-MED fMRI data.
-Subject: sub-01, ses-01
+Single-subject denoising test (sub-01, ses-01) for one pipeline.
 
-Implements Goldberg et al. (2024) strategy:
-  - Single GLM with WM, CSF, 6 motion, 6 derivatives, spike regressors (+/- GSR)
-  - Lomb-Scargle interpolation + bandpass: faithful Python port of CBIG_preproc_censor.m
-    (Jingwei Li, Yeo Lab; Power et al. 2014 Eq. 3-4 supplementary).
-    Bandpass 0.01-0.1 Hz applied via frequency-domain masking inside LS (no Butterworth).
+Runs one of the three pipelines (detrend | glm | maximal) on sub-01 ses-01 with
+verbose stage diagnostics + sanity checks. Use to eyeball a pipeline before the
+full 78-run batch. Core logic lives in denoise_core.py.
 
-Two output versions (both include spike regressors + interpolation):
-  +GSR +censor : desc-denoisedGSR_bold.nii.gz
-  -GSR +censor : desc-denoisedNoGSR_bold.nii.gz
-
-Core pipeline logic lives in denoise_core.py (shared with denoise_batch.py).
+Usage (on server):
+  conda activate fmri
+  python 01_preprocessing/02_denoising/scripts/denoise_single_subject.py --pipeline maximal
 """
 
 import sys
+import argparse
 import numpy as np
 import nibabel as nib
 from pathlib import Path
-
-# ─── Repo / path setup ────────────────────────────────────────────────────────
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (
-    denoise_run, sanity_check,
+    denoise_run, sanity_check, PIPELINE_PRESETS,
     TR, FD_THRESH, BP_LOW, BP_HIGH, LS_OVERSAMPLE_FAC,
 )
 
@@ -36,7 +30,7 @@ from denoise_core import (
 FMRIPREP_ROOT = Path(
     "/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep"
 )
-OUT_DIR = Path(__file__).resolve().parents[1] / "results"
+RESULTS_ROOT = Path(__file__).resolve().parents[1] / "results"
 
 SUBJECT = "sub-01"
 SESSION = "ses-01"
@@ -45,47 +39,51 @@ SESSION = "ses-01"
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--pipeline", default="maximal", choices=list(PIPELINE_PRESETS),
+                        help="Which denoising pipeline to test (default: maximal).")
+    args = parser.parse_args()
+    pipeline = args.pipeline
+    out_dir  = RESULTS_ROOT / pipeline
+
     result = denoise_run(
         subject       = SUBJECT,
         session       = SESSION,
         fmriprep_root = FMRIPREP_ROOT,
-        output_dir    = OUT_DIR,
+        output_dir    = out_dir,
+        pipeline      = pipeline,
         verbose       = True,
     )
 
-    n_base = 14
+    cfg = PIPELINE_PRESETS[pipeline]
     summary = (
-        f"\n─── Denoising summary: {SUBJECT}_{SESSION} ───\n"
+        f"\n─── Denoising summary: {SUBJECT}_{SESSION} | pipeline '{pipeline}' ───\n"
+        f"Steps:                   {cfg}\n"
         f"Total frames:            {result['n_frames']}\n"
-        f"High-motion censored:    {result['n_censored']}"
-        f" ({result['pct_censored']:.1f}%)\n"
-        f"Regressors (no GSR):     {n_base} + {result['n_censored']} spikes\n"
-        f"Regressors (+GSR):       {n_base + 1} + {result['n_censored']} spikes\n"
-        f"Bandpass:                {BP_LOW}–{BP_HIGH} Hz via LS freq mask"
-        f" (ofac={LS_OVERSAMPLE_FAC})\n"
-        f"Post-denoise std (+GSR): {result['post_std_GSR']:.2f}\n"
-        f"Post-denoise std (-GSR): {result['post_std_NoGSR']:.2f}\n"
-        f"Output: {result['gsr_path']}\n"
-        f"Output: {result['nogsr_path']}\n"
+        f"High-motion frames:      {result['n_censored']} "
+        f"({result['pct_censored']:.1f}%)"
+        f"{'  [censored]' if cfg['do_censor'] else '  [NOT censored — kept]'}\n"
+        f"Bandpass:                "
+        f"{f'{BP_LOW}-{BP_HIGH} Hz via LS freq mask (ofac={LS_OVERSAMPLE_FAC})' if cfg['do_ls'] else 'none'}\n"
+        f"Post-denoise std:        {result['post_std']:.2f}\n"
+        f"Output: {result['out_path']}\n"
     )
     print(summary)
 
-    log_path = OUT_DIR / f"{SUBJECT}_{SESSION}_denoising_log.txt"
+    log_path = out_dir / f"{SUBJECT}_{SESSION}_denoising_log.txt"
     log_path.write_text(summary)
 
-    # Sanity checks on saved outputs (reload from disk to free memory during processing)
-    print("Reloading outputs for sanity check...")
+    # Sanity check on the saved output (reload from disk)
+    print("Reloading output for sanity check...")
     mask_path = (FMRIPREP_ROOT / SUBJECT / SESSION / "func"
                  / f"{SUBJECT}_{SESSION}_task-rest_space-MNI152NLin2009cAsym"
                    "_desc-brain_mask.nii.gz")
     mask_flat = nib.load(mask_path).get_fdata().astype(bool).ravel()
 
-    gsr_data   = nib.load(result["gsr_path"]).get_fdata(dtype=np.float32)
-    nogsr_data = nib.load(result["nogsr_path"]).get_fdata(dtype=np.float32)
-    pre_std    = result["post_std_NoGSR"]  # use NoGSR as rough pre-std proxy
-
-    sanity_check(f"{SUBJECT} {SESSION} +GSR",  gsr_data,   pre_std, mask_flat)
-    sanity_check(f"{SUBJECT} {SESSION} -GSR",  nogsr_data, pre_std, mask_flat)
+    out_data = nib.load(result["out_path"]).get_fdata(dtype=np.float32)
+    pre_std  = result["post_std"]   # rough proxy
+    sanity_check(f"{SUBJECT} {SESSION} {pipeline}", out_data, pre_std, mask_flat)
 
 
 if __name__ == "__main__":
