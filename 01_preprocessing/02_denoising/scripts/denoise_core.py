@@ -11,8 +11,8 @@ One parameterized core drives three independent denoising pipelines (selected by
   - "maximal" (Goldberg et al. 2024): the "glm" regressors PLUS FD>0.3 frame censoring,
     CBIG Lomb-Scargle interpolation, and bandpass 0.01–0.1 Hz (frequency-domain mask).
 
-All three are NoGSR by default. The step toggles for each pipeline live in
-PIPELINE_PRESETS below.
+No pipeline does global-signal regression (GSR is retired entirely). The step
+toggles for each pipeline live in PIPELINE_PRESETS below.
 
 NOTE: an earlier spec mentioned adding "FPC/FPCsq" regressors to the maximal pipeline.
 Those turned out to be subject×session-level motion-quality covariates (pcf_diff,
@@ -52,17 +52,16 @@ DERIV_COLS  = [
     "trans_x_derivative1", "trans_y_derivative1", "trans_z_derivative1",
     "rot_x_derivative1",   "rot_y_derivative1",   "rot_z_derivative1",
 ]
-GSR_COL = "global_signal"
-
 # ─── Pipeline presets (one parameterized core, three pipelines) ──────────────
 # Each preset toggles the steps in the denoising step-matrix. desc = filename tag.
+# GSR is NOT a pipeline option — global-signal regression is retired entirely.
 PIPELINE_PRESETS = {
     "detrend": dict(desc="detrend", detrend_order=1,
-                    do_nuisance=False, do_censor=False, do_ls=False, do_gsr=False),
+                    do_nuisance=False, do_censor=False, do_ls=False),
     "glm":     dict(desc="glm",     detrend_order=1,
-                    do_nuisance=True,  do_censor=False, do_ls=False, do_gsr=False),
+                    do_nuisance=True,  do_censor=False, do_ls=False),
     "maximal": dict(desc="maximal", detrend_order=1,
-                    do_nuisance=True,  do_censor=True,  do_ls=True,  do_gsr=False),
+                    do_nuisance=True,  do_censor=True,  do_ls=True),
 }
 
 _RED   = "\033[91m"
@@ -120,18 +119,15 @@ def _standardize(X: np.ndarray) -> np.ndarray:
 def _build_regressors(
     confounds_df: pd.DataFrame,
     spike_idx: np.ndarray,
-    include_gsr: bool,
     include_spikes: bool = True,
 ) -> np.ndarray:
     """Assemble (n_times, n_regressors) nuisance matrix; NaNs → 0.
 
-    WM + CSF + 6 motion + 6 derivatives, optionally + GSR, optionally + spike
-    regressors (one-hot per censored frame). Spike regressors are only added when
-    `include_spikes` is True (i.e. the "maximal" pipeline that censors).
+    WM + CSF + 6 motion + 6 derivatives, optionally + spike regressors (one-hot
+    per censored frame). Spike regressors are only added when `include_spikes` is
+    True (i.e. the "maximal" pipeline that censors). No global-signal regression.
     """
     cols = WM_CSF_COLS + MOTION_COLS + DERIV_COLS
-    if include_gsr:
-        cols = cols + [GSR_COL]
 
     X = confounds_df[cols].to_numpy(dtype=np.float64)
     X = np.where(np.isnan(X), 0.0, X)
@@ -354,8 +350,8 @@ def denoise(
       do_nuisance   : run the WM/CSF/motion GLM (False = detrend-only pipeline)
       do_censor     : add spike regressors for FD>thresh frames (maximal only)
       do_ls         : CBIG Lomb-Scargle interpolation + bandpass (maximal only)
-      do_gsr        : add the global-signal regressor
 
+    No global-signal regression in any pipeline (GSR retired).
     Returns (nx, ny, nz, n_times) float32; zeros outside mask.
     """
     detrend_order = config["detrend_order"]
@@ -380,7 +376,6 @@ def denoise(
     else:
         X = _build_regressors(
             confounds_df, spike_idx,
-            include_gsr    = config["do_gsr"],
             include_spikes = config["do_censor"],
         )
         X = _poly_detrend(X, detrend_order)
