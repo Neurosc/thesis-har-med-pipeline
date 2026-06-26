@@ -49,7 +49,7 @@ from utils.subject_filter import get_included_subjects
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
 FMRIPREP_ROOT = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
-DENOISING_DIR = REPO_ROOT / "01_preprocessing" / "02_denoising" / "results"
+DENOISING_DIR = REPO_ROOT / "01_denoising" / "results"
 DATA_DIR      = REPO_ROOT / "02_timeseries_extraction" / "data"
 
 GLASSER_NII  = DATA_DIR / "glasser360MNI.nii.gz"

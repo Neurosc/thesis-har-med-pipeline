@@ -9,7 +9,7 @@ using CSV, DataFrames, PlotlyJS, Printf
 # ── Paths ─────────────────────────────────────────────────────────────────────
 const REPO_ROOT    = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const SPIKE_CSV    = joinpath(REPO_ROOT, "04_statistics", "results", "fig03_spike_rois.csv")
-const BATCH_LOG    = joinpath(REPO_ROOT, "01_preprocessing", "02_denoising", "results", "_batch_log.tsv")
+const BATCH_LOG    = joinpath(REPO_ROOT, "01_denoising", "results", "_batch_log.tsv")
 const RES_DIR      = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const FIG_DIR      = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "figures")
 const ROI_FREQ_CSV = joinpath(RES_DIR, "fig04_spikeA_roi_frequency.csv")

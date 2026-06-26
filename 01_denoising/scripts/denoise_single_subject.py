@@ -8,7 +8,7 @@ full 78-run batch. Core logic lives in denoise_core.py.
 
 Usage (on server):
   conda activate fmri
-  python 01_preprocessing/02_denoising/scripts/denoise_single_subject.py --pipeline maximal
+  python 01_denoising/scripts/denoise_single_subject.py --pipeline maximal
 """
 
 import sys
@@ -17,7 +17,7 @@ import numpy as np
 import nibabel as nib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (

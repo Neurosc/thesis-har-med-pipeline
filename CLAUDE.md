@@ -65,7 +65,7 @@ fMRIPrep BOLD ──▶ 01 denoise (NoGSR) ──▶ 02 extract 6-layer sphere t
 ```
 
 - **Server steps** (raw/denoised NIfTIs only exist there):
-  1. `01_preprocessing/02_denoising/` — produces `desc-denoisedNoGSR_bold.nii.gz`.
+  1. `01_denoising/` — three NoGSR pipelines → `results/{detrend,glm,maximal}/…desc-<pipeline>_bold.nii.gz`.
   2. `02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py` — writes the
      6-layer CSVs to `02_timeseries_extraction/results/qinspheres/{layer}/`.
 - **Local steps** (timeseries CSVs are committed to the repo, so these run on Windows):
@@ -89,7 +89,7 @@ python 03_acw_analysis/scripts/02_compute_sampen.py
 thesis-har-med-pipeline/
 ├── CLAUDE.md  README.md  config.toml  participants.tsv  .gitignore
 ├── utils/                         subject_filter, motion_qc, thesis_style, config_loader.{py,jl,R}
-├── 01_preprocessing/02_denoising/ denoise_core/batch/single (NoGSR), results/ (NIfTIs server-only)
+├── 01_denoising/                 denoise_core/batch/single (3 NoGSR pipelines), results/ (NIfTIs server-only)
 ├── 02_timeseries_extraction/
 │   ├── data/                      glasser360MNI.nii.gz, CAB-NP label key  (extraction inputs)
 │   ├── scripts/01_extract_sphere_timeseries.py

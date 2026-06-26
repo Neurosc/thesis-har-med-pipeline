@@ -9,7 +9,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 *.log
-01_preprocessing/02_denoising/results/_batch_log.tsv
+01_denoising/results/_batch_log.tsv
 _old/
 *.zip
 *.mat

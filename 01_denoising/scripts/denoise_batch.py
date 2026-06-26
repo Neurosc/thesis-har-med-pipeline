@@ -8,13 +8,13 @@ thing that differs between them is the denoising. See denoise_core.PIPELINE_PRES
 
 Usage (on server):
   conda activate fmri
-  python 01_preprocessing/02_denoising/scripts/denoise_batch.py --pipeline detrend
-  python 01_preprocessing/02_denoising/scripts/denoise_batch.py --pipeline glm
-  python 01_preprocessing/02_denoising/scripts/denoise_batch.py --pipeline maximal
+  python 01_denoising/scripts/denoise_batch.py --pipeline detrend
+  python 01_denoising/scripts/denoise_batch.py --pipeline glm
+  python 01_denoising/scripts/denoise_batch.py --pipeline maximal
 
 Outputs (one self-identifying folder per pipeline)
 -------
-  01_preprocessing/02_denoising/results/<pipeline>/
+  01_denoising/results/<pipeline>/
       sub-XX_ses-YY_task-rest_desc-<pipeline>_bold.nii.gz
       _batch_log.tsv   (appended after each run)
 
@@ -28,7 +28,7 @@ import datetime
 import csv
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from denoise_core import (

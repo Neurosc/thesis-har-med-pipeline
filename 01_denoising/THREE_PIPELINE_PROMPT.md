@@ -1,7 +1,7 @@
 # Implementation Prompt — Three Parallel Denoising Pipelines
 
 > **Scope guard:** This task covers the **denoising stage only**
-> (`01_preprocessing/02_denoising/`). Do **NOT** touch timeseries extraction,
+> (`01_denoising/`). Do **NOT** touch timeseries extraction,
 > ACW computation, or the statistics pipeline. Those come in a later, separate step.
 
 ## Goal
@@ -50,7 +50,7 @@ Outputs (NIfTIs + per-pipeline log) go to **separate sibling folders**, one per
 pipeline — no shared directory, no overlap:
 
 ```
-01_preprocessing/02_denoising/results/
+01_denoising/results/
 ├── detrend/
 │   ├── sub-XX_ses-YY_task-rest_desc-detrend_bold.nii.gz
 │   └── _batch_log.tsv

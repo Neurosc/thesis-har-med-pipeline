@@ -21,7 +21,7 @@ TASK                 = "rest"
 
 FMRIPREP_ROOT = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
 REPO_ROOT     = Path(__file__).resolve().parents[3]
-OUTPUT_DIR    = REPO_ROOT / "01_preprocessing" / "01_QC" / "figures" / "respiratory_check"
+OUTPUT_DIR    = REPO_ROOT / "99_QC" / "01_motion_qc" / "figures" / "respiratory_check"
 
 MOTION_COLS   = ["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]
 RESP_BAND_LOW = 0.05     # Hz — lower edge of observable respiratory band
