@@ -89,7 +89,7 @@ python 03_acw_analysis/scripts/02_compute_sampen.py
 thesis-har-med-pipeline/
 ├── CLAUDE.md  README.md  config.toml  participants.tsv  .gitignore
 ├── utils/                         subject_filter, motion_qc, thesis_style, config_loader.{py,jl,R}
-├── 01_denoising/                 denoise_core/batch/single (3 NoGSR pipelines), results/ (NIfTIs server-only)
+├── 01_denoising/                 denoise_pipelines.py + 00_test_one_subject/01_denoise_all (3 NoGSR pipelines)
 ├── 02_timeseries_extraction/
 │   ├── data/                      glasser360MNI.nii.gz, CAB-NP label key  (extraction inputs)
 │   ├── scripts/01_extract_sphere_timeseries.py
@@ -137,7 +137,7 @@ pull. **Caveat:** git-ignored binaries (`*.nii.gz` atlases, the MNI template,
 ### Denoising — three parallel pipelines (robustness design)
 To show the final results are robust to denoising choice, the same data is denoised
 three independent ways (all volumetric MNI, all **NoGSR**). One parameterized core
-(`denoise_core.PIPELINE_PRESETS`) drives all three; pick with `--pipeline`:
+(`denoise_pipelines.PIPELINE_PRESETS`) drives all three; pick with `--pipeline`:
 
 | Pipeline | Detrend | WM+CSF | Motion 6+6 | FD>0.3 censor | LS interp | Bandpass |
 |----------|:------:|:------:|:----------:|:-------------:|:---------:|:--------:|
@@ -156,8 +156,8 @@ three independent ways (all volumetric MNI, all **NoGSR**). One parameterized co
 - LS interpolation = port of CBIG_preproc_censor.m; bandpass via frequency-domain mask
   inside LS (no Butterworth).
 - Outputs: `results/{detrend,glm,maximal}/sub-XX_ses-YY_task-rest_desc-<pipeline>_bold.nii.gz`
-  + per-pipeline `_batch_log.tsv`. Run: `denoise_batch.py --pipeline {detrend|glm|maximal}`
-  (server); test one run with `denoise_single_subject.py --pipeline <p>`.
+  + per-pipeline `_batch_log.tsv`. Run: `01_denoise_all.py --pipeline {detrend|glm|maximal}`
+  (server); test one run with `00_test_one_subject.py --pipeline <p>`.
 - **FPC/FPCsq are NOT denoising regressors.** An earlier spec listed "FPC+FPCsq" for
   the maximal pipeline; they are actually subject×session motion-quality covariates
   (`pcf_diff`, `pcf_sq_diff` from percent-censored-frames) for the statistics-stage

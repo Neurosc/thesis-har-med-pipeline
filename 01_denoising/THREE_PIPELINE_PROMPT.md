@@ -72,14 +72,14 @@ pipeline — no shared directory, no overlap:
 
 Prefer **one parameterized core** over three copy-pasted scripts (avoids drift):
 
-- `denoise_core.py` — add a `pipeline` argument (`"detrend" | "glm" | "maximal"`)
+- `denoise_pipelines.py` — add a `pipeline` argument (`"detrend" | "glm" | "maximal"`)
   that toggles each step as a boolean config: `do_nuisance`, `do_motion`,
   `do_censor`, `do_interp`, `do_bandpass`, `do_gsr`, `do_fpc`, `detrend_order`.
   Each pipeline is just one preset of these flags (the step matrix above).
-- `denoise_batch.py` — accept `--pipeline {detrend,glm,maximal}`; iterate the
+- `01_denoise_all.py` — accept `--pipeline {detrend,glm,maximal}`; iterate the
   n=39 sample from `get_pipeline_subjects()`; write to the matching folder; skip
   existing outputs; append to that pipeline's `_batch_log.tsv`.
-- `denoise_single_subject.py` — same `--pipeline` flag for the sub-01 ses-01 test.
+- `00_test_one_subject.py` — same `--pipeline` flag for the sub-01 ses-01 test.
 - Keep the existing Lomb-Scargle / bandpass implementation for the `maximal` path
   unchanged except for adding FPC/FPCsq to the regressor matrix.
 
@@ -104,7 +104,7 @@ Prefer **one parameterized core** over three copy-pasted scripts (avoids drift):
 ## Definition of done
 
 - `get_pipeline_subjects()` added (n=39), legacy filter untouched.
-- `denoise_core.py` parameterized; batch + single-subject scripts take `--pipeline`.
+- `denoise_pipelines.py` parameterized; batch + single-subject scripts take `--pipeline`.
 - Three populated folders (`detrend/`, `glm/`, `maximal/`), 78 runs each, each with
   its own `_batch_log.tsv`.
 - CLAUDE.md "Decisions Made So Far" updated to document the three-pipeline design,

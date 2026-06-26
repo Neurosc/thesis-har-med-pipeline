@@ -4,13 +4,13 @@ Batch denoising — runs ONE of the three pipelines over the n=39 sample.
 
 Three pipelines (select with --pipeline): detrend | glm | maximal. All share the
 same sample of 39 subjects (all minus sub-12) × 2 sessions = 78 runs, so the only
-thing that differs between them is the denoising. See denoise_core.PIPELINE_PRESETS.
+thing that differs between them is the denoising. See denoise_pipelines.PIPELINE_PRESETS.
 
 Usage (on server):
   conda activate fmri
-  python 01_denoising/scripts/denoise_batch.py --pipeline detrend
-  python 01_denoising/scripts/denoise_batch.py --pipeline glm
-  python 01_denoising/scripts/denoise_batch.py --pipeline maximal
+  python 01_denoising/scripts/01_denoise_all.py --pipeline detrend
+  python 01_denoising/scripts/01_denoise_all.py --pipeline glm
+  python 01_denoising/scripts/01_denoise_all.py --pipeline maximal
 
 Outputs (one self-identifying folder per pipeline)
 -------
@@ -31,7 +31,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from denoise_core import (
+from denoise_pipelines import (
     denoise_run, build_output_path, PIPELINE_PRESETS,
     TR, FD_THRESH, BP_LOW, BP_HIGH, LS_OVERSAMPLE_FAC,
 )

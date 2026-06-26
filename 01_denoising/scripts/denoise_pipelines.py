@@ -1,5 +1,5 @@
 """
-Core denoising pipeline — shared between denoise_single_subject.py and denoise_batch.py.
+Denoising pipelines library — shared by 00_test_one_subject.py and 01_denoise_all.py.
 
 One parameterized core drives three independent denoising pipelines (selected by the
 `pipeline` argument) so the final results can be shown robust to denoising choice:
