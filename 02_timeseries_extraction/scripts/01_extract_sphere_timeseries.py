@@ -50,10 +50,10 @@ from utils.subject_filter import get_included_subjects
 
 FMRIPREP_ROOT = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
 DENOISING_DIR = REPO_ROOT / "01_denoising" / "results"
-DATA_DIR      = REPO_ROOT / "02_timeseries_extraction" / "data"
+ATLAS_DIR     = REPO_ROOT / "02_timeseries_extraction" / "atlases"
 
-GLASSER_NII  = DATA_DIR / "glasser360MNI.nii.gz"
-CABNP_KEY    = DATA_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt"
+GLASSER_NII  = ATLAS_DIR / "glasser360MNI.nii.gz"
+CABNP_KEY    = ATLAS_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt"
 
 OUT_ROOT = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
 LOG_PATH = OUT_ROOT / "_sphere_extraction_log.tsv"

@@ -1,0 +1,41 @@
+parcel_id	parcel_name	hemisphere	categories	keskin_coord_x	keskin_coord_y	keskin_coord_z
+32	L_23d	L	Mental Self	0.0	-18.0	40.0
+34	L_d23ab	L	Mental Self	-4.0	-54.0	28.0
+40	L_24dd	L	Interoceptive	0.0	4.0	48.0
+50	L_MIP	L	Exteroceptive	-22.0	-64.0	50.0
+53	L_3a	L	Interoceptive	-48.0	-16.0	32.0
+61	L_a24	L	Mental Self	-6.0	48.0	0.0
+68	L_8Ad	L	Mental Self	-20.0	36.0	46.0
+69	L_9m	L	Exteroceptive	-6.0	60.0	22.0
+78	L_6r	L	Interoceptive	-56.0	6.0	6.0
+85	L_a9-46v	L	Mental Self	-24.0	50.0	22.0
+106	L_PoI2	L	Interoceptive	-40.0	-2.0	2.0
+109	L_MI	L	Exteroceptive	-36.0	18.0	-4.0
+110	L_Pir	L	Interoceptive	-20.0	-4.0	-20.0
+111	L_AVI	L	Interoceptive,Mental Self	-36.0	24.0	4.0
+112	L_AAIC	L	Exteroceptive	-36.0	18.0	-4.0
+113	L_FOP1	L	Interoceptive	-36.0	24.0	4.0
+117	L_AIP	L	Exteroceptive	-46.0	-34.0	40.0
+118	L_EC	L	Interoceptive	-20.0	-4.0	-20.0
+120	L_H	L	Interoceptive	-20.0	-4.0	-20.0
+122	L_PeEc	L	Interoceptive	-20.0	-4.0	-20.0
+132	L_TE1a	L	Mental Self	-62.0	-6.0	-18.0
+138	L_PH	L	Exteroceptive	-44.0	-68.0	-6.0
+150	L_PGi	L	Mental Self	-48.0	-66.0	28.0
+197	R_IPS1	R	Exteroceptive	26.0	-72.0	44.0
+200	R_LO1	R	Exteroceptive	38.0	-80.0	-2.0
+227	R_7PC	R	Exteroceptive	36.0	-50.0	56.0
+228	R_LIPv	R	Exteroceptive	36.0	-50.0	56.0
+237	R_p24pr	R	Exteroceptive	4.0	8.0	38.0
+243	R_8BM	R	Interoceptive	4.0	24.0	48.0
+258	R_6r	R	Exteroceptive,Mental Self	50.0	8.0	26.0
+260	R_IFJp	R	Mental Self	46.0	6.0	24.0
+262	R_IFSa	R	Exteroceptive	48.0	40.0	8.0
+285	R_PFcm	R	Interoceptive	56.0	-26.0	26.0
+287	R_TA2	R	Mental Self	52.0	10.0	-6.0
+288	R_FOP4	R	Interoceptive	34.0	14.0	12.0
+289	R_MI	R	Exteroceptive	40.0	8.0	0.0
+296	R_PFt	R	Exteroceptive	58.0	-22.0	38.0
+300	R_H	R	Interoceptive	30.0	-4.0	-24.0
+318	R_PH	R	Exteroceptive	48.0	-58.0	-12.0
+330	R_PGi	R	Mental Self	54.0	-60.0	24.0
