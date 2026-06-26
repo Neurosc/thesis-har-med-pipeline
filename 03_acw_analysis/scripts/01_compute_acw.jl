@@ -19,7 +19,10 @@ const DUMMY_VOLUMES = 6
 const ACW_TYPES     = [:auc, :tau]
 const SKIP_ZERO_LAG = false
 
-# ── Included subjects (40 total; excluded: sub-06, sub-08, sub-12, sub-26, sub-36) ──
+# ── Included subjects: 35 (excluded by FD>0.3mm censoring: sub-06/08/12/26/36) ──
+# Matches utils/subject_filter.py:get_included_subjects() — the single source of
+# truth for inclusion. The 4 censoring-excluded subjects (06/08/26/36) and sub-12
+# are NOT computed; any stray outputs for them live under _archive/.
 const SUBJECTS = [
     "sub-01", "sub-02", "sub-03", "sub-04", "sub-05",
     "sub-07",

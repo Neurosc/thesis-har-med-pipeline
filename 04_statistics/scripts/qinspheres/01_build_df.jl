@@ -15,7 +15,7 @@ const OUT_DIR   = joinpath(REPO_ROOT, "04_statistics", "results", "qinspheres", 
 const OUT_CSV   = joinpath(OUT_DIR, "qinspheres_auc.csv")
 
 const CATEGORIES = ["intero", "extero", "mental", "auditory", "motor", "visual"]
-const SUBJECTS   = ["sub-$(lpad(i,2,'0'))" for i in 1:40 if !(i in (6,8,12,26,36))]
+const SUBJECTS   = ["sub-$(lpad(i,2,'0'))" for i in 1:40 if !(i in (12,))]
 const SESSIONS   = ["ses-01", "ses-02"]
 const AUC_IDX    = 1   # acw_results[1] = AUC
 
@@ -34,7 +34,7 @@ for cat in CATEGORIES, subj in SUBJECTS, ses in SESSIONS
         continue
     end
     d = load(p)
-    ids = d["parcel_ids"]
+    ids = d["roi_ids"]
     aucs = collect(d["acw_results"][AUC_IDX])
     for (rid, a) in zip(ids, aucs)
         push!(rows, (subject    = subj,

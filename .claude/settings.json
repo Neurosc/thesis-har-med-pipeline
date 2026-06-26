@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(\"C:\\\\Program Files\\\\R\\\\R-4.6.0\\\\bin\\\\Rscript.exe\" 03_acw_analysis/scripts/03_qinspheres_scatter.R)",
+      "Bash(julia 04_statistics/scripts/qinspheres/01_build_df.jl)",
+      "PowerShell(Remove-Item -Force \"c:\\\\Users\\\\JLU-MBB\\\\thesis-har-med-pipeline\\\\03_acw_analysis\\\\results\\\\qinspheres_NoGSR\\\\qinspheres_auc.csv\" -Confirm:$false)",
+      "PowerShell(Remove-Item -Force \"c:\\\\Users\\\\JLU-MBB\\\\thesis-har-med-pipeline\\\\03_acw_analysis\\\\figures\\\\qinspheres_scatter_prepost.png\" -ErrorAction SilentlyContinue -Confirm:$false)",
+      "Bash(\"C:\\\\Program Files\\\\R\\\\R-4.6.0\\\\bin\\\\Rscript.exe\" 04_statistics/scripts/qinspheres/02_scatter.R)",
+      "Bash(python _split_visual.py)",
+      "Bash(rm \"c:/Users/JLU-MBB/thesis-har-med-pipeline/02_timeseries_extraction/results/qinspheres/vis1/\"*.csv)",
+      "Bash(rm \"c:/Users/JLU-MBB/thesis-har-med-pipeline/02_timeseries_extraction/results/qinspheres/vis2/\"*.csv)",
+      "Bash(julia 03_acw_analysis/scripts/01_compute_acw.jl)",
+      "Bash(git push *)",
+      "Bash(\"C:\\\\Program Files\\\\R\\\\R-4.6.0\\\\bin\\\\Rscript.exe\" 04_statistics/scripts/qinspheres/statistics.R)",
+      "PowerShell(& \"C:\\\\Program Files\\\\R\\\\R-4.6.0\\\\bin\\\\Rscript.exe\" \"04_statistics/scripts/qinspheres/statistics_resid.R\" 2>&1)",
+      "PowerShell(julia \"03_acw_analysis/scripts/01_compute_acw.jl\" 2>&1)",
+      "PowerShell(julia \"04_statistics/scripts/qinspheres/01_build_df.jl\" 2>&1)",
+      "Bash(julia -e \"using JLD2; d=load\\(\\\\\"c:/Users/JLU-MBB/thesis-har-med-pipeline/03_acw_analysis/results/qinspheres/intero/sub-01_ses-01.jld2\\\\\"\\); println\\(keys\\(d\\)\\)\")",
+      "Bash(julia -e \"using JLD2; d=load\\(\\\\\"c:/Users/JLU-MBB/thesis-har-med-pipeline/03_acw_analysis/results/qinspheres_NoGSR/intero/sub-01_ses-01.jld2\\\\\"\\); println\\(keys\\(d\\)\\)\")",
+      "PowerShell(head)",
+      "Bash(\"C:/Program Files/R/R-4.6.0/bin/Rscript.exe\" -)",
+      "PowerShell(& \"C:\\\\Program Files\\\\R\\\\R-4.6.0\\\\bin\\\\Rscript.exe\" \"04_statistics\\\\scripts\\\\qinspheres\\\\03_drug_effect_figures.R\")"
+    ]
+  }
+}
