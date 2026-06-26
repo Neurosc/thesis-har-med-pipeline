@@ -1,0 +1,24 @@
+"category","test","n","statistic","p"
+"Interoceptive Self","placebo_prepost_pairedt",18,-0.383494864410036,0.706106513091733
+"Interoceptive Self","verum_prepost_pairedt",17,1.76474283808587,0.0966842714013755
+"Exteroceptive Self","placebo_prepost_pairedt",18,-0.277198282407022,0.784970355512952
+"Exteroceptive Self","verum_prepost_pairedt",17,2.3670110198466,0.030877763587891
+"Mental Self","placebo_prepost_pairedt",18,-0.62946138056862,0.537415358609913
+"Mental Self","verum_prepost_pairedt",17,2.11002135811868,0.050955120132903
+"Sensory-Motor","placebo_prepost_pairedt",18,1.14480822883976,0.268151217765944
+"Sensory-Motor","verum_prepost_pairedt",17,1.99594141958307,0.0632520241887142
+"Pooled","baseline_welch_t",35,0.849746132494307,0.402276425254201
+"Pooled","baseline_mannwhitney",35,178,0.418733473186816
+"Pooled","baseline_cohens_d",35,0.289760597616724,NA
+"Interoceptive Self","baseline_welch_t",35,0.065947946449356,0.947861715525661
+"Interoceptive Self","baseline_mannwhitney",35,159,0.855953903363525
+"Interoceptive Self","baseline_cohens_d",35,0.0224873595489195,NA
+"Exteroceptive Self","baseline_welch_t",35,0.974302018248048,0.336995338587677
+"Exteroceptive Self","baseline_mannwhitney",35,183,0.330232792992423
+"Exteroceptive Self","baseline_cohens_d",35,0.328857437127084,NA
+"Mental Self","baseline_welch_t",35,0.578627410591982,0.567021867556315
+"Mental Self","baseline_mannwhitney",35,172,0.541470392439108
+"Mental Self","baseline_cohens_d",35,0.196827730045905,NA
+"Sensory-Motor","baseline_welch_t",35,0.891639309998783,0.379766556223008
+"Sensory-Motor","baseline_mannwhitney",35,179,0.399997660666238
+"Sensory-Motor","baseline_cohens_d",35,0.304047023089732,NA

@@ -1,6 +1,8 @@
-# Active configuration — edit these two values to switch the analysis pipeline.
-# All scripts (Python, Julia, R) read from this file.
+# Active configuration for the calculation pipeline.
+# The pipeline now supports a single combination: NoGSR denoising + Qin 4mm
+# spheres (6 layers). GSR and the Glasser-parcels atlas were retired (see
+# _archive/). These values are kept fixed; do not change them.
 
 [active]
-denoising_method = "NoGSR"   # options: "NoGSR" | "GSR"
-atlas_method = "parcels"      # options: "spheres" | "parcels"
+denoising_method = "NoGSR"       # fixed — GSR retired
+atlas_method = "qinspheres"      # fixed — Glasser-parcels atlas retired

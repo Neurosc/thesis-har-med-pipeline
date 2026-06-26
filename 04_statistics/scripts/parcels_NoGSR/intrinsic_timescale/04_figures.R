@@ -1,13 +1,10 @@
-# 06_figures.R — Thesis figures for the parcels / NoGSR analysis (self-contained).
-# Reads only glasser_full_dataframe.csv (output of 01), drops the 58 low-tSNR parcels,
-# computes its own p-values with base-R paired t-tests, writes figure_pvalues.csv, and
-# saves (PNG, 300 dpi):
-#   raincloud_per_category, delta_plot_per_category, delta_plot_drug_effect,
-#   retreat_effect_per_category, baseline_balance_pooled, baseline_balance_per_category,
-#   paired_prepost, auc_distribution_self_nonself, auc_distribution_all_pooled,
-#   auc_per_subject_distribution.
-# delta_plot_drug_effect reads 03_LMM.R's lmm_group_x_session.csv (run 03_LMM.R first).
-# Run from repo root:  Rscript 04_statistics/scripts/parcels_NoGSR/06_figures.R
+# 04_figures.R — INT (ACW-AUC) thesis figures, parcels / NoGSR (self-contained).
+# Reads glasser_full_dataframe.csv, drops the 58 low-tSNR parcels, computes its own
+# base-R paired-t / baseline p-values (-> descriptive_pvalues.csv), and saves PNGs
+# (300 dpi) to int_figures/, named INT_<analysis>_<what>.png. See the folder README
+# for the figure -> analysis map (selfVSnonself / retreat / drug / QC).
+#   INT_drug_catavg_significance.png  reads combined_lmm_drug_effect.csv  (run 03 first)
+# Run from repo root:  Rscript 04_statistics/scripts/parcels_NoGSR/intrinsic_timescale/04_figures.R
 
 for (pkg in c("ggplot2", "ggdist", "patchwork", "dplyr")) {
   if (!requireNamespace(pkg, quietly = TRUE))
@@ -27,10 +24,10 @@ script_dir <- function() {
   }
   normalizePath(getwd(), winslash = "/")
 }
-REPO_ROOT   <- normalizePath(file.path(script_dir(), "..", "..", ".."), winslash = "/", mustWork = FALSE)
+REPO_ROOT   <- normalizePath(file.path(script_dir(), "..", "..", "..", ".."), winslash = "/", mustWork = FALSE)
 ATLAS_LABEL <- "Glasser self ROIs"
-TABLES_DIR  <- file.path(REPO_ROOT, "04_statistics", "results", "parcels_NoGSR", "tables")
-FIGS_DIR    <- file.path(REPO_ROOT, "04_statistics", "results", "parcels_NoGSR", "figures")
+TABLES_DIR  <- file.path(REPO_ROOT, "04_statistics", "results", "parcels_NoGSR", "int_tables")
+FIGS_DIR    <- file.path(REPO_ROOT, "04_statistics", "results", "parcels_NoGSR", "int_figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
 
 DATA_CSV <- file.path(TABLES_DIR, "glasser_full_dataframe.csv")
@@ -43,7 +40,7 @@ out_png <- function(name, gg, w, h) {
   ggsave(path, gg, width = w, height = h, dpi = 300, bg = "white")
   cat(sprintf("Saved: %s\n", path))
 }
-cat(SEP, "\n06_figures.R — parcels_NoGSR\n", SEP, "\n\n", sep = "")
+cat(SEP, "\n04_figures.R — parcels_NoGSR\n", SEP, "\n\n", sep = "")
 
 # ── Constants ────────────────────────────────────────────────────────────────────
 COND_LEVELS  <- c("Placebo Pre", "Verum Pre", "Placebo Post", "Verum Post")
@@ -176,8 +173,8 @@ base_stats <- do.call(rbind, lapply(c("Pooled", CAT_ORDER), function(lab) {
              p         = c(s$p_t, s$p_mw, NA), row.names = NULL)
 }))
 pvalues <- rbind(pair_stats, base_stats)
-write.csv(pvalues, file.path(TABLES_DIR, "figure_pvalues.csv"), row.names = FALSE)
-cat(sprintf("Saved: %s (%d rows)\n", file.path(TABLES_DIR, "figure_pvalues.csv"), nrow(pvalues)))
+write.csv(pvalues, file.path(TABLES_DIR, "descriptive_pvalues.csv"), row.names = FALSE)
+cat(sprintf("Saved: %s (%d rows)\n", file.path(TABLES_DIR, "descriptive_pvalues.csv"), nrow(pvalues)))
 print(pvalues, digits = 4)
 
 # ── Figure: raincloud per category (4 conditions) ────────────────────────────────
@@ -192,7 +189,7 @@ make_panel <- function(cat_label) {
     scale_x_continuous(breaks = (1:4) * 2, labels = COND_LABELS, expand = expansion(add = c(0.65, 1.00))) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) + panel_theme()
 }
-out_png("raincloud_per_category.png",
+out_png("INT_overview_raincloud_4conditions.png",
         assemble(lapply(CAT_ORDER, make_panel),
                  sprintf("AUC per condition and category (%s)", ATLAS_LABEL)), 10, 8)
 
@@ -214,20 +211,23 @@ make_delta_panel <- function(cat_label) {
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"), expand = expansion(add = c(0.65, 1.00))) +
     labs(title = cat_label, y = "ΔAUC (post − pre, s)", x = NULL) + panel_theme()
 }
-out_png("delta_plot_per_category.png",
+out_png("INT_drug_delta_per_category.png",
         assemble(lapply(CAT_ORDER, make_delta_panel),
                  sprintf("Post − Pre AUC change per category (%s)", ATLAS_LABEL)), 10, 8)
 
 # ── Figure: delta plot with the DRUG EFFECT (group x session) significance ────────
 # One bracket per panel between placebo and verum, labelled from the per-layer
-# group:session p-value (03_LMM.R -> lmm_group_x_session.csv). Run 03_LMM.R first.
-LMM_DRUG_CSV <- file.path(TABLES_DIR, "lmm_group_x_session.csv")
+# group:session p-value (03_lmm_combined.R -> combined_lmm_drug_effect.csv). Run 03_lmm_combined.R first.
+LMM_DRUG_CSV <- file.path(TABLES_DIR, "combined_lmm_drug_effect.csv")
 if (file.exists(LMM_DRUG_CSV)) {
   drug_tbl <- read.csv(LMM_DRUG_CSV, stringsAsFactors = FALSE)
-  drug_tbl$category <- CAT_MAP[as.character(drug_tbl$self_layer)]
-  drug_p <- function(cat_label) {
+  drug_tbl$category <- CAT_MAP[as.character(drug_tbl$category)]
+  # raw p and FDR-corrected q (p_fdr written by 02_lmm_category_avg.R, family = 4 layers);
+  # fall back to raw only if an older table without p_fdr is present.
+  drug_pq <- function(cat_label) {
     r <- drug_tbl[drug_tbl$category == cat_label, ]
-    if (nrow(r)) r$p[1] else NA
+    if (!nrow(r)) return(c(p = NA_real_, q = NA_real_))
+    c(p = r$p[1], q = if ("p_fdr" %in% names(r)) r$p_fdr[1] else NA_real_)
   }
   make_delta_sig_panel <- function(cat_label) {
     d <- add_x(delta_df[delta_df$category == cat_label, ], "group")
@@ -238,18 +238,34 @@ if (file.exists(LMM_DRUG_CSV)) {
       scale_color_manual(values = DELTA_COLORS, guide = "none") +
       scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"), expand = expansion(add = c(0.65, 1.00))) +
       labs(title = cat_label, y = "ΔAUC (post − pre, s)", x = NULL) + panel_theme()
-    pv <- drug_p(cat_label); star <- sig_star(pv)
-    lab <- if (is.na(pv)) "n/a" else if (star != "") paste(star, fmt_p(pv)) else fmt_p(pv)
+    pq <- drug_pq(cat_label); star <- sig_star(pq[["q"]])   # star reflects FDR q, not raw p
+    lab <- if (is.na(pq[["p"]])) "n/a"
+           else sprintf("%sp=%.3f (q=%.3f)", if (star != "") paste0(star, " ") else "",
+                        pq[["p"]], pq[["q"]])
     sig_bracket(p, 1.6, 3.6, d$delta, lab)   # placebo (box ~1.6) vs verum (box ~3.6)
   }
-  out_png("delta_plot_drug_effect.png",
+  out_png("INT_drug_catavg_significance.png",
           assemble(lapply(CAT_ORDER, make_delta_sig_panel),
-                   sprintf("Drug effect (group x session) per category (%s)", ATLAS_LABEL)), 10, 8)
+                   sprintf("Drug effect (group × session) per category — q = FDR across 4 layers (%s)", ATLAS_LABEL)), 10, 8)
 } else {
-  cat(sprintf("Skipped drug-effect plot - run 03_LMM.R first (missing %s)\n", LMM_DRUG_CSV))
+  cat(sprintf("Skipped drug-effect plot - run 03_lmm_combined.R first (missing %s)\n", LMM_DRUG_CSV))
 }
 
-# ── Figure: retreat effect (placebo group, pre vs post; paired-t bracket) ────────
+# ── Figure: retreat effect (placebo group, pre vs post; LMM bracket) ─────────────
+LMM_PREPOST_CSV <- file.path(TABLES_DIR, "combined_lmm_prepost_by_arm.csv")
+CAT_MAP_INV <- setNames(names(CAT_MAP), CAT_MAP)  # display name -> raw layer name
+retreat_lmm_p <- function(cat_label, arm = "placebo") {
+  if (!nrow(prepost_tbl)) return(NA_real_)
+  raw <- CAT_MAP_INV[cat_label]
+  r <- prepost_tbl[prepost_tbl$group == arm & prepost_tbl$category == raw, ]
+  if (nrow(r)) r$p.value[1] else NA_real_
+}
+if (file.exists(LMM_PREPOST_CSV)) {
+  prepost_tbl <- read.csv(LMM_PREPOST_CSV, stringsAsFactors = FALSE)
+} else {
+  cat(sprintf("Warning: %s not found — run 03_lmm_combined.R first; retreat brackets will show n/a\n", LMM_PREPOST_CSV))
+  prepost_tbl <- data.frame()
+}
 plac_means <- subj_means[subj_means$group == "placebo", ]
 make_retreat_panel <- function(cat_label) {
   d <- plac_means[plac_means$category == cat_label, ]
@@ -261,9 +277,9 @@ make_retreat_panel <- function(cat_label) {
     scale_color_manual(values = SESSION_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Pre", "Post"), expand = expansion(add = c(0.65, 1.00))) +
     labs(title = cat_label, y = "Mean AUC (s)", x = NULL) + panel_theme()
-  sig_bracket(p, 1.6, 3.6, d$mean_auc, fmt_p(pp(cat_label, "placebo")))
+  sig_bracket(p, 1.6, 3.6, d$mean_auc, fmt_p(retreat_lmm_p(cat_label)))
 }
-out_png("retreat_effect_per_category.png",
+out_png("INT_retreat_per_category.png",
         assemble(lapply(CAT_ORDER, make_retreat_panel),
                  "Meditation retreat effect (placebo group)"), 10, 8)
 
@@ -285,9 +301,9 @@ make_base_panel <- function(d_in, panel_title) {
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"), expand = expansion(add = c(0.65, 1.00))) +
     labs(title = panel_title, y = "Mean AUC (s)", x = NULL) + panel_theme()
 }
-out_png("baseline_balance_pooled.png",
+out_png("INT_QC_baseline_balance_pooled.png",
         make_base_panel(ses01_subj(), "Baseline balance — all regions pooled (ses-01)"), 5, 6)
-out_png("baseline_balance_per_category.png",
+out_png("INT_QC_baseline_balance_per_category.png",
         assemble(lapply(CAT_ORDER, function(cat) make_base_panel(ses01_subj(cat), cat)),
                  "Baseline balance by category (ses-01)"), 10, 8)
 
@@ -325,16 +341,16 @@ make_paired_panel <- function(cat_label) {
     annotate("segment", x = 1.0, xend = 2.0, y = y_br1, yend = y_br1, color = "#CD5C5C", linewidth = 0.5) +
     annotate("segment", x = 1.0, xend = 1.0, y = y_br1, yend = y_t1,  color = "#CD5C5C", linewidth = 0.5) +
     annotate("segment", x = 2.0, xend = 2.0, y = y_br1, yend = y_t1,  color = "#CD5C5C", linewidth = 0.5) +
-    annotate("text", x = 1.5, y = y_br1 + y_span * 0.02, label = fmt_p(pp(cat_label, "placebo")),
+    annotate("text", x = 1.5, y = y_br1 + y_span * 0.02, label = fmt_p(retreat_lmm_p(cat_label)),
              size = 3, hjust = 0.5, color = "#CD5C5C") +
     annotate("segment", x = 3.2, xend = 4.2, y = y_br2, yend = y_br2, color = "#4682B4", linewidth = 0.5) +
     annotate("segment", x = 3.2, xend = 3.2, y = y_br2, yend = y_t2,  color = "#4682B4", linewidth = 0.5) +
     annotate("segment", x = 4.2, xend = 4.2, y = y_br2, yend = y_t2,  color = "#4682B4", linewidth = 0.5) +
-    annotate("text", x = 3.7, y = y_br2 + y_span * 0.02, label = fmt_p(pp(cat_label, "verum")),
+    annotate("text", x = 3.7, y = y_br2 + y_span * 0.02, label = fmt_p(retreat_lmm_p(cat_label, "verum")),
              size = 3, hjust = 0.5, color = "#4682B4") +
     coord_cartesian(ylim = c(NA, y_br2 + y_span * 0.10))
 }
-out_png("paired_prepost.png",
+out_png("INT_retreat_paired_prepost.png",
         assemble(lapply(CAT_ORDER, make_paired_panel), "Pre → Post AUC change by drug group"), 10, 10)
 
 # ══ AUC distribution QC ══════════════════════════════════════════════════════════
@@ -356,49 +372,33 @@ dist_theme <- function() theme_minimal(base_size = 12, base_family = "serif") +
 
 self_v <- df_raw$auc[df_raw$atlas == "self"]; nonself_v <- df_raw$auc[df_raw$atlas == "nonself"]
 print_summary("Self", self_v); print_summary("Nonself", nonself_v)
-plot_df1 <- data.frame(
-  auc   = c(self_v[is.finite(self_v)], nonself_v[is.finite(nonself_v)]),
-  atlas = factor(c(rep("Self", sum(is.finite(self_v))), rep("Nonself", sum(is.finite(nonself_v)))),
-                 levels = c("Self", "Nonself")))
-COLORS1 <- c(Self = "#123434", Nonself = "#2E8B8B")
-LABELS1 <- c(Self = sprintf("Self (N=%d)", sum(is.finite(self_v))),
-             Nonself = sprintf("Nonself (N=%d)", sum(is.finite(nonself_v))))
-out_png("auc_distribution_self_nonself.png",
-  ggplot(plot_df1, aes(x = auc, fill = atlas, color = atlas)) +
-    geom_density(alpha = 0.20, adjust = 0.8, linewidth = 1.0) +
-    scale_fill_manual(values = COLORS1, labels = LABELS1, name = NULL) +
-    scale_color_manual(values = COLORS1, labels = LABELS1, name = NULL) +
-    labs(title = sprintf("AUC distribution — self vs nonself (%s)", ATLAS_LABEL),
+all_auc_v <- df_raw$auc[is.finite(df_raw$auc)]
+out_png("INT_overall_auc_density.png",
+  ggplot(data.frame(auc = all_auc_v), aes(x = auc)) +
+    geom_density(alpha = 0.20, adjust = 1.8, linewidth = 1.0, fill = "#2E8B8B", color = "#2E8B8B") +
+    labs(title = "Overall AUC distribution",
          x = "AUC (seconds)", y = "Density") +
-    dist_theme() +
-    theme(legend.position = c(0.82, 0.85),
-          legend.background = element_rect(fill = "white", color = "gray80", linewidth = 0.3)),
-  8, 6)
-
-auc_all <- df_raw$auc[is.finite(df_raw$auc)]
-print_summary("All parcels (pooled)", df_raw$auc)
-out_png("auc_distribution_all_pooled.png",
-  ggplot(data.frame(auc = auc_all), aes(x = auc)) +
-    geom_density(fill = "#2E8B8B", color = "#2E8B8B", alpha = 0.50, adjust = 0.8, linewidth = 0.7) +
-    geom_rug(data = data.frame(auc = sample(auc_all, min(500, length(auc_all)))),
-             color = "#2E8B8B", alpha = 0.25, linewidth = 0.3) +
-    labs(title = sprintf("AUC distribution — all %s (pooled)", ATLAS_LABEL),
-         x = "AUC (seconds)", y = "Density") + dist_theme(),
+    dist_theme(),
   8, 6)
 
 GROUP_COLORS3 <- c(placebo = "#CD5C5C", verum = "#4682B4")
-make_subject_panel <- function(atlas_val, session_val, panel_title, show_legend = FALSE) {
-  d <- df_raw[df_raw$atlas == atlas_val & as.character(df_raw$session) == session_val & is.finite(df_raw$auc), ]
-  d$subject_f  <- factor(d$subject, levels = names(sort(tapply(d$auc, d$subject, median, na.rm = TRUE))))
-  d$drug_group <- factor(d$drug_group, levels = c("placebo", "verum"))
-  ggplot(d, aes(x = subject_f, y = auc, fill = drug_group)) +
-    geom_hline(yintercept = median(d$auc, na.rm = TRUE), linetype = "dashed",
+subj_overall <- df_raw[is.finite(df_raw$auc), ] %>%
+  group_by(subject, session, drug_group) %>%
+  summarise(mean_auc = mean(auc, na.rm = TRUE), .groups = "drop")
+subj_overall$drug_group <- factor(subj_overall$drug_group, levels = c("placebo", "verum"))
+subj_order <- names(sort(tapply(subj_overall$mean_auc, subj_overall$subject, mean, na.rm = TRUE)))
+
+make_overall_subj_panel <- function(session_val, panel_title, show_legend = FALSE) {
+  d <- subj_overall[as.character(subj_overall$session) == session_val, ]
+  d$subject_f <- factor(d$subject, levels = subj_order)
+  ggplot(d, aes(x = subject_f, y = mean_auc, fill = drug_group)) +
+    geom_hline(yintercept = median(d$mean_auc, na.rm = TRUE), linetype = "dashed",
                color = "gray50", linewidth = 0.5) +
-    geom_boxplot(outlier.size = 0.6, outlier.alpha = 0.4, linewidth = 0.35, width = 0.75) +
+    geom_col(width = 0.7) +
     scale_fill_manual(values = GROUP_COLORS3, name = NULL,
                       labels = c(placebo = "Placebo", verum = "Verum")) +
     scale_x_discrete(labels = function(x) sub("sub-0?", "", x)) +
-    labs(title = panel_title, y = "AUC (s)", x = NULL) +
+    labs(title = panel_title, y = "Mean AUC (s)", x = NULL) +
     theme_minimal(base_size = 9, base_family = "serif") +
     theme(panel.background = element_rect(fill = "white", color = NA),
           plot.background  = element_rect(fill = "white", color = NA),
@@ -408,12 +408,12 @@ make_subject_panel <- function(atlas_val, session_val, panel_title, show_legend 
           plot.title   = element_text(face = "plain", hjust = 0.5, size = 10, family = "serif"),
           legend.position = if (show_legend) "bottom" else "none")
 }
-subj_panels <- list(
-  make_subject_panel("self",    "ses-01", "Self — Pre (ses-01)"),
-  make_subject_panel("self",    "ses-02", "Self — Post (ses-02)", show_legend = TRUE),
-  make_subject_panel("nonself", "ses-01", "Nonself — Pre (ses-01)"),
-  make_subject_panel("nonself", "ses-02", "Nonself — Post (ses-02)"))
-out_png("auc_per_subject_distribution.png",
-        assemble(subj_panels, "Per-subject AUC distribution by atlas × session"), 12, 8)
+out_png("INT_overall_per_subject.png",
+        (make_overall_subj_panel("ses-01", "Pre (ses-01)") /
+         make_overall_subj_panel("ses-02", "Post (ses-02)", show_legend = TRUE)) +
+        plot_annotation(title = "Individual mean AUC — all parcels",
+          theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
+                                                  size = 12, family = "serif"))),
+        12, 7)
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")

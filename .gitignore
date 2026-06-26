@@ -14,3 +14,5 @@ _old/
 *.zip
 *.mat
 HCP_MMP1_atlas/
+# Exceeds GitHub's 100 MB limit — kept locally only
+99_QC/03_acw_qc/figures/category_region_maps_surface.pdf
