@@ -8,10 +8,10 @@
 # Parameters: TR 1.8 s; dummy volumes = 6; n_lags = 100; acwtypes = [:auc, :tau]
 #
 # Input  : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/{sub}_{ses}_{layer}_timeseries.csv
-# Output : 03_acw_analysis/results/acw/{pipeline}/{layer}/{sub}_{ses}.jld2
+# Output : 03_intrinsic_neural_metrics/results/acw/{pipeline}/{layer}/{sub}_{ses}.jld2
 #          JLD2 vars: acw_results (ACWResults; [1]=AUC, [2]=tau), parcel_ids (Vector{String})
 #
-# Run from repo root:  julia 03_acw_analysis/scripts/01_compute_acw.jl
+# Run from repo root:  julia 03_intrinsic_neural_metrics/scripts/01_compute_acw.jl
 # Idempotent: skips runs whose output JLD2 already exists.
 
 using IntrinsicTimescales, CSV, DataFrames, JLD2, Statistics
@@ -44,7 +44,7 @@ const SESSIONS = ["ses-01", "ses-02"]
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 const TS_BASE  = joinpath(REPO_ROOT, "02_timeseries_extraction", "results", "qinspheres")
-const OUT_BASE = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
+const OUT_BASE = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "acw")
 
 # ── Main loop ────────────────────────────────────────────────────────────────
 TOTAL     = length(PIPELINES) * length(LAYERS) * length(SUBJECTS) * length(SESSIONS)

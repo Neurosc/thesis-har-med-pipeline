@@ -70,16 +70,16 @@ fMRIPrep BOLD ──▶ 01 denoise (NoGSR) ──▶ 02 extract 6-layer sphere t
      6-layer CSVs from **all three** denoising pipelines (n=39 subjects) to
      `results/qinspheres/{detrend,glm,maximal}/{layer}/`. CSVs are committed to git.
 - **Local steps** (timeseries CSVs are committed to the repo, so these run on Windows):
-  3a. `03_acw_analysis/scripts/01_compute_acw.jl` — ACW (3 pipelines) → `results/acw/{pipeline}/{layer}/`.
-  3b. `03_acw_analysis/scripts/02_compute_sampen.py` — SampEn (3 pipelines) → `results/sampen/{pipeline}/{layer}/`.
+  3a. `03_intrinsic_neural_metrics/scripts/01_compute_acw.jl` — ACW (3 pipelines) → `results/acw/{pipeline}/{layer}/`.
+  3b. `03_intrinsic_neural_metrics/scripts/02_compute_sampen.py` — SampEn (3 pipelines) → `results/sampen/{pipeline}/{layer}/`.
 
 ### Run order
 ```
 # Server (conda env: fmri)
 python 02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py
 # Local (or server)
-julia  03_acw_analysis/scripts/01_compute_acw.jl          # 3 pipelines × 6 layers × 39 subj
-python 03_acw_analysis/scripts/02_compute_sampen.py      # 3 pipelines × 6 layers × 39 subj
+julia  03_intrinsic_neural_metrics/scripts/01_compute_acw.jl          # 3 pipelines × 6 layers × 39 subj
+python 03_intrinsic_neural_metrics/scripts/02_compute_sampen.py      # 3 pipelines × 6 layers × 39 subj
 ```
 
 ---
@@ -95,7 +95,7 @@ thesis-har-med-pipeline/
 │   ├── atlases/                   glasser360MNI + CAB-NP key (inputs) + self/nonself coords + metadata
 │   ├── scripts/01_extract_sphere_timeseries.py   (extracts from all 3 denoising pipelines)
 │   └── results/qinspheres/{detrend,glm,maximal}/{layer}/   39×2 CSVs each (committed)
-├── 03_acw_analysis/
+├── 03_intrinsic_neural_metrics/
 │   ├── scripts/01_compute_acw.jl          (ACW, 3 pipelines)
 │   ├── scripts/02_compute_sampen.py       (SampEn, 3 pipelines)
 │   └── results/acw/{pipeline}/{layer}/  + results/sampen/{pipeline}/{layer}/

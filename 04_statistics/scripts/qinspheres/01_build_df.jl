@@ -1,7 +1,7 @@
 # 01_build_df.jl — Extract qinspheres ACW-AUC into a flat CSV.
-# Reads JLD2s from 03_acw_analysis/results/qinspheres_NoGSR/{category}/{sub}_{ses}.jld2
+# Reads JLD2s from 03_intrinsic_neural_metrics/results/qinspheres_NoGSR/{category}/{sub}_{ses}.jld2
 # and writes one row per (subject, session, category, roi) to:
-#   03_acw_analysis/results/qinspheres_NoGSR/qinspheres_auc.csv
+#   03_intrinsic_neural_metrics/results/qinspheres_NoGSR/qinspheres_auc.csv
 #
 # Run from repo root:
 #   julia 04_statistics/scripts/qinspheres/01_build_df.jl
@@ -9,7 +9,7 @@
 using JLD2, CSV, DataFrames, Printf
 
 const REPO_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
-const JLD2_DIR  = joinpath(REPO_ROOT, "03_acw_analysis", "results", "qinspheres_NoGSR")
+const JLD2_DIR  = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "qinspheres_NoGSR")
 const PARTS_TSV = joinpath(REPO_ROOT, "participants.tsv")
 const OUT_DIR   = joinpath(REPO_ROOT, "04_statistics", "results", "qinspheres", "tables")
 const OUT_CSV   = joinpath(OUT_DIR, "qinspheres_auc.csv")

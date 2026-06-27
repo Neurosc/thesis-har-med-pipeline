@@ -14,7 +14,7 @@ const WIDE_CSV  = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results",
 const OUT_DIR   = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "figures")
 const FIG_PATH  = joinpath(OUT_DIR, "fig_stuck_recompute_scrollable.html")
 
-# ── ACW constants (must match 03_acw_analysis/scripts/01_compute_acw.jl) ──────
+# ── ACW constants (must match 03_intrinsic_neural_metrics/scripts/01_compute_acw.jl) ──────
 const FS      = 1.0 / 1.8
 const N_LAGS  = 100
 const N_CASES = 10

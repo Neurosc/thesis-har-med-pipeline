@@ -19,12 +19,12 @@ Steps for each run × layer:
   4. Compute SampEn per ROI with EntropyHub (m=1, tau=1, r=0.3, log base 2)
 
 Inputs  : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/{sub}_{ses}_{layer}_timeseries.csv
-Outputs : 03_acw_analysis/results/sampen/{pipeline}/{layer}/{sub}_{ses}_{layer}_sampen.csv
-          03_acw_analysis/results/sampen/{pipeline}/sampen_long_{pipeline}.csv
-          03_acw_analysis/figures/sampen_detrend_check_{pipeline}_{sub}_{ses}_{layer}.png  (one QC)
+Outputs : 03_intrinsic_neural_metrics/results/sampen/{pipeline}/{layer}/{sub}_{ses}_{layer}_sampen.csv
+          03_intrinsic_neural_metrics/results/sampen/{pipeline}/sampen_long_{pipeline}.csv
+          03_intrinsic_neural_metrics/figures/sampen_detrend_check_{pipeline}_{sub}_{ses}_{layer}.png  (one QC)
 
 Run (local or server):
-  python 03_acw_analysis/scripts/02_compute_sampen.py
+  python 03_intrinsic_neural_metrics/scripts/02_compute_sampen.py
 """
 
 import sys
@@ -62,8 +62,8 @@ LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 TS_BASE     = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
-SAMPEN_BASE = REPO_ROOT / "03_acw_analysis" / "results" / "sampen"
-FIG_DIR     = REPO_ROOT / "03_acw_analysis" / "figures"
+SAMPEN_BASE = REPO_ROOT / "03_intrinsic_neural_metrics" / "results" / "sampen"
+FIG_DIR     = REPO_ROOT / "03_intrinsic_neural_metrics" / "figures"
 PARTS_TSV   = REPO_ROOT / "participants.tsv"
 
 

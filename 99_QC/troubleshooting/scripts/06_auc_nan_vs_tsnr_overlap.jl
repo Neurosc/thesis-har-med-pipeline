@@ -11,7 +11,7 @@ using CSV, DataFrames, JLD2, Statistics, Printf
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 const REPO_ROOT   = normpath(joinpath(@__DIR__, "..", "..", ".."))
-const ACW_BASE    = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
+const ACW_BASE    = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "acw")
 const VERSION     = "denoisedNoGSR"
 const EXCL_CSV    = joinpath(REPO_ROOT, "04_statistics", "results",
                              "excluded_rois_translated.csv")

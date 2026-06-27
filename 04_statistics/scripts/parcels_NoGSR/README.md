@@ -23,7 +23,7 @@ Outputs land in metric-tagged folders under `04_statistics/results/parcels_NoGSR
 03_lmm_per_parcel.R       LMM #2: auc ~ group*session + (1|subject), one fit per parcel
 04_figures.R              12 figures + descriptive_pvalues.csv  (run 02 & 03 first)
 ```
-Upstream: ACW itself is computed in `03_acw_analysis/scripts/01_compute_acw.jl`.
+Upstream: ACW itself is computed in `03_intrinsic_neural_metrics/scripts/01_compute_acw.jl`.
 
 ### SampEn — `sample_entropy/`
 ```
@@ -32,7 +32,7 @@ Upstream: ACW itself is computed in `03_acw_analysis/scripts/01_compute_acw.jl`.
 02_lmm_per_parcel.R       LMM #2: sampen ~ group*session + (1|subject), one fit per parcel
 03_figures.R              12 figures + descriptive_pvalues.csv  (run 01 & 02 first)
 ```
-Upstream: SampEn is computed in `03_acw_analysis/scripts/compute_sampen.py`.
+Upstream: SampEn is computed in `03_intrinsic_neural_metrics/scripts/compute_sampen.py`.
 
 Run R with `C:\Program Files\R\R-4.6.0\bin\Rscript.exe` (not on PATH); Julia 1.12 local.
 The dataframes already exist, so re-running only the LMM + figures scripts regenerates
@@ -110,7 +110,7 @@ Superseded INT tables from the old config-driven pipeline are archived in
 **SampEn dataframe is frozen.** `sampen_full_dataframe.csv` was produced by an earlier
 build step whose script is lost. Its parcel counts (nonself = 100 parcels / 6998 rows,
 Interoception = 11, Cognition = 10) **do not match** the current per-run SampEn CSVs in
-`03_acw_analysis/results/sampen/` (which give nonself = 320, Interoception = 14,
+`03_intrinsic_neural_metrics/results/sampen/` (which give nonself = 320, Interoception = 14,
 Cognition = 12 — the same structure as INT). It is preserved verbatim because it is what
 the existing SampEn results come from; it is **not** regenerated here. The nonself layer is
 labelled `somatomotor` in this file, but that 100-parcel set is **not** the CAB-NP

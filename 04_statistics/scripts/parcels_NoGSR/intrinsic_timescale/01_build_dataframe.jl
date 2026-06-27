@@ -7,7 +7,7 @@
 using JLD2, DataFrames, CSV, Printf
 
 const REPO_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", ".."))
-const PARCELS   = joinpath(REPO_ROOT, "03_acw_analysis", "results", "parcels_NoGSR")
+const PARCELS   = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "parcels_NoGSR")
 const OUT_DIR   = joinpath(REPO_ROOT, "04_statistics", "results", "parcels_NoGSR", "int_tables")
 const PARTS_TSV = joinpath(REPO_ROOT, "participants.tsv")
 const LABEL_KEY = joinpath(REPO_ROOT, "02_timeseries_extraction", "data",

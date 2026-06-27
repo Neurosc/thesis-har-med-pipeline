@@ -21,7 +21,7 @@ const ATLAS_FILE = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                              "glasser_coordinates_nonself_clean_1mm.txt")
 const SELF_LAB   = joinpath(REPO_ROOT, "_old", "Thesis", "01_atlases",
                              "self_labels.txt")
-const ACW_BASE   = joinpath(REPO_ROOT, "03_acw_analysis", "results", "acw")
+const ACW_BASE   = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "acw")
 const OUT_DIR    = joinpath(REPO_ROOT, "99_QC", "troubleshooting", "results")
 const OUT_CSV    = joinpath(OUT_DIR, "stuck_remaining_after_tsnr.csv")
 
