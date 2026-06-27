@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 """
-Compute Sample Entropy (SampEn) per ROI for the six Qin-sphere layers.
+Compute Sample Entropy (SampEn) per ROI for the three-pipeline DMT-MED design.
 
-Companion to 01_compute_acw.jl — same input timeseries, same 6-layer design,
-NoGSR only. Runs on the sphere timeseries produced by
-02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py.
+Loops the three denoising pipelines (detrend/glm/maximal) × six Qin-sphere layers,
+reading the qinspheres timeseries and writing one SampEn CSV per (pipeline, layer,
+subject, session) plus a per-pipeline long table. Sample = 39 (all minus sub-12),
+matching the extraction; the 35-subject inclusion filter is applied later at stats.
 
-Layers (Qin et al. 2020 self + CAB-NP nonself, 4mm spheres):
-    intero · extero · mental    (self)
-    visual · motor  · auditory  (nonself)
+Companion to 01_compute_acw.jl — same inputs, same design, NoGSR (all pipelines).
+
+Layers: intero · extero · mental (self) | visual · motor · auditory (nonself)
 
 Steps for each run × layer:
   1. Load the sphere timeseries CSV (timepoints × ROIs)
   2. Drop the first 6 dummy volumes (matches the ACW pipeline)
-  3. Linear detrend each ROI column (slow-drift removal; bandpass already applied
-     during denoising)
+  3. Linear detrend each ROI column (slow-drift removal; bandpass — where applied —
+     already happened during denoising)
   4. Compute SampEn per ROI with EntropyHub (m=1, tau=1, r=0.3, log base 2)
 
-Outputs (self-contained under the ACW analysis tree — no statistics coupling)
--------
-  Per-run CSV: 03_acw_analysis/results/sampen_qinspheres/{sub}_{ses}_{layer}_sampen.csv
-  Long table:  03_acw_analysis/results/sampen_qinspheres/sampen_long_qinspheres.csv
-  QC figure:   03_acw_analysis/figures/sampen_detrend_check_{sub}_{ses}_{layer}.png
+Inputs  : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/{sub}_{ses}_{layer}_timeseries.csv
+Outputs : 03_acw_analysis/results/sampen/{pipeline}/{layer}/{sub}_{ses}_{layer}_sampen.csv
+          03_acw_analysis/results/sampen/{pipeline}/sampen_long_{pipeline}.csv
+          03_acw_analysis/figures/sampen_detrend_check_{pipeline}_{sub}_{ses}_{layer}.png  (one QC)
 
 Run (local or server):
   python 03_acw_analysis/scripts/02_compute_sampen.py
@@ -44,7 +44,7 @@ except ImportError:
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
-from utils.subject_filter import get_included_subjects
+from utils.subject_filter import get_pipeline_subjects
 
 # ── SampEn parameters (Keskin et al. Temporal Imprecision conventions) ──────────
 M       = 1    # embedding dimension
@@ -55,16 +55,16 @@ LOGBASE = 2    # log base 2 (Northoff-lab convention)
 # ── Dataset constants ──────────────────────────────────────────────────────────
 DUMMY_VOLUMES = 6  # volumes dropped at the start (matches the ACW pipeline)
 
-SUBJECTS = get_included_subjects()       # 35 included subjects
-SESSIONS = ["ses-01", "ses-02"]
-LAYERS   = ["intero", "extero", "mental", "visual", "motor", "auditory"]
+PIPELINES = ["detrend", "glm", "maximal"]
+SUBJECTS  = get_pipeline_subjects()       # 39 (all minus sub-12)
+SESSIONS  = ["ses-01", "ses-02"]
+LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-TS_DIR     = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
-SAMPEN_DIR = REPO_ROOT / "03_acw_analysis" / "results" / "sampen_qinspheres"
-FIG_DIR    = REPO_ROOT / "03_acw_analysis" / "figures"
-LONG_CSV   = SAMPEN_DIR / "sampen_long_qinspheres.csv"
-PARTS_TSV  = REPO_ROOT / "participants.tsv"
+TS_BASE     = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
+SAMPEN_BASE = REPO_ROOT / "03_acw_analysis" / "results" / "sampen"
+FIG_DIR     = REPO_ROOT / "03_acw_analysis" / "figures"
+PARTS_TSV   = REPO_ROOT / "participants.tsv"
 
 
 def load_drug_groups():
@@ -74,10 +74,7 @@ def load_drug_groups():
 
 
 def load_timeseries(csv_path):
-    """Load a sphere timeseries CSV → (roi_ids, array of shape (n_tp, n_roi)).
-
-    The CSV has a Timepoint index column followed by one column per ROI.
-    """
+    """Load a sphere timeseries CSV → (roi_ids, array of shape (n_tp, n_roi))."""
     df = pd.read_csv(csv_path)
     roi_ids = [str(c) for c in df.columns[1:]]
     ts      = df.iloc[:, 1:].to_numpy(dtype=float)
@@ -85,11 +82,7 @@ def load_timeseries(csv_path):
 
 
 def compute_sampen(ts, roi_ids):
-    """SampEn for each ROI column. Returns (values, bad_rois).
-
-    values  -- array of SampEn values (NaN where the computation failed)
-    bad_rois -- list of ROI IDs that returned NaN/Inf or had non-finite data
-    """
+    """SampEn for each ROI column. Returns (values, bad_rois)."""
     values, bad_rois = [], []
     for i, roi in enumerate(roi_ids):
         col = ts[:, i]
@@ -108,13 +101,13 @@ def compute_sampen(ts, roi_ids):
     return np.array(values, dtype=float), bad_rois
 
 
-def save_qc_plot(ts_raw_col, ts_det_col, subject, session, layer, roi):
+def save_qc_plot(ts_raw_col, ts_det_col, pipeline, subject, session, layer, roi):
     """Save a before/after detrend plot for one ROI to check preprocessing."""
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     fig, (ax_raw, ax_det) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
     ax_raw.plot(ts_raw_col, color="#444444", lw=1.0)
-    ax_raw.set_title(f"{subject} {session} | {layer} ROI {roi} — raw (after dummy removal)")
+    ax_raw.set_title(f"{pipeline} | {subject} {session} | {layer} ROI {roi} — raw (after dummy removal)")
     ax_raw.set_ylabel("BOLD signal")
 
     ax_det.plot(ts_det_col, color="#1f77b4", lw=1.0)
@@ -124,16 +117,16 @@ def save_qc_plot(ts_raw_col, ts_det_col, subject, session, layer, roi):
     ax_det.set_ylabel("BOLD signal")
 
     fig.tight_layout()
-    out = FIG_DIR / f"sampen_detrend_check_{subject}_{session}_{layer}.png"
+    out = FIG_DIR / f"sampen_detrend_check_{pipeline}_{subject}_{session}_{layer}.png"
     fig.savefig(out, dpi=300)
     plt.close(fig)
     print(f"  [QC] Detrend figure saved: {out}")
 
 
-def first_run_sanity_check(values, ts_raw, ts_det, subject, session, layer, roi_ids):
+def first_run_sanity_check(values, ts_raw, ts_det, pipeline, subject, session, layer, roi_ids):
     """Print basic statistics and save a QC plot for the first processed run."""
     finite = values[np.isfinite(values)]
-    print(f"\n  First-run sanity check ({subject} {session} {layer})")
+    print(f"\n  First-run sanity check ({pipeline} {subject} {session} {layer})")
     print(f"  SampEn: n={finite.size}, min={finite.min():.3f}, max={finite.max():.3f}, "
           f"mean={finite.mean():.3f}, sd={finite.std():.3f}")
 
@@ -145,36 +138,36 @@ def first_run_sanity_check(values, ts_raw, ts_det, subject, session, layer, roi_
 
     first_valid = int(np.flatnonzero(np.isfinite(values))[0])
     save_qc_plot(ts_raw[:, first_valid], ts_det[:, first_valid],
-                 subject, session, layer, roi_ids[first_valid])
+                 pipeline, subject, session, layer, roi_ids[first_valid])
     print()
 
 
-def main():
-    print("=" * 70)
-    print("02_compute_sampen.py — Sample Entropy per ROI (Qin-sphere layers)")
-    print(f"  SampEn params: m={M}, tau={TAU}, r={R} (absolute), log base={LOGBASE}")
-    print(f"  Dummy volumes discarded: {DUMMY_VOLUMES}")
-    print(f"  Subjects: {len(SUBJECTS)}, Sessions: {len(SESSIONS)}, Layers: {len(LAYERS)}")
-    print("=" * 70, "\n")
+def process_pipeline(pipeline, drug_groups, first_run_done):
+    """Run SampEn for every layer × subject × session of one pipeline.
 
-    drug_groups = load_drug_groups()
-    SAMPEN_DIR.mkdir(parents=True, exist_ok=True)
+    Returns (completed, failed, first_run_done).
+    """
+    ts_base     = TS_BASE / pipeline
+    sampen_base = SAMPEN_BASE / pipeline
+    long_csv    = sampen_base / f"sampen_long_{pipeline}.csv"
+    sampen_base.mkdir(parents=True, exist_ok=True)
 
-    all_rows       = []
-    total_runs     = len(LAYERS) * len(SUBJECTS) * len(SESSIONS)
-    completed      = 0
-    failed         = 0
-    first_run_done = False
+    all_rows  = []
+    completed = 0
+    failed    = 0
+    total     = len(LAYERS) * len(SUBJECTS) * len(SESSIONS)
+
+    print(f"\n{'='*60}\nPIPELINE: {pipeline}\n{'='*60}")
 
     for layer in LAYERS:
-        ts_dir = TS_DIR / layer
-
+        out_dir = sampen_base / layer
+        out_dir.mkdir(parents=True, exist_ok=True)
         for subject in SUBJECTS:
             for session in SESSIONS:
                 run_num  = completed + failed + 1
-                label    = f"[{run_num}/{total_runs}] {subject} {session} {layer}"
-                csv_path = ts_dir / f"{subject}_{session}_{layer}_timeseries.csv"
-                out_csv  = SAMPEN_DIR / f"{subject}_{session}_{layer}_sampen.csv"
+                label    = f"[{pipeline}][{run_num}/{total}] {subject} {session} {layer}"
+                csv_path = ts_base / layer / f"{subject}_{session}_{layer}_timeseries.csv"
+                out_csv  = out_dir / f"{subject}_{session}_{layer}_sampen.csv"
 
                 if not csv_path.is_file():
                     print(f"{label} ... MISSING")
@@ -183,23 +176,21 @@ def main():
 
                 try:
                     roi_ids, ts_raw = load_timeseries(csv_path)
-                    ts_raw = ts_raw[DUMMY_VOLUMES:]       # drop dummy volumes
-                    ts_det = detrend(ts_raw, axis=0)      # linear detrend each ROI column
+                    ts_raw = ts_raw[DUMMY_VOLUMES:]
+                    ts_det = detrend(ts_raw, axis=0)
                     values, bad_rois = compute_sampen(ts_det, roi_ids)
                 except Exception as e:
                     print(f"{label} ... ERROR ({type(e).__name__}: {e})")
                     failed += 1
                     continue
 
-                # Per-run output
                 pd.DataFrame({"roi_id": roi_ids, "sampen": values}).to_csv(out_csv, index=False)
 
-                # Long-format accumulation
                 group = drug_groups.get(subject, "unknown")
                 for roi, val in zip(roi_ids, values):
-                    all_rows.append({"subject": subject, "session": session,
-                                     "drug_group": group, "layer": layer,
-                                     "roi_id": roi, "sampen": val})
+                    all_rows.append({"pipeline": pipeline, "subject": subject,
+                                     "session": session, "drug_group": group,
+                                     "layer": layer, "roi_id": roi, "sampen": val})
 
                 n_bad = len(bad_rois)
                 print(f"{label} ... OK ({len(roi_ids)} ROIs, mean={np.nanmean(values):.3f}, bad={n_bad})")
@@ -208,18 +199,43 @@ def main():
                     print(f"    [FLAG] {n_bad} ROIs returned NaN/Inf: {shown}")
 
                 if not first_run_done:
-                    first_run_sanity_check(values, ts_raw, ts_det, subject, session, layer, roi_ids)
+                    first_run_sanity_check(values, ts_raw, ts_det, pipeline,
+                                           subject, session, layer, roi_ids)
                     first_run_done = True
 
                 completed += 1
 
-    long_df = pd.DataFrame(all_rows, columns=["subject", "session", "drug_group",
-                                              "layer", "roi_id", "sampen"])
-    long_df.to_csv(LONG_CSV, index=False)
+    long_df = pd.DataFrame(all_rows, columns=["pipeline", "subject", "session",
+                                              "drug_group", "layer", "roi_id", "sampen"])
+    long_df.to_csv(long_csv, index=False)
+    print(f"\n  {pipeline}: {completed} done, {failed} missing/failed. "
+          f"Long table ({len(long_df)} rows) -> {long_csv}")
 
+    return completed, failed, first_run_done
+
+
+def main():
+    print("=" * 70)
+    print("02_compute_sampen.py — Sample Entropy, three pipelines × six layers")
+    print(f"  SampEn params: m={M}, tau={TAU}, r={R} (absolute), log base={LOGBASE}")
+    print(f"  Dummy volumes discarded: {DUMMY_VOLUMES}")
+    print(f"  Pipelines: {PIPELINES}  Subjects: {len(SUBJECTS)}  "
+          f"Sessions: {len(SESSIONS)}  Layers: {len(LAYERS)}")
+    print("=" * 70)
+
+    drug_groups = load_drug_groups()
+    SAMPEN_BASE.mkdir(parents=True, exist_ok=True)
+
+    total_done = total_fail = 0
+    first_run_done = False
+    for pipeline in PIPELINES:
+        done, fail, first_run_done = process_pipeline(pipeline, drug_groups, first_run_done)
+        total_done += done
+        total_fail += fail
+
+    grand_total = len(PIPELINES) * len(LAYERS) * len(SUBJECTS) * len(SESSIONS)
     print("\n" + "=" * 70)
-    print(f"Done. Completed: {completed}/{total_runs} runs, Failed/missing: {failed}")
-    print(f"Long-format table: {len(long_df)} rows -> {LONG_CSV}")
+    print(f"Done. Completed: {total_done}/{grand_total} runs, Failed/missing: {total_fail}")
     print("=" * 70)
 
 
