@@ -222,7 +222,7 @@ sub-10,ses-02,placebo,intero,11,2.6742167713126586
 sub-11,ses-01,verum,intero,1,3.276527401676162
 sub-11,ses-01,verum,intero,2,3.112130523164211
 sub-11,ses-01,verum,intero,3,2.797695207592061
-sub-11,ses-01,verum,intero,4,2.2256767541425257
+sub-11,ses-01,verum,intero,4,2.2256767541424916
 sub-11,ses-01,verum,intero,5,2.55590682607075
 sub-11,ses-01,verum,intero,6,3.034861976960973
 sub-11,ses-01,verum,intero,7,2.9956965455964397
@@ -701,7 +701,7 @@ sub-33,ses-02,verum,intero,6,2.851392394504659
 sub-33,ses-02,verum,intero,7,3.3185164488412573
 sub-33,ses-02,verum,intero,8,3.322362564949139
 sub-33,ses-02,verum,intero,9,3.5066430385127543
-sub-33,ses-02,verum,intero,10,3.233571686081405
+sub-33,ses-02,verum,intero,10,3.233571686081404
 sub-33,ses-02,verum,intero,11,3.0164695647268935
 sub-34,ses-01,verum,intero,1,2.708832001715029
 sub-34,ses-01,verum,intero,2,2.8248005505372804
@@ -1180,7 +1180,7 @@ sub-13,ses-01,placebo,extero,23,2.8116424521046435
 sub-13,ses-01,placebo,extero,24,2.6611565716430006
 sub-13,ses-01,placebo,extero,25,2.538056574358299
 sub-13,ses-02,placebo,extero,12,3.3746433291100093
-sub-13,ses-02,placebo,extero,13,2.7900410546501684
+sub-13,ses-02,placebo,extero,13,2.79004105466145
 sub-13,ses-02,placebo,extero,14,2.491347557494616
 sub-13,ses-02,placebo,extero,15,2.8805586687924705
 sub-13,ses-02,placebo,extero,16,3.2764311068902128
@@ -1401,7 +1401,7 @@ sub-21,ses-01,verum,extero,20,2.627104433657857
 sub-21,ses-01,verum,extero,21,2.4060903519022423
 sub-21,ses-01,verum,extero,22,2.599415151377215
 sub-21,ses-01,verum,extero,23,2.5497992865443058
-sub-21,ses-01,verum,extero,24,2.6405592416637407
+sub-21,ses-01,verum,extero,24,2.640559241648415
 sub-21,ses-01,verum,extero,25,3.0076467015355566
 sub-21,ses-02,verum,extero,12,2.756286587147972
 sub-21,ses-02,verum,extero,13,2.8789048276609086
@@ -1474,7 +1474,7 @@ sub-23,ses-02,placebo,extero,23,3.0018576954561715
 sub-23,ses-02,placebo,extero,24,2.6153056920603515
 sub-23,ses-02,placebo,extero,25,2.9828017283460513
 sub-24,ses-01,placebo,extero,12,3.2238770091888234
-sub-24,ses-01,placebo,extero,13,3.712057571344365
+sub-24,ses-01,placebo,extero,13,3.7120575713442623
 sub-24,ses-01,placebo,extero,14,3.1794441616130764
 sub-24,ses-01,placebo,extero,15,3.1259818207306687
 sub-24,ses-01,placebo,extero,16,3.5572014951983606
@@ -1839,7 +1839,7 @@ sub-36,ses-02,verum,extero,24,2.790716229544422
 sub-36,ses-02,verum,extero,25,2.803639918887655
 sub-37,ses-01,placebo,extero,12,3.4692303318737494
 sub-37,ses-01,placebo,extero,13,3.919691584704009
-sub-37,ses-01,placebo,extero,14,3.9313016151320586
+sub-37,ses-01,placebo,extero,14,3.9313016151320612
 sub-37,ses-01,placebo,extero,15,3.7666406346012797
 sub-37,ses-01,placebo,extero,16,3.6917098079693345
 sub-37,ses-01,placebo,extero,17,4.013671354861565
@@ -1870,7 +1870,7 @@ sub-38,ses-01,placebo,extero,13,2.9781501243127937
 sub-38,ses-01,placebo,extero,14,2.8819399842848625
 sub-38,ses-01,placebo,extero,15,2.48017444733607
 sub-38,ses-01,placebo,extero,16,2.677511816970458
-sub-38,ses-01,placebo,extero,17,2.9151115282147444
+sub-38,ses-01,placebo,extero,17,2.9151115282145086
 sub-38,ses-01,placebo,extero,18,2.8083123616849197
 sub-38,ses-01,placebo,extero,19,2.732557022467392
 sub-38,ses-01,placebo,extero,20,2.6164628354176016
@@ -2800,7 +2800,7 @@ sub-37,ses-01,placebo,mental,33,3.54169608663677
 sub-37,ses-01,placebo,mental,34,3.9126815244383595
 sub-37,ses-01,placebo,mental,35,3.8842358577887777
 sub-37,ses-01,placebo,mental,36,3.3210117498888874
-sub-37,ses-01,placebo,mental,37,3.455686681659366
+sub-37,ses-01,placebo,mental,37,3.4556866816593663
 sub-37,ses-02,placebo,mental,26,3.1562251997606943
 sub-37,ses-02,placebo,mental,27,3.0229373039746292
 sub-37,ses-02,placebo,mental,28,2.9573393532354864
@@ -3387,7 +3387,7 @@ sub-19,ses-02,verum,auditory,204,2.5217562486790133
 sub-19,ses-02,verum,auditory,283,2.6370973067070644
 sub-19,ses-02,verum,auditory,304,2.9330171256082282
 sub-19,ses-02,verum,auditory,353,3.398463422430107
-sub-19,ses-02,verum,auditory,354,2.6879427019614757
+sub-19,ses-02,verum,auditory,354,2.6879427019614894
 sub-19,ses-02,verum,auditory,355,2.9505886768117984
 sub-20,ses-01,placebo,auditory,24,2.72485993924256
 sub-20,ses-01,placebo,auditory,103,2.5941200661729056
@@ -3786,7 +3786,7 @@ sub-34,ses-01,verum,auditory,103,2.767384471654321
 sub-34,ses-01,verum,auditory,104,2.8500703959526237
 sub-34,ses-01,verum,auditory,107,2.7396122098202054
 sub-34,ses-01,verum,auditory,124,2.8402040166768843
-sub-34,ses-01,verum,auditory,173,2.6957863632681556
+sub-34,ses-01,verum,auditory,173,2.695786363268156
 sub-34,ses-01,verum,auditory,174,2.609346955531458
 sub-34,ses-01,verum,auditory,175,2.840634725261376
 sub-34,ses-01,verum,auditory,204,2.679923985649552
@@ -3889,7 +3889,7 @@ sub-37,ses-02,placebo,auditory,174,2.5626735019294706
 sub-37,ses-02,placebo,auditory,175,2.7358894762129387
 sub-37,ses-02,placebo,auditory,204,2.781653649641214
 sub-37,ses-02,placebo,auditory,283,2.732134375717011
-sub-37,ses-02,placebo,auditory,304,2.6650672432704106
+sub-37,ses-02,placebo,auditory,304,2.665067243270409
 sub-37,ses-02,placebo,auditory,353,2.7087679463546532
 sub-37,ses-02,placebo,auditory,354,2.685380897753799
 sub-37,ses-02,placebo,auditory,355,2.594953802990629
@@ -4053,7 +4053,7 @@ sub-02,ses-01,placebo,motor,8,2.6094961601928204
 sub-02,ses-01,placebo,motor,9,2.858420869764014
 sub-02,ses-01,placebo,motor,36,2.52454600881482
 sub-02,ses-01,placebo,motor,39,2.8885943440749116
-sub-02,ses-01,placebo,motor,41,2.7739128861384783
+sub-02,ses-01,placebo,motor,41,2.7739128861384086
 sub-02,ses-01,placebo,motor,42,2.704482251496059
 sub-02,ses-01,placebo,motor,47,2.7718457363914437
 sub-02,ses-01,placebo,motor,51,2.787879271165164
@@ -4670,7 +4670,7 @@ sub-10,ses-02,placebo,motor,42,2.924269957813572
 sub-10,ses-02,placebo,motor,47,2.7845126466996937
 sub-10,ses-02,placebo,motor,51,2.7998338258252042
 sub-10,ses-02,placebo,motor,52,2.8162354513214733
-sub-10,ses-02,placebo,motor,54,2.6390961720325885
+sub-10,ses-02,placebo,motor,54,2.639096172032553
 sub-10,ses-02,placebo,motor,55,2.7015023541222227
 sub-10,ses-02,placebo,motor,56,2.7705312907606676
 sub-10,ses-02,placebo,motor,100,2.927822978556662
@@ -4698,7 +4698,7 @@ sub-10,ses-02,placebo,motor,284,2.565587229815827
 sub-10,ses-02,placebo,motor,295,2.972868713410836
 sub-10,ses-02,placebo,motor,348,2.7280958236221355
 sub-11,ses-01,verum,motor,8,2.580548549219993
-sub-11,ses-01,verum,motor,9,2.785521739705489
+sub-11,ses-01,verum,motor,9,2.785521739705558
 sub-11,ses-01,verum,motor,36,2.629938097117157
 sub-11,ses-01,verum,motor,39,2.864809422539675
 sub-11,ses-01,verum,motor,41,2.624750152325754
@@ -5463,7 +5463,7 @@ sub-22,ses-02,verum,motor,47,2.741261887538547
 sub-22,ses-02,verum,motor,51,2.8921493988747673
 sub-22,ses-02,verum,motor,52,3.0106914884762874
 sub-22,ses-02,verum,motor,54,2.550553106243429
-sub-22,ses-02,verum,motor,55,2.586746030319654
+sub-22,ses-02,verum,motor,55,2.5867460303196474
 sub-22,ses-02,verum,motor,56,2.826063597087847
 sub-22,ses-02,verum,motor,100,3.0819108883197934
 sub-22,ses-02,verum,motor,101,2.7378297608343156
@@ -5657,7 +5657,7 @@ sub-25,ses-01,verum,motor,219,2.7383912807716246
 sub-25,ses-01,verum,motor,220,2.8904991302265897
 sub-25,ses-01,verum,motor,221,2.9948934367772564
 sub-25,ses-01,verum,motor,222,2.72471392050202
-sub-25,ses-01,verum,motor,231,2.8493424822841824
+sub-25,ses-01,verum,motor,231,2.849342482285639
 sub-25,ses-01,verum,motor,232,2.849728636246954
 sub-25,ses-01,verum,motor,233,2.8151931463564748
 sub-25,ses-01,verum,motor,234,2.677356312871294
@@ -6184,7 +6184,7 @@ sub-32,ses-02,placebo,motor,51,2.87005094081186
 sub-32,ses-02,placebo,motor,52,2.7747425903822216
 sub-32,ses-02,placebo,motor,54,2.355737566512125
 sub-32,ses-02,placebo,motor,55,2.619868427766695
-sub-32,ses-02,placebo,motor,56,2.7778778727204165
+sub-32,ses-02,placebo,motor,56,2.7778778727265205
 sub-32,ses-02,placebo,motor,100,2.8960762317714686
 sub-32,ses-02,placebo,motor,101,2.6385312227080515
 sub-32,ses-02,placebo,motor,102,2.9135177984725105
@@ -6259,9 +6259,9 @@ sub-33,ses-02,verum,motor,55,2.593449002779458
 sub-33,ses-02,verum,motor,56,2.6101247662393803
 sub-33,ses-02,verum,motor,100,2.6847598840530407
 sub-33,ses-02,verum,motor,101,2.8652354824461574
-sub-33,ses-02,verum,motor,102,2.755327798803913
+sub-33,ses-02,verum,motor,102,2.755327798803912
 sub-33,ses-02,verum,motor,115,2.790043271428289
-sub-33,ses-02,verum,motor,168,2.699225105824491
+sub-33,ses-02,verum,motor,168,2.69922510582449
 sub-33,ses-02,verum,motor,188,2.46779825696874
 sub-33,ses-02,verum,motor,189,2.8014488535580666
 sub-33,ses-02,verum,motor,216,2.7606383457035406
@@ -7126,7 +7126,7 @@ sub-04,ses-01,placebo,visual,13,4.168884321863586
 sub-04,ses-01,placebo,visual,16,3.156463823608342
 sub-04,ses-01,placebo,visual,17,3.9281275513968317
 sub-04,ses-01,placebo,visual,18,2.7906985056156017
-sub-04,ses-01,placebo,visual,19,1.4377249556441651
+sub-04,ses-01,placebo,visual,19,1.4377249556443465
 sub-04,ses-01,placebo,visual,20,3.3859190936722587
 sub-04,ses-01,placebo,visual,21,3.112799521918478
 sub-04,ses-01,placebo,visual,22,3.009006674974917
@@ -7208,7 +7208,7 @@ sub-04,ses-02,placebo,visual,186,3.5324886815822194
 sub-04,ses-02,placebo,visual,187,3.0826573054708133
 sub-04,ses-02,placebo,visual,193,3.71671723220427
 sub-04,ses-02,placebo,visual,196,3.4597540699350504
-sub-04,ses-02,placebo,visual,198,3.4134526407614576
+sub-04,ses-02,placebo,visual,198,3.4134526407613195
 sub-04,ses-02,placebo,visual,199,3.5478755506709496
 sub-04,ses-02,placebo,visual,201,3.8039107332025814
 sub-04,ses-02,placebo,visual,202,3.6456950285257914
@@ -7554,7 +7554,7 @@ sub-07,ses-02,placebo,visual,337,3.6878586012467545
 sub-07,ses-02,placebo,visual,338,3.457346468908061
 sub-07,ses-02,placebo,visual,339,3.684499900158503
 sub-07,ses-02,placebo,visual,340,3.499852080556532
-sub-07,ses-02,placebo,visual,343,3.396442534772633
+sub-07,ses-02,placebo,visual,343,3.3964425347786773
 sub-08,ses-01,verum,visual,1,3.513996391965037
 sub-08,ses-01,verum,visual,2,3.44513124379463
 sub-08,ses-01,verum,visual,3,2.728392519513709
@@ -7909,7 +7909,7 @@ sub-11,ses-01,verum,visual,152,2.420872220270139
 sub-11,ses-01,verum,visual,153,2.829715682047007
 sub-11,ses-01,verum,visual,154,3.3497684077886665
 sub-11,ses-01,verum,visual,156,3.0889243598314193
-sub-11,ses-01,verum,visual,157,2.695526049858724
+sub-11,ses-01,verum,visual,157,2.6955260498587252
 sub-11,ses-01,verum,visual,158,3.7943860779754743
 sub-11,ses-01,verum,visual,159,3.1145182812858616
 sub-11,ses-01,verum,visual,160,3.294453962827655
@@ -8877,7 +8877,7 @@ sub-20,ses-02,placebo,visual,340,2.38883425573621
 sub-20,ses-02,placebo,visual,343,2.7193244202668434
 sub-21,ses-01,verum,visual,1,2.5517698923829637
 sub-21,ses-01,verum,visual,2,2.7797915337054664
-sub-21,ses-01,verum,visual,3,2.781358884271836
+sub-21,ses-01,verum,visual,3,2.7813588842718366
 sub-21,ses-01,verum,visual,4,2.5043674289222366
 sub-21,ses-01,verum,visual,5,2.8056974518101563
 sub-21,ses-01,verum,visual,6,2.609525537485229
@@ -9130,7 +9130,7 @@ sub-23,ses-01,placebo,visual,183,2.659153893820235
 sub-23,ses-01,placebo,visual,184,2.602707254722668
 sub-23,ses-01,placebo,visual,185,2.6299747484420712
 sub-23,ses-01,placebo,visual,186,2.611119158182378
-sub-23,ses-01,placebo,visual,187,2.758279475385261
+sub-23,ses-01,placebo,visual,187,2.7582794753852586
 sub-23,ses-01,placebo,visual,193,2.547561504310419
 sub-23,ses-01,placebo,visual,196,2.5800005851606103
 sub-23,ses-01,placebo,visual,198,2.710542122238769
@@ -9295,7 +9295,7 @@ sub-24,ses-02,placebo,visual,183,3.0099563247155525
 sub-24,ses-02,placebo,visual,184,2.9969448368897638
 sub-24,ses-02,placebo,visual,185,2.6445746651848454
 sub-24,ses-02,placebo,visual,186,2.65880734458216
-sub-24,ses-02,placebo,visual,187,2.90286027409617
+sub-24,ses-02,placebo,visual,187,2.90286027409621
 sub-24,ses-02,placebo,visual,193,3.663841985378339
 sub-24,ses-02,placebo,visual,196,3.6833305680998554
 sub-24,ses-02,placebo,visual,198,3.2352848335093762
@@ -9817,7 +9817,7 @@ sub-29,ses-02,verum,visual,4,2.7191340593763385
 sub-29,ses-02,verum,visual,5,2.635819311774969
 sub-29,ses-02,verum,visual,6,3.3447514490064822
 sub-29,ses-02,verum,visual,7,3.646333941402553
-sub-29,ses-02,verum,visual,13,3.19701204254976
+sub-29,ses-02,verum,visual,13,3.197012042549774
 sub-29,ses-02,verum,visual,16,2.939122092064517
 sub-29,ses-02,verum,visual,17,2.9268760058331678
 sub-29,ses-02,verum,visual,18,3.097711813772653
@@ -10983,7 +10983,7 @@ sub-40,ses-01,placebo,visual,22,2.439661982405911
 sub-40,ses-01,placebo,visual,23,2.4974675242057325
 sub-40,ses-01,placebo,visual,48,2.848098962338784
 sub-40,ses-01,placebo,visual,49,2.433772336273676
-sub-40,ses-01,placebo,visual,121,2.56598324695195
+sub-40,ses-01,placebo,visual,121,2.565983246947882
 sub-40,ses-01,placebo,visual,142,2.7456516420777195
 sub-40,ses-01,placebo,visual,152,2.7006613862875053
 sub-40,ses-01,placebo,visual,153,2.702913565989545

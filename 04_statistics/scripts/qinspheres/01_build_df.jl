@@ -1,7 +1,8 @@
 # 01_build_df.jl — Extract qinspheres ACW-AUC into a flat CSV.
-# Reads JLD2s from 03_intrinsic_neural_metrics/results/qinspheres_NoGSR/{category}/{sub}_{ses}.jld2
-# and writes one row per (subject, session, category, roi) to:
-#   03_intrinsic_neural_metrics/results/qinspheres_NoGSR/qinspheres_auc.csv
+# Reads JLD2s from 03_intrinsic_neural_metrics/results/acw/{PIPELINE}/{category}/{sub}_{ses}.jld2
+# (PIPELINE = maximal, the primary denoising) and writes one row per
+# (subject, session, category, roi) to:
+#   04_statistics/results/qinspheres/tables/qinspheres_auc.csv
 #
 # Run from repo root:
 #   julia 04_statistics/scripts/qinspheres/01_build_df.jl
@@ -9,7 +10,8 @@
 using JLD2, CSV, DataFrames, Printf
 
 const REPO_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
-const JLD2_DIR  = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "qinspheres_NoGSR")
+const PIPELINE  = "maximal"   # primary denoising pipeline (= old NoGSR); detrend/glm later
+const JLD2_DIR  = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "acw", PIPELINE)
 const PARTS_TSV = joinpath(REPO_ROOT, "participants.tsv")
 const OUT_DIR   = joinpath(REPO_ROOT, "04_statistics", "results", "qinspheres", "tables")
 const OUT_CSV   = joinpath(OUT_DIR, "qinspheres_auc.csv")
@@ -34,7 +36,7 @@ for cat in CATEGORIES, subj in SUBJECTS, ses in SESSIONS
         continue
     end
     d = load(p)
-    ids = d["roi_ids"]
+    ids = d["parcel_ids"]
     aucs = collect(d["acw_results"][AUC_IDX])
     for (rid, a) in zip(ids, aucs)
         push!(rows, (subject    = subj,

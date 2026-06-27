@@ -100,7 +100,7 @@ thesis-har-med-pipeline/
 │   ├── scripts/02_compute_sampen.py       (SampEn, 3 pipelines)
 │   └── results/acw/{pipeline}/{layer}/  + results/sampen/{pipeline}/{layer}/
 ├── 99_QC/                         01_motion_qc, 02_denoising_qc, 03_acw_qc, troubleshooting
-├── 04_statistics/                 DEFERRED — holds the previous parcels analysis, not the current flow
+├── 04_statistics/scripts/qinspheres/   ACW drug-effect analysis (maximal, n=39) + results/qinspheres/
 └── _archive/                      everything retired (see below)
 ```
 
@@ -225,12 +225,33 @@ Both ACW and SampEn loop the **three pipelines × six layers** at **n=39**
 
 ---
 
-## Statistics (`04_statistics/`) — DEFERRED
-Not part of the current calculation flow. The folder still contains the **previous
-parcels analysis** (parcels_NoGSR / parcels_GSR LMMs, figures) and a partial
-`qinspheres/` attempt. When we resume statistics it will be rebuilt for the 6-layer
-sphere design on top of `results/acw/{pipeline}/` + `results/sampen/{pipeline}/`.
-Do not assume any script in here matches the current pipeline yet.
+## Statistics (`04_statistics/`) — ACW drug-effect analysis (qinspheres, maximal)
+The active analysis is `scripts/qinspheres/`, on the **maximal** pipeline ACW-AUC at
+**n=39** (the parcels_NoGSR / GSR / _old analyses are archived under
+`_archive/statistics_parcels_and_old/`).
+
+**Design:** per-layer (6 layers, kept separate) subject-level drug-effect test —
+ΔAUC = mean post − pre per subject×layer; statistic = mean(verum Δ) − mean(placebo Δ);
+Shapiro→Welch/Mann-Whitney + 10k permutation; BH-FDR across the 6 layers; ±2.5SD / 1.5×IQR
+outlier-sensitivity variants. Two flavours: raw ΔAUC and **motion-quality-residualized**
+ΔAUC (partialled for `pcf_diff`/`pcf_sq_diff`/`mean_fd_retained_diff` from
+`99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`).
+
+**Run order** (from repo root; Rscript at `C:\Program Files\R\R-4.6.0\bin\Rscript.exe`):
+```
+julia   04_statistics/scripts/qinspheres/01_build_df.jl          # acw/maximal -> qinspheres_auc.csv
+Rscript 04_statistics/scripts/qinspheres/qc_residualize_auc.R    # -> auc_diff_quality_residuals.csv
+Rscript 04_statistics/scripts/qinspheres/statistics.R            # raw drug-effect tables
+Rscript 04_statistics/scripts/qinspheres/statistics_resid.R      # residualized + residual figures
+Rscript 04_statistics/scripts/qinspheres/04_figures.R            # full 6-layer figure suite (qin_*.png)
+```
+Outputs → `results/qinspheres/{tables,figures}/`. `04_figures.R` ports the parcels
+raincloud/serif/bracket aesthetic to 6 layers (drug-effect significance read from
+`layer_drug_effect.csv`). `02_scatter.R` / `03_drug_effect_figures.R` are the earlier
+simpler-style figures (superseded by `04_figures.R`).
+
+**Pending:** detrend/glm pipelines (robustness) and SampEn stats are not yet wired in —
+only `maximal` ACW is analysed so far. The SampEn re-detrend question is also still open.
 
 ---
 
