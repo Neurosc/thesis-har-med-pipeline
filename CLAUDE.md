@@ -70,19 +70,16 @@ fMRIPrep BOLD ──▶ 01 denoise (NoGSR) ──▶ 02 extract 6-layer sphere t
      6-layer CSVs from **all three** denoising pipelines (n=39 subjects) to
      `results/qinspheres/{detrend,glm,maximal}/{layer}/`. CSVs are committed to git.
 - **Local steps** (timeseries CSVs are committed to the repo, so these run on Windows):
-  3a. `03_acw_analysis/scripts/01_compute_acw.jl` — ACW → `results/qinspheres_NoGSR/`.
-  3b. `03_acw_analysis/scripts/02_compute_sampen.py` — SampEn → `results/sampen_qinspheres/`.
-  ⚠ ACW + SampEn still read the **old flat** `qinspheres/{layer}/` layout (now archived) —
-  they must be **repointed** to the per-pipeline structure (pick a pipeline, e.g. `maximal`,
-  or loop all three). Pending step; do not re-run them until repointed.
+  3a. `03_acw_analysis/scripts/01_compute_acw.jl` — ACW (3 pipelines) → `results/acw/{pipeline}/{layer}/`.
+  3b. `03_acw_analysis/scripts/02_compute_sampen.py` — SampEn (3 pipelines) → `results/sampen/{pipeline}/{layer}/`.
 
 ### Run order
 ```
 # Server (conda env: fmri)
 python 02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py
 # Local (or server)
-julia  03_acw_analysis/scripts/01_compute_acw.jl          # config.toml = NoGSR + qinspheres
-python 03_acw_analysis/scripts/02_compute_sampen.py
+julia  03_acw_analysis/scripts/01_compute_acw.jl          # 3 pipelines × 6 layers × 39 subj
+python 03_acw_analysis/scripts/02_compute_sampen.py      # 3 pipelines × 6 layers × 39 subj
 ```
 
 ---
@@ -99,9 +96,9 @@ thesis-har-med-pipeline/
 │   ├── scripts/01_extract_sphere_timeseries.py   (extracts from all 3 denoising pipelines)
 │   └── results/qinspheres/{detrend,glm,maximal}/{layer}/   39×2 CSVs each (committed)
 ├── 03_acw_analysis/
-│   ├── scripts/01_compute_acw.jl          (ACW)
-│   ├── scripts/02_compute_sampen.py       (SampEn)
-│   └── results/qinspheres_NoGSR/{layer}/  + results/sampen_qinspheres/
+│   ├── scripts/01_compute_acw.jl          (ACW, 3 pipelines)
+│   ├── scripts/02_compute_sampen.py       (SampEn, 3 pipelines)
+│   └── results/acw/{pipeline}/{layer}/  + results/sampen/{pipeline}/{layer}/
 ├── 99_QC/                         01_motion_qc, 02_denoising_qc, 03_acw_qc, troubleshooting
 ├── 04_statistics/                 DEFERRED — holds the previous parcels analysis, not the current flow
 └── _archive/                      everything retired (see below)
@@ -180,17 +177,22 @@ three independent ways (all volumetric MNI, all **NoGSR**). One parameterized co
 - Excluded: **sub-06, sub-08, sub-12, sub-26, sub-36** → final **35 × 2 = 70**.
 - Single source of truth: `utils/subject_filter.py:get_included_subjects()`.
 
+Both ACW and SampEn loop the **three pipelines × six layers** at **n=39**
+(matches the extraction; the 35-subject filter is applied later at stats). Input:
+`02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/`.
+
 ### ACW (`01_compute_acw.jl`, Julia + IntrinsicTimescales.jl)
 - TR 1.8 s, n_lags 100, dummy volumes discarded = 6, types `[:auc, :tau]`.
-- Reads `config.toml`; for qinspheres loops the 6 layer folders.
-- Output: `results/qinspheres_NoGSR/{layer}/{sub}_{ses}.jld2`
+- Self-contained (no longer reads `config.toml`); 39-subject list hardcoded to match
+  `get_pipeline_subjects()`. Idempotent (skips existing JLD2).
+- Output: `results/acw/{pipeline}/{layer}/{sub}_{ses}.jld2`
   (vars: `acw_results` [1]=AUC [2]=τ, `parcel_ids`).
 
 ### SampEn (`02_compute_sampen.py`, Python + EntropyHub)
 - Per run × layer: drop 6 dummy volumes → linear detrend → SampEn (m=1, τ=1, r=0.3
-  absolute, log base 2; Keskin/Northoff conventions).
-- Output: per-run `results/sampen_qinspheres/{sub}_{ses}_{layer}_sampen.csv`
-  + `results/sampen_qinspheres/sampen_long_qinspheres.csv` (self-contained;
+  absolute, log base 2; Keskin/Northoff conventions). Uses `get_pipeline_subjects()`.
+- Output: per-run `results/sampen/{pipeline}/{layer}/{sub}_{ses}_{layer}_sampen.csv`
+  + per-pipeline `results/sampen/{pipeline}/sampen_long_{pipeline}.csv` (self-contained;
   no coupling to `04_statistics`).
 
 ---
@@ -227,7 +229,7 @@ three independent ways (all volumetric MNI, all **NoGSR**). One parameterized co
 Not part of the current calculation flow. The folder still contains the **previous
 parcels analysis** (parcels_NoGSR / parcels_GSR LMMs, figures) and a partial
 `qinspheres/` attempt. When we resume statistics it will be rebuilt for the 6-layer
-sphere design on top of `results/qinspheres_NoGSR/` + `results/sampen_qinspheres/`.
+sphere design on top of `results/acw/{pipeline}/` + `results/sampen/{pipeline}/`.
 Do not assume any script in here matches the current pipeline yet.
 
 ---
