@@ -45,9 +45,11 @@ REPO_ROOT <- if (length(file_arg) > 0) {
   normalizePath(".")
 }
 
-DATA_CSV <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres",
-                      "tables", "qinspheres_auc.csv")
-OUT_DIR  <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", "tables")
+PIPELINE <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
+cat(sprintf("Pipeline: %s\n", PIPELINE))
+QIN_DIR  <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
+DATA_CSV <- file.path(QIN_DIR, "tables", "qinspheres_auc.csv")
+OUT_DIR  <- file.path(QIN_DIR, "tables")
 
 if (!file.exists(DATA_CSV))
   stop("Input not found — run 01_build_df.jl first:\n  ", DATA_CSV)

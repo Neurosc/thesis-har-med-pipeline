@@ -29,8 +29,11 @@ REPO_ROOT <- if (length(file_arg))
   normalizePath(file.path(dirname(normalizePath(sub("^--file=", "", file_arg[1]))),
                           "..", "..", "..")) else normalizePath(".")
 
-TABLES_DIR <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", "tables")
-FIGS_DIR   <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", "figures")
+PIPELINE   <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
+cat(sprintf("Pipeline: %s\n", PIPELINE))
+QIN_DIR    <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
+TABLES_DIR <- file.path(QIN_DIR, "tables")
+FIGS_DIR   <- file.path(QIN_DIR, "figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
 
 DATA_CSV <- file.path(TABLES_DIR, "qinspheres_auc.csv")

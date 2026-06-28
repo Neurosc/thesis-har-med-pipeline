@@ -35,11 +35,13 @@ REPO_ROOT <- if (length(file_arg) > 0) {
   normalizePath(".")
 }
 
+PIPELINE <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
+cat(sprintf("Pipeline: %s\n", PIPELINE))
+QIN_DIR <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
 COV_CSV <- file.path(REPO_ROOT, "99_QC", "01_motion_qc", "results",
-                     "fd_covariates_wide_thresh03.csv")
-AUC_CSV <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres",
-                     "tables", "qinspheres_auc.csv")
-OUT_DIR  <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", "tables")
+                     "fd_covariates_wide_thresh03.csv")   # motion covariates (pipeline-independent)
+AUC_CSV <- file.path(QIN_DIR, "tables", "qinspheres_auc.csv")
+OUT_DIR  <- file.path(QIN_DIR, "tables")
 OUT_CSV  <- file.path(OUT_DIR, "auc_diff_quality_residuals.csv")
 OUT_LOG  <- file.path(OUT_DIR, "auc_diff_quality_model_summary.txt")
 
