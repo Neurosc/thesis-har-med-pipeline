@@ -233,12 +233,12 @@ The active analysis is `scripts/qinspheres/`, on the **maximal** pipeline ACW-AU
 **Design:** per-layer (6 layers, kept separate) subject-level drug-effect test —
 ΔAUC = mean post − pre per subject×layer; statistic = mean(verum Δ) − mean(placebo Δ);
 Shapiro→Welch/Mann-Whitney + 10k permutation; BH-FDR across the 6 layers; ±2.5SD / 1.5×IQR
-outlier-sensitivity variants. Raw ΔAUC is run for all three pipelines; the
-**motion-quality-residualized** ΔAUC (partialled for `pcf_diff`/`pcf_sq_diff`/
-`mean_fd_retained_diff` from `99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`)
-is run for **maximal only** — the `pcf` covariates describe frame censoring, which only
-the maximal pipeline does, so residualizing the no-censoring detrend/glm pipelines on them
-is conceptually mismatched. (Run `qc_residualize_auc.R` + `statistics_resid.R` for maximal.)
+outlier-sensitivity variants. Both raw ΔAUC and **motion-quality-residualized** ΔAUC
+(partialled for `pcf_diff`/`pcf_sq_diff`/`mean_fd_retained_diff` from
+`99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`) are run for **all three
+pipelines** — the residualization removes the **session-wise FD/motion** confound, which
+matters most for detrend/glm (they don't censor, so motion stays in the data). Run
+`qc_residualize_auc.R` + `statistics_resid.R` per pipeline.
 
 Scripts are **pipeline × metric-parameterized**: R scripts take `<pipeline> <metric>`
 trailing args (metric ∈ `auc` | `acw50`, default `maximal auc`). AUC stays at the
@@ -263,12 +263,14 @@ Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R acw50       # 
 superseded by `04_figures.R`).
 
 **Results:**
-- **AUC:** exteroception ΔAUC reduction under verum is a **consistent raw trend across all
-  three pipelines** (perm p = 0.012 / 0.057 / 0.062 for detrend / glm / maximal) that
-  strengthens to **p=0.025** under motion correction in maximal (q=0.151). **Nothing survives
-  FDR** (closest: detrend raw q=0.074). The earlier detrend-residualized FDR hit (q=0.035) is
-  gone now that residualization is maximal-only. The visual effect is a maximal-only
-  denoising artifact.
+- **AUC:** exteroception ΔAUC reduction under verum is a **consistent trend across all three
+  pipelines**. Raw perm p = 0.012 / 0.057 / 0.062 (detrend / glm / maximal); motion-residualized
+  perm p = 0.006 / 0.065 / 0.025, FDR q = **0.035** / 0.392 / 0.151. So after motion correction
+  exteroception is **FDR-significant in detrend (q=0.035)** and a trend in maximal (q=0.151) /
+  glm. The **primary report is maximal-residualized** (q=0.151, trend); detrend/glm are the
+  robustness comparison. The visual effect is a maximal-only denoising artifact. (The maximal
+  result is held back partly by one placebo outlier, sub-37; Tukey-IQR trim → maximal raw
+  q=0.116 — see `pipeline_comparison.csv`.)
 - **ACW-50:** values are **computed and kept** (`acw_results[2]` in the JLD2 +
   `results/qinspheres/acw50/{pipeline}/tables/qinspheres_acw50.csv`) but the statistical
   analysis was **removed** — ACW-50 showed no robust effect and did not reproduce the

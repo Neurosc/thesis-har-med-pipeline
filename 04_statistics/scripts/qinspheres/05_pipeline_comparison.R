@@ -36,34 +36,28 @@ col <- function(pipeline, suffix, what) {
 
 cmp <- data.frame(layer = LAYERS)
 for (pl in PIPELINES) {
-  cmp[[paste0(pl, "_raw_full_p")]] <- col(pl, "",     "p")
-  cmp[[paste0(pl, "_raw_full_q")]] <- col(pl, "",     "q")
-  cmp[[paste0(pl, "_raw_iqr_p")]]  <- col(pl, "_iqr", "p")
-  cmp[[paste0(pl, "_raw_iqr_q")]]  <- col(pl, "_iqr", "q")
+  cmp[[paste0(pl, "_raw_full_p")]]   <- col(pl, "",           "p")
+  cmp[[paste0(pl, "_raw_full_q")]]   <- col(pl, "",           "q")
+  cmp[[paste0(pl, "_raw_iqr_p")]]    <- col(pl, "_iqr",       "p")
+  cmp[[paste0(pl, "_raw_iqr_q")]]    <- col(pl, "_iqr",       "q")
+  cmp[[paste0(pl, "_resid_full_p")]] <- col(pl, "_resid",     "p")
+  cmp[[paste0(pl, "_resid_full_q")]] <- col(pl, "_resid",     "q")
+  cmp[[paste0(pl, "_resid_iqr_p")]]  <- col(pl, "_resid_iqr", "p")
+  cmp[[paste0(pl, "_resid_iqr_q")]]  <- col(pl, "_resid_iqr", "q")
 }
-cmp[["maximal_resid_full_p"]] <- col("maximal", "_resid",     "p")
-cmp[["maximal_resid_full_q"]] <- col("maximal", "_resid",     "q")
-cmp[["maximal_resid_iqr_p"]]  <- col("maximal", "_resid_iqr", "p")
-cmp[["maximal_resid_iqr_q"]]  <- col("maximal", "_resid_iqr", "q")
 
 out_csv <- file.path(QROOT, "pipeline_comparison.csv")
 write.csv(cmp, out_csv, row.names = FALSE)
 
-show <- function(title, cols) {
+p3 <- function(title, key) {  # key e.g. "raw_full_q" -> prints detrend/glm/maximal
   cat(sprintf("\n== %s ==\n", title))
-  d <- cmp[, c("layer", cols)]
-  names(d) <- c("layer", sub("^[a-z]+_(raw|resid)_", "", cols))
-  print(d, row.names = FALSE)
+  print(data.frame(layer   = LAYERS,
+                   detrend = cmp[[paste0("detrend_", key)]],
+                   glm     = cmp[[paste0("glm_",     key)]],
+                   maximal = cmp[[paste0("maximal_", key)]]), row.names = FALSE)
 }
-show("RAW perm p  (full vs Tukey-IQR)",
-     c("detrend_raw_full_p","detrend_raw_iqr_p","glm_raw_full_p","glm_raw_iqr_p",
-       "maximal_raw_full_p","maximal_raw_iqr_p"))
-show("RAW FDR q   (full vs Tukey-IQR)",
-     c("detrend_raw_full_q","detrend_raw_iqr_q","glm_raw_full_q","glm_raw_iqr_q",
-       "maximal_raw_full_q","maximal_raw_iqr_q"))
-cat("\n== MAXIMAL motion-residualized (full vs Tukey-IQR) ==\n")
-print(data.frame(layer = LAYERS,
-                 full_p = cmp$maximal_resid_full_p, full_q = cmp$maximal_resid_full_q,
-                 iqr_p  = cmp$maximal_resid_iqr_p,  iqr_q  = cmp$maximal_resid_iqr_q),
-      row.names = FALSE)
-cat(sprintf("\nSaved: %s\n", out_csv))
+p3("RAW   perm p (full)", "raw_full_p")
+p3("RAW   FDR q  (full)", "raw_full_q")
+p3("RESID perm p (full)", "resid_full_p")
+p3("RESID FDR q  (full)", "resid_full_q")
+cat(sprintf("\n(Tukey-IQR variants for raw and resid are in %s)\n", out_csv))
