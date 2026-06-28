@@ -350,4 +350,45 @@ out_png("qin_overall_auc_density.png",
     labs(title = sprintf("Overall %s distribution (qinspheres %s)", MLAB, PIPELINE),
          x = sprintf("%s (seconds)", MLAB), y = "Density") + dist_theme(), 8, 6)
 
+# ── Residualized drug-effect figure (parcels style) — only where residuals exist ───
+# (residualization is run for maximal only, so this is generated for maximal.)
+RESID_CSV      <- file.path(TABLES_DIR, "auc_diff_quality_residuals.csv")
+DRUG_RESID_CSV <- file.path(TABLES_DIR, "layer_drug_effect_resid.csv")
+if (file.exists(RESID_CSV) && file.exists(DRUG_RESID_CSV)) {
+  rcols  <- paste0(LAYER_ORDER, "_resid")
+  rlong  <- read.csv(RESID_CSV, stringsAsFactors = FALSE) %>%
+    select(subject, drug_group, all_of(rcols)) %>%
+    pivot_longer(all_of(rcols), names_to = "layer", values_to = "resid") %>%
+    mutate(layer = factor(sub("_resid$", "", layer), levels = LAYER_ORDER),
+           group = factor(drug_group, levels = c("placebo", "verum"))) %>%
+    filter(!is.na(resid))
+  drug_resid <- read.csv(DRUG_RESID_CSV, stringsAsFactors = FALSE)
+  drug_resid_pq <- function(L) {
+    r <- drug_resid[drug_resid$layer == L, ]
+    if (!nrow(r)) return(c(p = NA_real_, q = NA_real_))
+    c(p = r$perm_p_raw[1], q = if ("perm_p_fdr" %in% names(r)) r$perm_p_fdr[1] else NA_real_)
+  }
+  make_resid_sig <- function(L) {
+    d <- add_x(as.data.frame(rlong[as.character(rlong$layer) == L, ]), "group")
+    p <- ggplot(d, aes(x = x_cond, y = resid, fill = group, color = group, group = group)) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
+      rain_layers() +
+      scale_fill_manual(values = DELTA_COLORS, guide = "none") +
+      scale_color_manual(values = DELTA_COLORS, guide = "none") +
+      scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"),
+                         expand = expansion(add = c(0.65, 1.00))) +
+      labs(title = LAYER_LABELS[[L]],
+           y = paste0("Quality-adj. Δ", MLAB, " (residual)"), x = NULL) + panel_theme()
+    pq <- drug_resid_pq(L); star <- sig_star(pq[["q"]])
+    lab <- if (is.na(pq[["p"]])) "n/a"
+           else sprintf("%sp=%.3f (q=%.3f)", if (star != "") paste0(star, " ") else "",
+                        pq[["p"]], pq[["q"]])
+    sig_bracket(p, 1.6, 3.6, d$resid, lab)
+  }
+  out_png("qin_drug_effect_significance_resid.png",
+          assemble6(lapply(LAYER_ORDER, make_resid_sig),
+                    sprintf("Drug effect per layer — MOTION-RESIDUALIZED %s (q = FDR across 6 layers, %s)",
+                            MLAB, PIPELINE)), 14, 8)
+}
+
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
