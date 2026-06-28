@@ -27,7 +27,9 @@ LAYERS    <- c("visual", "auditory", "motor", "extero", "intero", "mental")
 
 grab <- function(pipeline, kind) {   # kind = "" (raw) or "_resid"
   f <- file.path(QROOT, pipeline, "tables", paste0("layer_drug_effect", kind, ".csv"))
-  if (!file.exists(f)) { warning("missing: ", f); return(NULL) }
+  # residualization is run for maximal only — missing resid tables -> NA (not an error)
+  if (!file.exists(f))
+    return(data.frame(layer = LAYERS, diff = NA_real_, p = NA_real_, q = NA_real_))
   d <- read.csv(f, stringsAsFactors = FALSE)
   data.frame(layer = d$layer, diff = d$observed_diff,
              p = d$perm_p_raw, q = d$perm_p_fdr, stringsAsFactors = FALSE)
