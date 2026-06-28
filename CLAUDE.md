@@ -248,6 +248,12 @@ both metrics (acw_results[1]=AUC, [2]=ACW-50; value column named `auc` for both 
 carryover; figure labels are metric-correct). `safe_sw()` guards Shapiro-Wilk against the
 degenerate (all-identical) groups that the discrete ACW-50 metric can produce.
 
+**Non-positive AUC dropped:** `01_build_df.jl` removes ROIs with `auc ≤ 0` (AUC metric only).
+Without bandpass, the broadband signal's autocorrelation collapses to/below zero, giving 0 or
+negative "area" — not a valid timescale. This is a **detrend/glm** problem (≈1042 / 1665 ROIs
+dropped, concentrated in motor); **maximal** (bandpassed) has **none** (0 dropped) and is
+unaffected. Underlying ACW values are still in the JLD2; only the analysis CSV is filtered.
+
 **Run order** (from repo root; Rscript at `C:\Program Files\R\R-4.6.0\bin\Rscript.exe`):
 ```
 julia   04_statistics/scripts/qinspheres/01_build_df.jl                       # both metrics × pipelines
@@ -263,14 +269,14 @@ Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R acw50       # 
 superseded by `04_figures.R`).
 
 **Results:**
-- **AUC:** exteroception ΔAUC reduction under verum is a **consistent trend across all three
-  pipelines**. Raw perm p = 0.012 / 0.057 / 0.062 (detrend / glm / maximal); motion-residualized
-  perm p = 0.006 / 0.065 / 0.025, FDR q = **0.035** / 0.392 / 0.151. So after motion correction
-  exteroception is **FDR-significant in detrend (q=0.035)** and a trend in maximal (q=0.151) /
-  glm. The **primary report is maximal-residualized** (q=0.151, trend); detrend/glm are the
-  robustness comparison. The visual effect is a maximal-only denoising artifact. (The maximal
-  result is held back partly by one placebo outlier, sub-37; Tukey-IQR trim → maximal raw
-  q=0.116 — see `pipeline_comparison.csv`.)
+- **AUC:** exteroception ΔAUC reduction under verum (after dropping non-positive AUC — see
+  the build note below). Motion-residualized perm p = 0.007 / 0.155 / 0.025, FDR q =
+  **0.040** / 0.932 / **0.151** (detrend / glm / maximal). The **primary report is
+  maximal-residualized: q=0.151 — marginal, does NOT survive FDR**. In the robustness set it's
+  FDR-significant in detrend (q=0.040) but null in glm; i.e. inconsistent across pipelines, and
+  the lighter detrend/glm pipelines also suffer the AUC degeneracy. The visual effect is a
+  maximal-only denoising artifact. (Maximal is held back partly by one placebo outlier, sub-37;
+  Tukey-IQR → maximal raw q=0.116 — see `pipeline_comparison.csv`.)
 - **ACW-50:** values are **computed and kept** (`acw_results[2]` in the JLD2 +
   `results/qinspheres/acw50/{pipeline}/tables/qinspheres_acw50.csv`) but the statistical
   analysis was **removed** — ACW-50 showed no robust effect and did not reproduce the

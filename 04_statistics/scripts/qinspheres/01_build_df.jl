@@ -50,8 +50,16 @@ function build(metric, midx, pipeline)
         end
     end
     df = DataFrame(rows)
+    n0 = nrow(df)
+    # Drop degenerate non-positive AUC (broadband ACF collapse — only affects the
+    # no-bandpass detrend/glm pipelines, concentrated in motor; maximal has none).
+    # A non-positive area-under-ACF is not a valid intrinsic timescale.
+    if metric == "auc"
+        df = df[df.auc .> 0.0, :]
+    end
     mkpath(out_dir); CSV.write(out_csv, df)
-    @printf("  %-6s %-8s  %d rows  (%d missing)\n", metric, pipeline, nrow(df), missing_n)
+    @printf("  %-6s %-8s  %d rows (dropped %d non-positive AUC)  (%d missing)\n",
+            metric, pipeline, nrow(df), n0 - nrow(df), missing_n)
 end
 
 for (metric, midx) in METRICS, pipeline in PIPELINES
