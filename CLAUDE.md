@@ -277,6 +277,15 @@ superseded by `04_figures.R`).
   the lighter detrend/glm pipelines also suffer the AUC degeneracy. The visual effect is a
   maximal-only denoising artifact. (Maximal is held back partly by one placebo outlier, sub-37;
   Tukey-IQR → maximal raw q=0.116 — see `pipeline_comparison.csv`.)
+- **Category × Drug interaction (result 2 — do the 6 layers change *differently*?):**
+  `06_interaction.R` — `lmer(ΔAUC ~ category*drug + (1|subject))`, Type III F (Satterthwaite)
+  + subject-level permutation of drug labels, raw + residualized, all 3 pipelines.
+  **Significant only in maximal:** raw F(5,185)=2.39, p=0.040 (perm 0.050); resid p=0.037
+  (perm 0.057). The raw interaction is partly the **visual** artifact (drops to p=0.105 without
+  visual), but the **residualized interaction survives removing visual (p=0.051)** — a genuine
+  **exteroception↓ vs cognition↑ dissociation** under verum (cognition/intero timescales rise,
+  extero/visual fall; auditory/motor flat). Absent in detrend/glm. Borderline and maximal-only →
+  suggestive. Fig `qin_interaction_category_by_drug.png`, table `interaction_category_by_drug.csv`.
 - **ACW-50:** values are **computed and kept** (`acw_results[2]` in the JLD2 +
   `results/qinspheres/acw50/{pipeline}/tables/qinspheres_acw50.csv`) but the statistical
   analysis was **removed** — ACW-50 showed no robust effect and did not reproduce the
