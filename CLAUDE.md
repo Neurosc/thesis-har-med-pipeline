@@ -263,10 +263,12 @@ superseded by `04_figures.R`).
 - **AUC:** exteroception ΔAUC reduction under verum is consistent across all three pipelines
   and strengthens under motion correction (FDR-significant in detrend: p=0.006, q=0.035);
   the visual effect is a maximal-only denoising artifact.
-- **ACW-50:** no robust effect — nothing replicates across pipelines (only nominal hit,
-  motor in detrend p=0.082/resid 0.023, is pipeline-specific), and the AUC-exteroception
-  effect does **not** appear in ACW-50. As with the earlier tau check, the drug effect is
-  **AUC-specific**.
+- **ACW-50:** values are **computed and kept** (`acw_results[2]` in the JLD2 +
+  `results/qinspheres/acw50/{pipeline}/tables/qinspheres_acw50.csv`) but the statistical
+  analysis was **removed** — ACW-50 showed no robust effect and did not reproduce the
+  AUC-exteroception finding (the effect is AUC-specific; see the earlier ACW-50/tau checks).
+  To regenerate ACW-50 stats, re-run the chain with the `acw50` metric arg. Only **AUC** is
+  the reported analysis.
 
 **Pending:** SampEn stats (none built yet) + the SampEn re-detrend question (still open).
 
