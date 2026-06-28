@@ -5,11 +5,11 @@
 # subject, session). Sample = 39 (all minus sub-12), matching the extraction; the
 # 35-subject inclusion filter is applied later at the statistics stage.
 #
-# Parameters: TR 1.8 s; dummy volumes = 6; n_lags = 100; acwtypes = [:auc, :tau]
+# Parameters: TR 1.8 s; dummy volumes = 6; n_lags = 100; acwtypes = [:auc, :acw50]
 #
 # Input  : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/{sub}_{ses}_{layer}_timeseries.csv
 # Output : 03_intrinsic_neural_metrics/results/acw/{pipeline}/{layer}/{sub}_{ses}.jld2
-#          JLD2 vars: acw_results (ACWResults; [1]=AUC, [2]=tau), parcel_ids (Vector{String})
+#          JLD2 vars: acw_results (ACWResults; [1]=AUC, [2]=ACW-50), parcel_ids (Vector{String})
 #
 # Run from repo root:  julia 03_intrinsic_neural_metrics/scripts/01_compute_acw.jl
 # Idempotent: skips runs whose output JLD2 already exists.
@@ -23,7 +23,7 @@ const TR            = 1.8
 const FS            = 1.0 / TR
 const N_LAGS        = 100
 const DUMMY_VOLUMES = 6
-const ACW_TYPES     = [:auc, :tau]
+const ACW_TYPES     = [:auc, :acw50]   # [1]=AUC, [2]=ACW-50
 const SKIP_ZERO_LAG = false
 
 # ── Design ───────────────────────────────────────────────────────────────────

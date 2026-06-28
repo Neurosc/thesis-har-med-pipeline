@@ -55,11 +55,15 @@ REPO_ROOT <- if (length(file_arg) > 0) {
   normalizePath(".")
 }
 
-PIPELINE  <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
-cat(sprintf("Pipeline: %s\n", PIPELINE))
-QIN_DIR   <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
+.args     <- commandArgs(trailingOnly = TRUE)
+PIPELINE  <- if (length(.args) >= 1) .args[1] else "maximal"
+METRIC    <- if (length(.args) >= 2) .args[2] else "auc"
+MLAB      <- if (METRIC == "acw50") "ACW-50" else if (METRIC == "tau") "τ" else "AUC"
+cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
+QBASE     <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+QIN_DIR   <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
 RESID_CSV <- file.path(QIN_DIR, "tables", "auc_diff_quality_residuals.csv")
-AUC_CSV   <- file.path(QIN_DIR, "tables", "qinspheres_auc.csv")
+AUC_CSV   <- file.path(QIN_DIR, "tables", paste0("qinspheres_", METRIC, ".csv"))
 OUT_DIR   <- file.path(QIN_DIR, "tables")
 FIGS_DIR  <- file.path(QIN_DIR, "figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
@@ -68,6 +72,13 @@ LAYER_ORDER <- c("visual", "auditory", "motor", "extero", "intero", "mental")
 PERM_SEED   <- 42L
 N_PERM      <- 10000L
 SW_ALPHA    <- 0.05
+
+# Shapiro-Wilk that degrades gracefully on degenerate input (constant/too-few-distinct
+# values, e.g. discrete ACW-50): returns 0 → forces the Mann-Whitney branch.
+safe_sw <- function(x) {
+  if (length(x) < 3 || length(unique(x)) < 3 || sd(x) == 0) return(0)
+  tryCatch(shapiro.test(x)$p.value, error = function(e) 0)
+}
 
 # ── Plot styling (shared with 02_scatter.R) ───────────────────────────────────
 LAYER_LABELS <- c(
@@ -239,8 +250,8 @@ run_tests <- function(data, label) {
                         stringsAsFactors=FALSE))
     }
 
-    sw_v <- shapiro.test(v_vals)$p.value
-    sw_p <- shapiro.test(p_vals)$p.value
+    sw_v <- safe_sw(v_vals)
+    sw_p <- safe_sw(p_vals)
 
     if (sw_v > SW_ALPHA && sw_p > SW_ALPHA) {
       tt           <- t.test(v_vals, p_vals, var.equal = FALSE)
@@ -366,7 +377,7 @@ make_resid_scatter <- function(d, title, subtitle) {
     scale_x_discrete(labels = LAYER_LABELS) +
     scale_color_manual(values = LAYER_COLORS, guide = "none") +
     scale_y_continuous(limits = resid_ylim) +
-    labs(x = NULL, y = "Quality-adjusted ΔAUC (residual)",
+    labs(x = NULL, y = paste0("Quality-adjusted Δ", MLAB, " (residual)"),
          title = title, subtitle = subtitle) +
     base_theme
 }
@@ -423,7 +434,7 @@ p_diff <- ggplot(plot_df,
   scale_color_manual(values = GROUP_COLORS,
                      labels = c(placebo = "Placebo", verum = "Verum (DMT)"),
                      name = NULL) +
-  labs(x = NULL, y = "Quality-adjusted ΔAUC (residual)",
+  labs(x = NULL, y = paste0("Quality-adjusted Δ", MLAB, " (residual)"),
        title = "Drug effect: Verum vs Placebo residual per layer",
        subtitle = "One point = one subject. Black bars = group medians.") +
   base_theme +

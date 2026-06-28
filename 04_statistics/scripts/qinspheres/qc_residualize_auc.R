@@ -35,12 +35,15 @@ REPO_ROOT <- if (length(file_arg) > 0) {
   normalizePath(".")
 }
 
-PIPELINE <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
-cat(sprintf("Pipeline: %s\n", PIPELINE))
-QIN_DIR <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
+.args    <- commandArgs(trailingOnly = TRUE)
+PIPELINE <- if (length(.args) >= 1) .args[1] else "maximal"
+METRIC   <- if (length(.args) >= 2) .args[2] else "auc"
+cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
+QBASE   <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+QIN_DIR <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
 COV_CSV <- file.path(REPO_ROOT, "99_QC", "01_motion_qc", "results",
                      "fd_covariates_wide_thresh03.csv")   # motion covariates (pipeline-independent)
-AUC_CSV <- file.path(QIN_DIR, "tables", "qinspheres_auc.csv")
+AUC_CSV <- file.path(QIN_DIR, "tables", paste0("qinspheres_", METRIC, ".csv"))
 OUT_DIR  <- file.path(QIN_DIR, "tables")
 OUT_CSV  <- file.path(OUT_DIR, "auc_diff_quality_residuals.csv")
 OUT_LOG  <- file.path(OUT_DIR, "auc_diff_quality_model_summary.txt")

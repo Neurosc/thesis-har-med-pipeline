@@ -29,14 +29,19 @@ REPO_ROOT <- if (length(file_arg))
   normalizePath(file.path(dirname(normalizePath(sub("^--file=", "", file_arg[1]))),
                           "..", "..", "..")) else normalizePath(".")
 
-PIPELINE   <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
-cat(sprintf("Pipeline: %s\n", PIPELINE))
-QIN_DIR    <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
+.args      <- commandArgs(trailingOnly = TRUE)
+PIPELINE   <- if (length(.args) >= 1) .args[1] else "maximal"
+METRIC     <- if (length(.args) >= 2) .args[2] else "auc"
+MLAB       <- if (METRIC == "acw50") "ACW-50" else if (METRIC == "tau") "τ" else "AUC"
+MUNIT      <- sprintf("%s (s)", MLAB)
+cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
+QBASE      <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+QIN_DIR    <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
 TABLES_DIR <- file.path(QIN_DIR, "tables")
 FIGS_DIR   <- file.path(QIN_DIR, "figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
 
-DATA_CSV <- file.path(TABLES_DIR, "qinspheres_auc.csv")
+DATA_CSV <- file.path(TABLES_DIR, paste0("qinspheres_", METRIC, ".csv"))
 DRUG_CSV <- file.path(TABLES_DIR, "layer_drug_effect.csv")
 if (!file.exists(DATA_CSV)) stop("Input not found — run 01_build_df.jl first: ", DATA_CSV)
 
@@ -208,11 +213,11 @@ make_overview <- function(cat) {
     scale_color_manual(values = COND_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:4) * 2, labels = COND_LABELS,
                        expand = expansion(add = c(0.65, 1.00))) +
-    labs(title = LAYER_LABELS[[cat]], y = "Mean AUC (s)", x = NULL) + panel_theme()
+    labs(title = LAYER_LABELS[[cat]], y = paste("Mean", MUNIT), x = NULL) + panel_theme()
 }
 out_png("qin_overview_raincloud_4conditions.png",
         assemble6(lapply(LAYER_ORDER, make_overview),
-                  "AUC per condition and layer (qinspheres, maximal)"), 14, 8)
+                  sprintf("%s per condition and layer (qinspheres %s)", MLAB, PIPELINE)), 14, 8)
 
 # ── Delta (post − pre) per group ───────────────────────────────────────────────
 pre_df  <- subj_means[subj_means$session == "ses-01", c("category", "subject", "group", "mean_auc")]
@@ -231,7 +236,7 @@ make_delta <- function(cat, with_sig = FALSE) {
     scale_color_manual(values = DELTA_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"),
                        expand = expansion(add = c(0.65, 1.00))) +
-    labs(title = LAYER_LABELS[[cat]], y = "ΔAUC (post − pre, s)", x = NULL) + panel_theme()
+    labs(title = LAYER_LABELS[[cat]], y = paste0("Δ", MLAB, " (post − pre, s)"), x = NULL) + panel_theme()
   if (!with_sig) return(p)
   pq  <- drug_p(cat); star <- sig_star(pq[["q"]])
   lab <- if (is.na(pq[["p"]])) "n/a"
@@ -241,7 +246,7 @@ make_delta <- function(cat, with_sig = FALSE) {
 }
 out_png("qin_drug_delta_per_layer.png",
         assemble6(lapply(LAYER_ORDER, make_delta),
-                  "Post − Pre AUC change per layer (qinspheres, maximal)"), 14, 8)
+                  sprintf("Post − Pre %s change per layer (qinspheres %s)", MLAB, PIPELINE)), 14, 8)
 out_png("qin_drug_effect_significance.png",
         assemble6(lapply(LAYER_ORDER, function(c) make_delta(c, with_sig = TRUE)),
                   "Drug effect per layer — permutation p (q = FDR across 6 layers)"), 14, 8)
@@ -258,7 +263,7 @@ make_retreat <- function(cat) {
     scale_color_manual(values = SESSION_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Pre", "Post"),
                        expand = expansion(add = c(0.65, 1.00))) +
-    labs(title = LAYER_LABELS[[cat]], y = "Mean AUC (s)", x = NULL) + panel_theme()
+    labs(title = LAYER_LABELS[[cat]], y = paste("Mean", MUNIT), x = NULL) + panel_theme()
   sig_bracket(p, 1.6, 3.6, d$mean_auc, fmt_p(pp(cat, "placebo")))
 }
 out_png("qin_retreat_per_layer.png",
@@ -282,7 +287,7 @@ make_base <- function(d_in, panel_title) {
     scale_color_manual(values = BASE_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"),
                        expand = expansion(add = c(0.65, 1.00))) +
-    labs(title = panel_title, y = "Mean AUC (s)", x = NULL) + panel_theme()
+    labs(title = panel_title, y = paste("Mean", MUNIT), x = NULL) + panel_theme()
 }
 out_png("qin_QC_baseline_balance_pooled.png",
         make_base(ses01_subj(), "Baseline balance — all layers pooled (ses-01)"), 5, 6)
@@ -317,7 +322,7 @@ make_paired <- function(cat) {
     scale_x_continuous(breaks = unname(XPOS_PAIRED),
                        labels = c("Placebo\nPre", "Placebo\nPost", "Verum\nPre", "Verum\nPost"),
                        expand = expansion(add = c(0.5, 0.5))) +
-    labs(title = LAYER_LABELS[[cat]], y = "Mean AUC (s)", x = NULL) + panel_theme(title_face = "bold")
+    labs(title = LAYER_LABELS[[cat]], y = paste("Mean", MUNIT), x = NULL) + panel_theme(title_face = "bold")
   y_br1 <- y_max + y_span * 0.05; y_t1 <- y_br1 - y_span * 0.02
   y_br2 <- y_br1 + y_span * 0.05; y_t2 <- y_br2 - y_span * 0.02
   p +
@@ -330,7 +335,7 @@ make_paired <- function(cat) {
     coord_cartesian(ylim = c(NA, y_br2 + y_span * 0.10))
 }
 out_png("qin_retreat_paired_prepost.png",
-        assemble6(lapply(LAYER_ORDER, make_paired), "Pre → Post AUC change by drug group"), 14, 9)
+        assemble6(lapply(LAYER_ORDER, make_paired), sprintf("Pre → Post %s change by drug group", MLAB)), 14, 9)
 
 # ── AUC distribution (overall) ─────────────────────────────────────────────────
 dist_theme <- function() theme_minimal(base_size = 12, base_family = "serif") +
@@ -342,7 +347,7 @@ all_auc <- df_raw$auc[is.finite(df_raw$auc)]
 out_png("qin_overall_auc_density.png",
   ggplot(data.frame(auc = all_auc), aes(x = auc)) +
     geom_density(alpha = 0.20, adjust = 1.8, linewidth = 1.0, fill = "#2E8B8B", color = "#2E8B8B") +
-    labs(title = "Overall AUC distribution (qinspheres, maximal)",
-         x = "AUC (seconds)", y = "Density") + dist_theme(), 8, 6)
+    labs(title = sprintf("Overall %s distribution (qinspheres %s)", MLAB, PIPELINE),
+         x = sprintf("%s (seconds)", MLAB), y = "Density") + dist_theme(), 8, 6)
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")

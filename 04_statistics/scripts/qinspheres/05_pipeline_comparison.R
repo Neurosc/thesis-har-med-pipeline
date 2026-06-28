@@ -18,7 +18,10 @@ REPO_ROOT <- if (length(file_arg))
   normalizePath(file.path(dirname(normalizePath(sub("^--file=", "", file_arg[1]))),
                           "..", "..", "..")) else normalizePath(".")
 
-QROOT     <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+METRIC    <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "auc" }
+cat(sprintf("Metric: %s\n", METRIC))
+QBASE     <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+QROOT     <- if (METRIC == "auc") QBASE else file.path(QBASE, METRIC)
 PIPELINES <- c("detrend", "glm", "maximal")
 LAYERS    <- c("visual", "auditory", "motor", "extero", "intero", "mental")
 

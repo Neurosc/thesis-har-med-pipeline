@@ -45,10 +45,13 @@ REPO_ROOT <- if (length(file_arg) > 0) {
   normalizePath(".")
 }
 
-PIPELINE <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "maximal" }
-cat(sprintf("Pipeline: %s\n", PIPELINE))
-QIN_DIR  <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres", PIPELINE)
-DATA_CSV <- file.path(QIN_DIR, "tables", "qinspheres_auc.csv")
+.args    <- commandArgs(trailingOnly = TRUE)
+PIPELINE <- if (length(.args) >= 1) .args[1] else "maximal"
+METRIC   <- if (length(.args) >= 2) .args[2] else "auc"
+cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
+QBASE    <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+QIN_DIR  <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
+DATA_CSV <- file.path(QIN_DIR, "tables", paste0("qinspheres_", METRIC, ".csv"))
 OUT_DIR  <- file.path(QIN_DIR, "tables")
 
 if (!file.exists(DATA_CSV))
@@ -59,6 +62,14 @@ LAYER_ORDER <- c("visual", "auditory", "motor", "extero", "intero", "mental")
 PERM_SEED   <- 42L
 N_PERM      <- 10000L
 SW_ALPHA    <- 0.05
+
+# Shapiro-Wilk that degrades gracefully on degenerate input (e.g. discrete metrics
+# like ACW-50, where a trimmed group can be all-identical): returns 0 (→ forces the
+# Mann-Whitney branch) when values are constant or have < 3 distinct values.
+safe_sw <- function(x) {
+  if (length(x) < 3 || length(unique(x)) < 3 || sd(x) == 0) return(0)
+  tryCatch(shapiro.test(x)$p.value, error = function(e) 0)
+}
 
 # ── Load and verify ───────────────────────────────────────────────────────────
 df <- read.csv(DATA_CSV, stringsAsFactors = FALSE)
@@ -168,8 +179,8 @@ run_tests <- function(deltas, label) {
                         stringsAsFactors=FALSE))
     }
 
-    sw_v <- shapiro.test(v_deltas)$p.value
-    sw_p <- shapiro.test(p_deltas)$p.value
+    sw_v <- safe_sw(v_deltas)
+    sw_p <- safe_sw(p_deltas)
 
     if (sw_v > SW_ALPHA && sw_p > SW_ALPHA) {
       tt           <- t.test(v_deltas, p_deltas, var.equal = FALSE)

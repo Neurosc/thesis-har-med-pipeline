@@ -182,11 +182,11 @@ Both ACW and SampEn loop the **three pipelines × six layers** at **n=39**
 `02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/`.
 
 ### ACW (`01_compute_acw.jl`, Julia + IntrinsicTimescales.jl)
-- TR 1.8 s, n_lags 100, dummy volumes discarded = 6, types `[:auc, :tau]`.
+- TR 1.8 s, n_lags 100, dummy volumes discarded = 6, types `[:auc, :acw50]`.
 - Self-contained (no longer reads `config.toml`); 39-subject list hardcoded to match
   `get_pipeline_subjects()`. Idempotent (skips existing JLD2).
 - Output: `results/acw/{pipeline}/{layer}/{sub}_{ses}.jld2`
-  (vars: `acw_results` [1]=AUC [2]=τ, `parcel_ids`).
+  (vars: `acw_results` [1]=AUC [2]=ACW-50, `parcel_ids`).
 
 ### SampEn (`02_compute_sampen.py`, Python + EntropyHub)
 - Per run × layer: drop 6 dummy volumes → linear detrend → SampEn (m=1, τ=1, r=0.3
@@ -237,30 +237,36 @@ outlier-sensitivity variants. Two flavours: raw ΔAUC and **motion-quality-resid
 ΔAUC (partialled for `pcf_diff`/`pcf_sq_diff`/`mean_fd_retained_diff` from
 `99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`).
 
-All scripts are **pipeline-parameterized**: the R scripts take the pipeline as a trailing
-arg (default `maximal`) and write to `results/qinspheres/{pipeline}/{tables,figures}/`;
-`01_build_df.jl` loops all three. The full analysis is run for **detrend / glm / maximal**.
+Scripts are **pipeline × metric-parameterized**: R scripts take `<pipeline> <metric>`
+trailing args (metric ∈ `auc` | `acw50`, default `maximal auc`). AUC stays at the
+top-level `results/qinspheres/{pipeline}/`; other metrics nest at
+`results/qinspheres/{metric}/{pipeline}/` (so AUC is undisturbed). `01_build_df.jl` emits
+both metrics (acw_results[1]=AUC, [2]=ACW-50; value column named `auc` for both — a
+carryover; figure labels are metric-correct). `safe_sw()` guards Shapiro-Wilk against the
+degenerate (all-identical) groups that the discrete ACW-50 metric can produce.
 
 **Run order** (from repo root; Rscript at `C:\Program Files\R\R-4.6.0\bin\Rscript.exe`):
 ```
-julia   04_statistics/scripts/qinspheres/01_build_df.jl              # all 3 -> {pipeline}/tables/qinspheres_auc.csv
-# then per pipeline (e.g. detrend):
-Rscript 04_statistics/scripts/qinspheres/qc_residualize_auc.R detrend
-Rscript 04_statistics/scripts/qinspheres/statistics.R        detrend  # raw drug-effect tables
-Rscript 04_statistics/scripts/qinspheres/statistics_resid.R  detrend  # residualized + residual figures
-Rscript 04_statistics/scripts/qinspheres/04_figures.R        detrend  # full 6-layer figure suite (qin_*.png)
-# after all 3 pipelines:
-Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R     # -> pipeline_comparison.csv
+julia   04_statistics/scripts/qinspheres/01_build_df.jl                       # both metrics × pipelines
+# then per (pipeline, metric), e.g. detrend acw50:
+Rscript 04_statistics/scripts/qinspheres/qc_residualize_auc.R detrend acw50
+Rscript 04_statistics/scripts/qinspheres/statistics.R        detrend acw50
+Rscript 04_statistics/scripts/qinspheres/statistics_resid.R  detrend acw50
+Rscript 04_statistics/scripts/qinspheres/04_figures.R        detrend acw50
+Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R acw50       # per-metric comparison
 ```
 `04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to 6 layers.
-`02_scatter.R` / `03_drug_effect_figures.R` are the earlier simpler-style figures
-(superseded by `04_figures.R`). `05_pipeline_comparison.R` collates the per-layer
-drug-effect p/q (raw + residualized) across the three pipelines → `pipeline_comparison.csv`.
+`02_scatter.R` / `03_drug_effect_figures.R` are earlier simpler-style figures (AUC only,
+superseded by `04_figures.R`).
 
-**Result (robustness):** exteroception ΔAUC reduction under verum is consistent across all
-three denoising pipelines and strengthens under motion correction (FDR-significant in
-detrend: p=0.006, q=0.035); the visual effect appears only in maximal and is a denoising
-artifact. Nothing else is significant.
+**Results:**
+- **AUC:** exteroception ΔAUC reduction under verum is consistent across all three pipelines
+  and strengthens under motion correction (FDR-significant in detrend: p=0.006, q=0.035);
+  the visual effect is a maximal-only denoising artifact.
+- **ACW-50:** no robust effect — nothing replicates across pipelines (only nominal hit,
+  motor in detrend p=0.082/resid 0.023, is pipeline-specific), and the AUC-exteroception
+  effect does **not** appear in ACW-50. As with the earlier tau check, the drug effect is
+  **AUC-specific**.
 
 **Pending:** SampEn stats (none built yet) + the SampEn re-detrend question (still open).
 
