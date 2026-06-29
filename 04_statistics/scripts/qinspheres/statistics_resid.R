@@ -60,7 +60,8 @@ PIPELINE  <- if (length(.args) >= 1) .args[1] else "maximal"
 METRIC    <- if (length(.args) >= 2) .args[2] else "auc"
 MLAB      <- if (METRIC == "acw50") "ACW-50" else if (METRIC == "sampen") "SampEn" else if (METRIC == "tau") "τ" else "AUC"
 cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
-QBASE     <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+ATLAS     <- if (length(.args) >= 3) .args[3] else "qinspheres"
+QBASE     <- file.path(REPO_ROOT, "04_statistics", "results", ATLAS)
 QIN_DIR   <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
 RESID_CSV <- file.path(QIN_DIR, "tables", "auc_diff_quality_residuals.csv")
 AUC_CSV   <- file.path(QIN_DIR, "tables", paste0("qinspheres_", METRIC, ".csv"))

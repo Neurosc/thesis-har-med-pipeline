@@ -37,7 +37,8 @@ MUNIT      <- if (METRIC == "sampen") MLAB else sprintf("%s (s)", MLAB)   # Samp
 DUNIT      <- if (METRIC == "sampen") "" else ", s"                       # delta-axis unit suffix
 XUNIT      <- if (METRIC == "sampen") "" else " (seconds)"               # density x-axis unit
 cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
-QBASE      <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+ATLAS      <- if (length(.args) >= 3) .args[3] else "qinspheres"
+QBASE      <- file.path(REPO_ROOT, "04_statistics", "results", ATLAS)
 QIN_DIR    <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
 TABLES_DIR <- file.path(QIN_DIR, "tables")
 FIGS_DIR   <- file.path(QIN_DIR, "figures")

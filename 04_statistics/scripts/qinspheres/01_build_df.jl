@@ -16,6 +16,8 @@ using JLD2, CSV, DataFrames, Printf
 const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const PIPELINES  = ["detrend", "glm", "maximal"]
 const METRICS    = [("auc", 1), ("acw50", 2)]   # name => index into acw_results
+const ATLAS      = length(ARGS) >= 1 ? ARGS[1] : "qinspheres"   # qinspheres | qinparcels
+const ACW_DIR    = ATLAS == "qinspheres" ? "acw" : "acw_parcels"
 const PARTS_TSV  = joinpath(REPO_ROOT, "participants.tsv")
 const CATEGORIES = ["intero", "extero", "mental", "auditory", "motor", "visual"]
 const SUBJECTS   = ["sub-$(lpad(i,2,'0'))" for i in 1:40 if !(i in (12,))]   # n=39
@@ -29,11 +31,11 @@ Row = NamedTuple{(:subject,:session,:drug_group,:category,:roi_id,:auc),
 
 # AUC stays at qinspheres/{pipeline}/...; other metrics nest under qinspheres/{metric}/{pipeline}/...
 metric_dir(metric, pipeline) = metric == "auc" ?
-    joinpath(REPO_ROOT, "04_statistics", "results", "qinspheres", pipeline, "tables") :
-    joinpath(REPO_ROOT, "04_statistics", "results", "qinspheres", metric, pipeline, "tables")
+    joinpath(REPO_ROOT, "04_statistics", "results", ATLAS, pipeline, "tables") :
+    joinpath(REPO_ROOT, "04_statistics", "results", ATLAS, metric, pipeline, "tables")
 
 function build(metric, midx, pipeline)
-    jld2_dir = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", "acw", pipeline)
+    jld2_dir = joinpath(REPO_ROOT, "03_intrinsic_neural_metrics", "results", ACW_DIR, pipeline)
     out_dir  = metric_dir(metric, pipeline)
     out_csv  = joinpath(out_dir, "qinspheres_$(metric).csv")
 

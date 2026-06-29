@@ -19,7 +19,8 @@ REPO_ROOT <- if (length(file_arg))
 
 METRIC    <- { a <- commandArgs(trailingOnly = TRUE); if (length(a) >= 1) a[1] else "auc" }
 cat(sprintf("Metric: %s\n", METRIC))
-QBASE     <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+ATLAS     <- { .aa <- commandArgs(trailingOnly = TRUE); if (length(.aa) >= 2) .aa[2] else "qinspheres" }
+QBASE     <- file.path(REPO_ROOT, "04_statistics", "results", ATLAS)
 QROOT     <- if (METRIC == "auc") QBASE else file.path(QBASE, METRIC)
 PIPELINES <- c("detrend", "glm", "maximal")
 LAYERS    <- c("visual", "auditory", "motor", "extero", "intero", "mental")

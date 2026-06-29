@@ -39,7 +39,8 @@ REPO_ROOT <- if (length(file_arg) > 0) {
 PIPELINE <- if (length(.args) >= 1) .args[1] else "maximal"
 METRIC   <- if (length(.args) >= 2) .args[2] else "auc"
 cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
-QBASE   <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
+ATLAS   <- if (length(.args) >= 3) .args[3] else "qinspheres"
+QBASE   <- file.path(REPO_ROOT, "04_statistics", "results", ATLAS)
 QIN_DIR <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
 COV_CSV <- file.path(REPO_ROOT, "99_QC", "01_motion_qc", "results",
                      "fd_covariates_wide_thresh03.csv")   # motion covariates (pipeline-independent)
