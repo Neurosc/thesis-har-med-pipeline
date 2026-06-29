@@ -300,11 +300,11 @@ same 6 sphere layers × 3 pipelines, n=35; per-layer drug-effect test (permutati
 identical methodology to AUC. SampEn df built from
 `03_intrinsic_neural_metrics/results/sampen/{pipeline}/{layer}/…_sampen.csv` →
 `results/qinspheres/sampen/{pipeline}/tables/qinspheres_sampen.csv` (value column named `auc`).
-**Reported RAW** (per user; SampEn residualized was equally null, residual outputs removed —
-the always-residualize rule still applies to all *other* analyses).
-**Result: comprehensive null** — nothing significant in any layer/pipeline (smallest perm p = 0.14
-[intero/glm], smallest FDR q = 0.61). Exteroception SampEn p=0.32–0.97, so the AUC-exteroception
-effect is **timescale-specific, not reflected in signal irregularity (SampEn)**.
+Run **both raw and motion-residualized** (the always-residualize rule applies to SampEn too).
+**Result: comprehensive null** — nothing significant in any layer/pipeline, raw or residualized
+(raw smallest perm p ≈ 0.14, smallest FDR q ≈ 0.61; residualized equally null, all q ≥ 0.31).
+Exteroception SampEn p=0.20–0.97, so the AUC-exteroception effect is **timescale-specific, not
+reflected in signal irregularity (SampEn)**.
 
 **Parcel version (`qinparcels`):** the same 6 regions as **whole Glasser parcels** (self from the
 Keskin focus-point→parcel mapping in `glasser_self_metadata.tsv` — intero 14 / extero 16 / mental 12;

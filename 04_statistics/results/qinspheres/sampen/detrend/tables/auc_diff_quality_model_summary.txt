@@ -1,0 +1,97 @@
+═══════════════════════════════════════════════════════════════════════
+QC residualization: AUC_diff ~ 1 + pcf_diff + pcf_sq_diff + mean_fd_retained_diff
+Run: 2026-06-29 21:16:01
+═══════════════════════════════════════════════════════════════════════
+
+── Input files ──────────────────────────────────────────────────────────
+  Covariates:  C:\Users\JLU-MBB\thesis-har-med-pipeline/99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv
+    40 rows × 16 columns; 40 unique subjects
+  AUC data:    C:\Users\JLU-MBB\thesis-har-med-pipeline/04_statistics/results/qinspheres/sampen/detrend/tables/qinspheres_sampen.csv
+    9940 rows × 6 columns; 35 unique subjects
+
+── Subject inventory ────────────────────────────────────────────────────
+  Covariates file:  40 subjects
+  AUC file:         35 subjects
+  WARNING — in covariates but not AUC (5): sub-06, sub-08, sub-12, sub-26, sub-36
+  Intersection (will enter analysis): 35 subjects
+  Subjects available for modelling: 35
+
+  Note: dropped 41 non-finite AUC values before aggregation
+
+── Per-layer OLS model fits ─────────────────────────────────────────────
+
+  ── VISUAL ──
+    N entering model: 35
+    R²          = 0.2207  (22.1% variance explained)
+    Adjusted R² = 0.1453
+
+    Coefficient                    Estimate    Std.Err         t          p
+    ────────────────────────────────────────────────────────────────────
+    (Intercept)                     0.07232    0.04316     1.676     0.1039
+    pcf_diff                        0.00807    0.01140     0.708     0.4842
+    pcf_sq_diff                     0.00013    0.00019     0.674     0.5055
+    mean_fd_retained_diff          -2.05079    3.22210    -0.636     0.5291
+
+  ── AUDITORY ──
+    N entering model: 35
+    R²          = 0.1228  (12.3% variance explained)
+    Adjusted R² = 0.0379
+
+    Coefficient                    Estimate    Std.Err         t          p
+    ────────────────────────────────────────────────────────────────────
+    (Intercept)                     0.11780    0.05132     2.295     0.0286
+    pcf_diff                        0.02042    0.01355     1.507     0.1418
+    pcf_sq_diff                    -0.00018    0.00022    -0.808     0.4252
+    mean_fd_retained_diff          -2.38374    3.83101    -0.622     0.5383
+
+  ── MOTOR ──
+    N entering model: 35
+    R²          = 0.1381  (13.8% variance explained)
+    Adjusted R² = 0.0547
+
+    Coefficient                    Estimate    Std.Err         t          p
+    ────────────────────────────────────────────────────────────────────
+    (Intercept)                     0.10661    0.04715     2.261     0.0309
+    pcf_diff                        0.01171    0.01245     0.941     0.3540
+    pcf_sq_diff                    -0.00002    0.00021    -0.099     0.9215
+    mean_fd_retained_diff          -0.85171    3.52012    -0.242     0.8104
+
+  ── EXTERO ──
+    N entering model: 35
+    R²          = 0.0797  (8.0% variance explained)
+    Adjusted R² = -0.0093
+
+    Coefficient                    Estimate    Std.Err         t          p
+    ────────────────────────────────────────────────────────────────────
+    (Intercept)                     0.03158    0.04742     0.666     0.5104
+    pcf_diff                        0.01561    0.01252     1.247     0.2218
+    pcf_sq_diff                    -0.00019    0.00021    -0.933     0.3579
+    mean_fd_retained_diff          -0.67932    3.53998    -0.192     0.8491
+
+  ── INTERO ──
+    N entering model: 35
+    R²          = 0.0438  (4.4% variance explained)
+    Adjusted R² = -0.0488
+
+    Coefficient                    Estimate    Std.Err         t          p
+    ────────────────────────────────────────────────────────────────────
+    (Intercept)                     0.05115    0.05389     0.949     0.3499
+    pcf_diff                        0.01340    0.01423     0.942     0.3536
+    pcf_sq_diff                    -0.00024    0.00023    -1.007     0.3217
+    mean_fd_retained_diff           0.12143    4.02292     0.030     0.9761
+
+  ── MENTAL ──
+    N entering model: 35
+    R²          = 0.1316  (13.2% variance explained)
+    Adjusted R² = 0.0476
+
+    Coefficient                    Estimate    Std.Err         t          p
+    ────────────────────────────────────────────────────────────────────
+    (Intercept)                    -0.05552    0.05038    -1.102     0.2789
+    pcf_diff                       -0.00078    0.01330    -0.058     0.9538
+    pcf_sq_diff                     0.00004    0.00022     0.179     0.8588
+    mean_fd_retained_diff           4.89133    3.76086     1.301     0.2030
+
+── Output summary ───────────────────────────────────────────────────────
+  Output rows:                   35 subjects
+  Rows with all 6 residuals:     35

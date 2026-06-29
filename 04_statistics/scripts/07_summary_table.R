@@ -44,10 +44,11 @@ for (atlas in c("qinspheres", "qinparcels")) {
     samp <- read.csv(file.path(RES, atlas, "sampen", pl, "tables", "qinspheres_sampen.csv"))
     lde  <- list(AUC  = read.csv(file.path(RES, atlas, pl, "tables", "layer_drug_effect.csv")),
                  SampEn = read.csv(file.path(RES, atlas, "sampen", pl, "tables", "layer_drug_effect.csv")))
-    rde_p <- file.path(RES, atlas, pl, "tables", "layer_drug_effect_resid.csv")
-    rde   <- if (file.exists(rde_p)) read.csv(rde_p) else NULL
     for (met in c("AUC", "SampEn")) {
       df    <- if (met == "AUC") auc else samp
+      rde_p <- if (met == "AUC") file.path(RES, atlas, pl, "tables", "layer_drug_effect_resid.csv") else
+               file.path(RES, atlas, "sampen", pl, "tables", "layer_drug_effect_resid.csv")
+      rde   <- if (file.exists(rde_p)) read.csv(rde_p) else NULL
       valid <- if (met == "AUC") (df$auc > 0 & is.finite(df$auc)) else is.finite(df$auc)
       d     <- subj_delta(df, valid)
       for (lay in LAYERS) {
@@ -58,7 +59,7 @@ for (atlas in c("qinspheres", "qinparcels")) {
         full    <- sum(samp$category == lay)            # all ROI-observations (SampEn unfiltered)
         present <- sum(valid & df$category == lay)
         prr <- pqr <- NA
-        if (met == "AUC" && !is.null(rde)) { rr <- rde[rde$layer == lay, ]
+        if (!is.null(rde)) { rr <- rde[rde$layer == lay, ]
           if (nrow(rr)) { prr <- rr$perm_p_raw[1]; pqr <- rr$perm_p_fdr[1] } }
         rows[[length(rows) + 1]] <- data.frame(
           metric = met, atlas = atlas, pipeline = pl, layer = unname(LL[lay]),
