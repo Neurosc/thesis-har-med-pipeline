@@ -6,7 +6,7 @@ Two intrinsic-dynamics metrics from resting-state fMRI, compared across
 **six brain layers** (Qin et al. 2020 self + sensory/motor nonself), in a
 within-subject pre/post design:
 
-- **ACW** — Autocorrelation Window (AUC and τ), the intrinsic neural timescale.
+- **ACW** — Autocorrelation Window (AUC), the intrinsic neural timescale.
 - **SampEn** — Sample Entropy, signal irregularity.
 
 **Dataset:** DMT-MED, **35 subjects × 2 sessions = 70 runs**, NoGSR denoising only.
@@ -182,11 +182,11 @@ Both ACW and SampEn loop the **three pipelines × six layers** at **n=39**
 `02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/`.
 
 ### ACW (`01_compute_acw.jl`, Julia + IntrinsicTimescales.jl)
-- TR 1.8 s, n_lags 100, dummy volumes discarded = 6, types `[:auc, :acw50]`.
+- TR 1.8 s, n_lags 100, dummy volumes discarded = 6, type `[:auc]`.
 - Self-contained (no longer reads `config.toml`); 39-subject list hardcoded to match
   `get_pipeline_subjects()`. Idempotent (skips existing JLD2).
 - Output: `results/acw/{pipeline}/{layer}/{sub}_{ses}.jld2`
-  (vars: `acw_results` [1]=AUC [2]=ACW-50, `parcel_ids`).
+  (vars: `acw_results` [1]=AUC, `parcel_ids`).
 
 ### SampEn (`02_compute_sampen.py`, Python + EntropyHub)
 - Per run × layer: drop 6 dummy volumes → linear detrend → SampEn (m=1, τ=1, r=0.3
@@ -217,7 +217,7 @@ Both ACW and SampEn loop the **three pipelines × six layers** at **n=39**
 - `01_motion_qc/` — FD, motion, subject exclusion, thesis figures
   (`thesis_figures/supplementary/` is the only valid thesis-figure dir).
 - `02_denoising_qc/` — DVARS pre/post + FD-DVARS coupling.
-- `03_acw_qc/` — τ distribution, tSNR / dropout checks, ROI-placement viewer.
+- `03_acw_qc/` — AUC distribution, tSNR / dropout checks, ROI-placement viewer.
 - `troubleshooting/` — non-thesis experiments.
 - **tSNR note:** the old 58-parcel tSNR exclusion list belonged to the *parcels* atlas
   (now in `_archive/`). A sphere-based tSNR check must be recomputed if ROI exclusion is
@@ -243,13 +243,15 @@ pipelines** — the residualization removes the **session-wise FD/motion** confo
 matters most for detrend/glm (they don't censor, so motion stays in the data). Run
 `qc_residualize_auc.R` + `statistics_resid.R` per pipeline.
 
-Scripts are **pipeline × metric-parameterized**: R scripts take `<pipeline> <metric>`
-trailing args (metric ∈ `auc` | `acw50`, default `maximal auc`). AUC stays at the
-top-level `results/qinspheres/{pipeline}/`; other metrics nest at
-`results/qinspheres/{metric}/{pipeline}/` (so AUC is undisturbed). `01_build_df.jl` emits
-both metrics (acw_results[1]=AUC, [2]=ACW-50; value column named `auc` for both — a
-carryover; figure labels are metric-correct). `safe_sw()` guards Shapiro-Wilk against the
-degenerate (all-identical) groups that the discrete ACW-50 metric can produce.
+Scripts are **pipeline × metric × atlas-parameterized**: R scripts take
+`<pipeline> <metric> <atlas>` trailing args (metric ∈ `auc` | `sampen`; atlas ∈
+`qinspheres` | `qinparcels`; default `maximal auc qinspheres`). AUC stays at the top-level
+`results/{atlas}/{pipeline}/`; other metrics nest at `results/{atlas}/{metric}/{pipeline}/`.
+`01_build_df.jl` emits AUC (`acw_results[1]`; value column named `auc`). `safe_sw()` guards
+Shapiro-Wilk against degenerate (all-identical) groups. **ACW-50 and τ were removed** — they
+were defective operationalizations (ACW-50 is TR-quantized/discrete; τ a noisy single-parameter
+fit), so their failure to "replicate" the AUC effect is **not** valid evidence and they are not
+reported.
 
 **Non-positive AUC dropped:** `01_build_df.jl` removes ROIs with `auc ≤ 0` (AUC metric only).
 Without bandpass, the broadband signal's autocorrelation collapses to/below zero, giving 0 or
@@ -259,13 +261,14 @@ unaffected. Underlying ACW values are still in the JLD2; only the analysis CSV i
 
 **Run order** (from repo root; Rscript at `C:\Program Files\R\R-4.6.0\bin\Rscript.exe`):
 ```
-julia   04_statistics/scripts/qinspheres/01_build_df.jl                       # both metrics × pipelines
-# then per (pipeline, metric), e.g. detrend acw50:
-Rscript 04_statistics/scripts/qinspheres/qc_residualize_auc.R detrend acw50
-Rscript 04_statistics/scripts/qinspheres/statistics.R        detrend acw50
-Rscript 04_statistics/scripts/qinspheres/statistics_resid.R  detrend acw50
-Rscript 04_statistics/scripts/qinspheres/04_figures.R        detrend acw50
-Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R acw50       # per-metric comparison
+julia   04_statistics/scripts/qinspheres/01_build_df.jl [atlas]                # AUC × pipelines (n=35)
+python  04_statistics/scripts/qinspheres/01_build_sampen_df.py [atlas]         # SampEn × pipelines (n=35)
+# then per (pipeline, metric, atlas), e.g. detrend auc qinparcels:
+Rscript 04_statistics/scripts/qinspheres/qc_residualize_auc.R detrend auc qinparcels
+Rscript 04_statistics/scripts/qinspheres/statistics.R        detrend auc qinparcels
+Rscript 04_statistics/scripts/qinspheres/statistics_resid.R  detrend auc qinparcels
+Rscript 04_statistics/scripts/qinspheres/04_figures.R        detrend auc qinparcels
+Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R auc qinparcels   # per-metric/atlas comparison
 ```
 `04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to 6 layers.
 `02_scatter.R` / `03_drug_effect_figures.R` are earlier simpler-style figures (AUC only,
@@ -277,8 +280,8 @@ superseded by `04_figures.R`).
   maximal-residualized: p=0.022, a strong trend that does NOT survive FDR** (6-layer q≈0.13;
   a-priori self-only 3-layer family q=0.067). FDR-significant only in **detrend** (q=0.016 — the
   broadband-degraded pipeline). The effect is **qin-sphere- and AUC-specific**: it is **null in
-  every parcel analysis** (extero resid p=0.46) and **every SampEn analysis**, and fails for
-  tau/ACW-50. Within-group: placebo extero ΔAUC rises (trend in maximal p≈0.07, sig in
+  every parcel analysis** (extero resid p=0.46) and **every SampEn analysis**.
+  Within-group: placebo extero ΔAUC rises (trend in maximal p≈0.07, sig in
   detrend/glm) while verum is flat — but this dissociation does **not** replicate with parcels
   (both rise). **Reported as a directional trend, not a confirmed effect.** The visual effect is
   a maximal-only denoising artifact.
@@ -291,12 +294,6 @@ superseded by `04_figures.R`).
   **exteroception↓ vs cognition↑ dissociation** under verum (cognition/intero timescales rise,
   extero/visual fall; auditory/motor flat). Absent in detrend/glm. Borderline and maximal-only →
   suggestive. Fig `qin_interaction_category_by_drug.png`, table `interaction_category_by_drug.csv`.
-- **ACW-50:** values are **computed and kept** (`acw_results[2]` in the JLD2 +
-  `results/qinspheres/acw50/{pipeline}/tables/qinspheres_acw50.csv`) but the statistical
-  analysis was **removed** — ACW-50 showed no robust effect and did not reproduce the
-  AUC-exteroception finding (the effect is AUC-specific; see the earlier ACW-50/tau checks).
-  To regenerate ACW-50 stats, re-run the chain with the `acw50` metric arg. Only **AUC** is
-  the reported analysis.
 
 **SampEn (`01_build_sampen_df.py` + the metric-parameterized R pipeline, metric=`sampen`):**
 same 6 sphere layers × 3 pipelines, n=35; per-layer drug-effect test (permutation + BH-FDR),

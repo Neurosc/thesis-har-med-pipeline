@@ -10,7 +10,7 @@
 using IntrinsicTimescales, CSV, DataFrames, JLD2
 
 const TR = 1.8; const FS = 1.0 / TR; const N_LAGS = 100; const DUMMY = 6
-const ACW_TYPES = [:auc, :acw50]; const SKIP_ZERO_LAG = false
+const ACW_TYPES = [:auc]; const SKIP_ZERO_LAG = false   # ACW-50 removed (defective metric)
 
 const REPO     = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const PIPELINES = ["detrend", "glm", "maximal"]

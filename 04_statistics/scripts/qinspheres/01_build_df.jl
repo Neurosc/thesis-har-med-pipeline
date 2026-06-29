@@ -15,7 +15,7 @@ using JLD2, CSV, DataFrames, Printf
 
 const REPO_ROOT  = normpath(joinpath(@__DIR__, "..", "..", ".."))
 const PIPELINES  = ["detrend", "glm", "maximal"]
-const METRICS    = [("auc", 1), ("acw50", 2)]   # name => index into acw_results
+const METRICS    = [("auc", 1)]   # name => index into acw_results (ACW-50 removed — defective metric)
 const ATLAS      = length(ARGS) >= 1 ? ARGS[1] : "qinspheres"   # qinspheres | qinparcels
 const ACW_DIR    = ATLAS == "qinspheres" ? "acw" : "acw_parcels"
 const PARTS_TSV  = joinpath(REPO_ROOT, "participants.tsv")

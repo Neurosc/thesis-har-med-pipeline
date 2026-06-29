@@ -23,7 +23,7 @@ const TR            = 1.8
 const FS            = 1.0 / TR
 const N_LAGS        = 100
 const DUMMY_VOLUMES = 6
-const ACW_TYPES     = [:auc, :acw50]   # [1]=AUC, [2]=ACW-50
+const ACW_TYPES     = [:auc]   # [1]=AUC (ACW-50 removed — defective metric)
 const SKIP_ZERO_LAG = false
 
 # ── Design ───────────────────────────────────────────────────────────────────
