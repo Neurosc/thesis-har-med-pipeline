@@ -319,10 +319,12 @@ drug-specific flattening) — the per-parcel G1 column is kept only as optional 
   test, BH-FDR) and `04_network_drugdiff_plot.R` (first-glance jitter+median plot, **5 focus
   networks**: Sensorimotor=Somatomotor, Salience=Cingulo-Opercular, Dorsal-Attention,
   CentralExecutive=Frontoparietal, **DefaultMode=Default**).
-- **Result so far:** placebo lengthens timescales more than verum in **every** network (consistent
-  with Result 1) but underpowered — global maximal p=0.27, nothing survives FDR. The placebo>verum
-  gap is largest in **Sensorimotor & Dorsal-Attention**, modest in **DMN** (verum ≈ 0). DMN-vs-others
-  contrast = the next planned test.
+- **Result:** placebo lengthens timescales more than verum in **every** network (consistent with
+  Result 1) but underpowered. Per-network drug test (residualized, `05_…test.R`): all 5 verum<placebo;
+  Dorsal-Attention p=0.033 / Sensorimotor p=0.064 nominal, **none survive FDR** (q≥0.16); DMN mid-pack.
+  Network×drug interaction and **DMN-vs-others** both **null** (`06_…interaction.R`; maximal p=0.53 / 0.59).
+  → the drug effect is **global/uniform, not network-specific; DMN is not special** (hypothesis tested,
+  not supported). All residualized (mandatory). Detrend agrees in direction (broadband-inflated), glm null.
 
 ## Things NOT to redo / change
 - Do not reintroduce GSR or the Glasser-parcels atlas into the active flow.
