@@ -293,7 +293,15 @@ superseded by `04_figures.R`).
   To regenerate ACW-50 stats, re-run the chain with the `acw50` metric arg. Only **AUC** is
   the reported analysis.
 
-**Pending:** SampEn stats (none built yet) + the SampEn re-detrend question (still open).
+**SampEn (`01_build_sampen_df.py` + the metric-parameterized R pipeline, metric=`sampen`):**
+same 6 sphere layers × 3 pipelines, n=39; per-layer drug-effect test (raw + motion-residualized,
+permutation + BH-FDR), identical methodology to AUC. SampEn df built from
+`03_intrinsic_neural_metrics/results/sampen/{pipeline}/{layer}/…_sampen.csv` →
+`results/qinspheres/sampen/{pipeline}/tables/qinspheres_sampen.csv` (value column named `auc`).
+**Result: comprehensive null** — nothing significant in any layer/pipeline, raw or residualized
+(smallest perm p anywhere = 0.14, smallest FDR q = 0.61). Exteroception SampEn p=0.27–0.97, so the
+AUC-exteroception effect is **timescale-specific, not reflected in signal irregularity (SampEn)**.
+(SampEn re-detrend question still open but immaterial given the null.)
 
 ---
 

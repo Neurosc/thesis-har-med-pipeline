@@ -32,8 +32,10 @@ REPO_ROOT <- if (length(file_arg))
 .args      <- commandArgs(trailingOnly = TRUE)
 PIPELINE   <- if (length(.args) >= 1) .args[1] else "maximal"
 METRIC     <- if (length(.args) >= 2) .args[2] else "auc"
-MLAB       <- if (METRIC == "acw50") "ACW-50" else if (METRIC == "tau") "τ" else "AUC"
-MUNIT      <- sprintf("%s (s)", MLAB)
+MLAB       <- if (METRIC == "acw50") "ACW-50" else if (METRIC == "sampen") "SampEn" else if (METRIC == "tau") "τ" else "AUC"
+MUNIT      <- if (METRIC == "sampen") MLAB else sprintf("%s (s)", MLAB)   # SampEn is unitless
+DUNIT      <- if (METRIC == "sampen") "" else ", s"                       # delta-axis unit suffix
+XUNIT      <- if (METRIC == "sampen") "" else " (seconds)"               # density x-axis unit
 cat(sprintf("Pipeline: %s  Metric: %s\n", PIPELINE, METRIC))
 QBASE      <- file.path(REPO_ROOT, "04_statistics", "results", "qinspheres")
 QIN_DIR    <- if (METRIC == "auc") file.path(QBASE, PIPELINE) else file.path(QBASE, METRIC, PIPELINE)
@@ -236,7 +238,7 @@ make_delta <- function(cat, with_sig = FALSE) {
     scale_color_manual(values = DELTA_COLORS, guide = "none") +
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"),
                        expand = expansion(add = c(0.65, 1.00))) +
-    labs(title = LAYER_LABELS[[cat]], y = paste0("Δ", MLAB, " (post − pre, s)"), x = NULL) + panel_theme()
+    labs(title = LAYER_LABELS[[cat]], y = paste0("Δ", MLAB, " (post − pre", DUNIT, ")"), x = NULL) + panel_theme()
   if (!with_sig) return(p)
   pq  <- drug_p(cat); star <- sig_star(pq[["q"]])
   lab <- if (is.na(pq[["p"]])) "n/a"
@@ -348,7 +350,7 @@ out_png("qin_overall_auc_density.png",
   ggplot(data.frame(auc = all_auc), aes(x = auc)) +
     geom_density(alpha = 0.20, adjust = 1.8, linewidth = 1.0, fill = "#2E8B8B", color = "#2E8B8B") +
     labs(title = sprintf("Overall %s distribution (qinspheres %s)", MLAB, PIPELINE),
-         x = sprintf("%s (seconds)", MLAB), y = "Density") + dist_theme(), 8, 6)
+         x = paste0(MLAB, XUNIT), y = "Density") + dist_theme(), 8, 6)
 
 # ── Residualized drug-effect figure (parcels style) — only where residuals exist ───
 # (residualization is run for maximal only, so this is generated for maximal.)
