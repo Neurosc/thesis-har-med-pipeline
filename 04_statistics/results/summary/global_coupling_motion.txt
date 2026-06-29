@@ -1,0 +1,17 @@
+###### TEST 3 — MOTION CONFOUND (do first) ######
+  postFD  verum=0.2131 placebo=0.2155 diff=-0.0025  t=-0.14 p=0.890 d=-0.05
+  dFD     verum=-0.0122 placebo=0.0089 diff=-0.0211  t=-1.47 p=0.151 d=-0.50
+  dFD vs dSampEn (qinspheres): r=-0.054 p=0.758 n=35
+  dFD vs dSampEn (qinparcels): r=+0.141 p=0.418 n=35
+
+###### TEST 1 — GLOBAL EFFECT (maximal, no FDR) ######
+  AUC    qinspheres  verum=+0.088 placebo=+0.117 diff=-0.029 p_raw=0.576 d=-0.19 | resid_diff=-0.043 p=0.388
+  AUC    qinparcels  verum=+0.142 placebo=+0.202 diff=-0.060 p_raw=0.519 d=-0.22 | resid_diff=-0.103 p=0.221
+  SampEn qinspheres  verum=+0.088 placebo=+0.019 diff=+0.069 p_raw=0.358 d=0.31 | resid_diff=+0.067 p=0.362
+  SampEn qinparcels  verum=+0.099 placebo=+0.028 diff=+0.071 p_raw=0.376 d=0.30 | resid_diff=+0.088 p=0.266
+
+###### TEST 2 — AUC x SampEn COUPLING (maximal) ######
+  qinspheres: verum r=-0.252 p=0.329 (n=17) | all35 r=-0.045 p=0.797 (n=35)
+  qinparcels: verum r=-0.240 p=0.352 (n=17) | all35 r=-0.296 p=0.085 (n=35)
+
+POWER: SampEn global d≈0.31 → ~16% power at n=17/18 (α=.05). 80% power needs d≈0.97, or ~165/arm at d=0.31.
