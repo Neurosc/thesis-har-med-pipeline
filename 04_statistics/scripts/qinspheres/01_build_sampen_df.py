@@ -25,6 +25,7 @@ PARTS   = REPO / "participants.tsv"
 OUTBASE = REPO / "04_statistics" / "results" / ATLAS / "sampen"
 PIPELINES = ["detrend", "glm", "maximal"]
 LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
+EXCL      = {"sub-06", "sub-08", "sub-12", "sub-26", "sub-36"}   # get_included_subjects (n=35)
 
 arm = dict(zip(*[pd.read_csv(PARTS, sep="\t")[c] for c in ("participant_id", "condition")]))
 FN  = re.compile(r"^(sub-\d+)_(ses-\d+)_(\w+)_sampen\.csv$")
@@ -36,6 +37,8 @@ for pl in PIPELINES:
         for f in sorted(ld.glob(f"*_{layer}_sampen.csv")):
             m = FN.match(f.name)
             sub, ses = m.group(1), m.group(2)
+            if sub in EXCL:
+                continue
             d = pd.read_csv(f)
             for _, r in d.iterrows():
                 rows.append(dict(subject=sub, session=ses, drug_group=arm.get(sub, "unknown"),

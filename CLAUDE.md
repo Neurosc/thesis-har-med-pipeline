@@ -100,7 +100,7 @@ thesis-har-med-pipeline/
 │   ├── scripts/02_compute_sampen.py       (SampEn, 3 pipelines)
 │   └── results/acw/{pipeline}/{layer}/  + results/sampen/{pipeline}/{layer}/
 ├── 99_QC/                         01_motion_qc, 02_denoising_qc, 03_acw_qc, troubleshooting
-├── 04_statistics/scripts/qinspheres/   ACW drug-effect analysis (maximal, n=39) + results/qinspheres/
+├── 04_statistics/scripts/qinspheres/   ACW drug-effect analysis (maximal, n=35) + results/qinspheres/
 └── _archive/                      everything retired (see below)
 ```
 
@@ -227,8 +227,11 @@ Both ACW and SampEn loop the **three pipelines × six layers** at **n=39**
 
 ## Statistics (`04_statistics/`) — ACW drug-effect analysis (qinspheres, maximal)
 The active analysis is `scripts/qinspheres/`, on the **maximal** pipeline ACW-AUC at
-**n=39** (the parcels_NoGSR / GSR / _old analyses are archived under
-`_archive/statistics_parcels_and_old/`).
+**n=35** (the parcels_NoGSR / GSR / _old analyses are archived under
+`_archive/statistics_parcels_and_old/`). **Sample = n=35** = `get_included_subjects` (drop
+sub-06/08/12/26/36): the ACW/SampEn *compute* loops n=39 (keeps high-motion for denoising
+robustness), but `01_build_df.jl` / `01_build_sampen_df.py` filter to **n=35** so all stats
+(spheres AND parcels) are on the same FD-included sample.
 
 **Design:** per-layer (6 layers, kept separate) subject-level drug-effect test —
 ΔAUC = mean post − pre per subject×layer; statistic = mean(verum Δ) − mean(placebo Δ);
@@ -269,14 +272,16 @@ Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R acw50       # 
 superseded by `04_figures.R`).
 
 **Results:**
-- **AUC:** exteroception ΔAUC reduction under verum (after dropping non-positive AUC — see
-  the build note below). Motion-residualized perm p = 0.007 / 0.155 / 0.025, FDR q =
-  **0.040** / 0.932 / **0.151** (detrend / glm / maximal). The **primary report is
-  maximal-residualized: q=0.151 — marginal, does NOT survive FDR**. In the robustness set it's
-  FDR-significant in detrend (q=0.040) but null in glm; i.e. inconsistent across pipelines, and
-  the lighter detrend/glm pipelines also suffer the AUC degeneracy. The visual effect is a
-  maximal-only denoising artifact. (Maximal is held back partly by one placebo outlier, sub-37;
-  Tukey-IQR → maximal raw q=0.116 — see `pipeline_comparison.csv`.)
+- **AUC (n=35):** exteroception ΔAUC reduction under verum (after dropping non-positive AUC).
+  Motion-residualized perm p = 0.005 / 0.239 / **0.022** (detrend / glm / maximal). **Primary =
+  maximal-residualized: p=0.022, a strong trend that does NOT survive FDR** (6-layer q≈0.13;
+  a-priori self-only 3-layer family q=0.067). FDR-significant only in **detrend** (q=0.016 — the
+  broadband-degraded pipeline). The effect is **qin-sphere- and AUC-specific**: it is **null in
+  every parcel analysis** (extero resid p=0.46) and **every SampEn analysis**, and fails for
+  tau/ACW-50. Within-group: placebo extero ΔAUC rises (trend in maximal p≈0.07, sig in
+  detrend/glm) while verum is flat — but this dissociation does **not** replicate with parcels
+  (both rise). **Reported as a directional trend, not a confirmed effect.** The visual effect is
+  a maximal-only denoising artifact.
 - **Category × Drug interaction (result 2 — do the 6 layers change *differently*?):**
   `06_interaction.R` — `lmer(ΔAUC ~ category*drug + (1|subject))`, Type III F (Satterthwaite)
   + subject-level permutation of drug labels, raw + residualized, all 3 pipelines.
@@ -294,7 +299,7 @@ superseded by `04_figures.R`).
   the reported analysis.
 
 **SampEn (`01_build_sampen_df.py` + the metric-parameterized R pipeline, metric=`sampen`):**
-same 6 sphere layers × 3 pipelines, n=39; per-layer drug-effect test (permutation + BH-FDR),
+same 6 sphere layers × 3 pipelines, n=35; per-layer drug-effect test (permutation + BH-FDR),
 identical methodology to AUC. SampEn df built from
 `03_intrinsic_neural_metrics/results/sampen/{pipeline}/{layer}/…_sampen.csv` →
 `results/qinspheres/sampen/{pipeline}/tables/qinspheres_sampen.csv` (value column named `auc`).

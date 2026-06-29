@@ -1,100 +1,100 @@
 ═══════════════════════════════════════════════════════════════════════
 QC residualization: AUC_diff ~ 1 + pcf_diff + pcf_sq_diff + mean_fd_retained_diff
-Run: 2026-06-28 19:02:11
+Run: 2026-06-29 20:02:27
 ═══════════════════════════════════════════════════════════════════════
 
 ── Input files ──────────────────────────────────────────────────────────
   Covariates:  C:\Users\JLU-MBB\thesis-har-med-pipeline/99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv
     40 rows × 16 columns; 40 unique subjects
   AUC data:    C:\Users\JLU-MBB\thesis-har-med-pipeline/04_statistics/results/qinspheres/detrend/tables/qinspheres_auc.csv
-    10034 rows × 6 columns; 39 unique subjects
+    8935 rows × 6 columns; 35 unique subjects
 
 ── Subject inventory ────────────────────────────────────────────────────
   Covariates file:  40 subjects
-  AUC file:         39 subjects
-  WARNING — in covariates but not AUC (1): sub-12
-  Intersection (will enter analysis): 39 subjects
-  Subjects available for modelling: 39
+  AUC file:         35 subjects
+  WARNING — in covariates but not AUC (5): sub-06, sub-08, sub-12, sub-26, sub-36
+  Intersection (will enter analysis): 35 subjects
+  Subjects available for modelling: 35
 
 ── Per-layer OLS model fits ─────────────────────────────────────────────
 
   ── VISUAL ──
-    N entering model: 39
-    R²          = 0.0592  (5.9% variance explained)
-    Adjusted R² = -0.0214
+    N entering model: 35
+    R²          = 0.0506  (5.1% variance explained)
+    Adjusted R² = -0.0413
 
     Coefficient                    Estimate    Std.Err         t          p
     ────────────────────────────────────────────────────────────────────
-    (Intercept)                     0.12374    0.29489     0.420     0.6773
-    pcf_diff                       -0.09949    0.08029    -1.239     0.2236
-    pcf_sq_diff                     0.00094    0.00109     0.859     0.3961
-    mean_fd_retained_diff          28.63767   22.81561     1.255     0.2177
+    (Intercept)                     0.15519    0.33209     0.467     0.6435
+    pcf_diff                       -0.10544    0.08767    -1.203     0.2382
+    pcf_sq_diff                     0.00126    0.00145     0.874     0.3886
+    mean_fd_retained_diff          26.66059   24.79052     1.075     0.2905
 
   ── AUDITORY ──
     Subjects missing ses-01 or ses-02 AUC (3): sub-16, sub-21, sub-37
-    N entering model: 36
-    R²          = 0.0004  (0.0% variance explained)
-    Adjusted R² = -0.0933
+    N entering model: 32
+    R²          = 0.0305  (3.0% variance explained)
+    Adjusted R² = -0.0734
 
     Coefficient                    Estimate    Std.Err         t          p
     ────────────────────────────────────────────────────────────────────
-    (Intercept)                     0.21041    0.28974     0.726     0.4730
-    pcf_diff                       -0.00764    0.07767    -0.098     0.9222
-    pcf_sq_diff                     0.00011    0.00106     0.103     0.9190
-    mean_fd_retained_diff           0.32624   21.70329     0.015     0.9881
+    (Intercept)                     0.36855    0.29756     1.239     0.2258
+    pcf_diff                        0.03722    0.07808     0.477     0.6373
+    pcf_sq_diff                    -0.00110    0.00135    -0.812     0.4235
+    mean_fd_retained_diff           6.85425   21.71528     0.316     0.7546
 
   ── MOTOR ──
-    Subjects missing ses-01 or ses-02 AUC (18): sub-01, sub-04, sub-06, sub-09, sub-10, sub-11, sub-16, sub-23, sub-24, sub-25, sub-27, sub-28, sub-30, sub-31, sub-32, sub-33, sub-35, sub-39
-    N entering model: 19
-    R²          = 0.0980  (9.8% variance explained)
-    Adjusted R² = -0.0824
+    Subjects missing ses-01 or ses-02 AUC (17): sub-01, sub-04, sub-09, sub-10, sub-11, sub-16, sub-23, sub-24, sub-25, sub-27, sub-28, sub-30, sub-31, sub-32, sub-33, sub-35, sub-39
+    N entering model: 16
+    R²          = 0.0840  (8.4% variance explained)
+    Adjusted R² = -0.1449
 
     Coefficient                    Estimate    Std.Err         t          p
     ────────────────────────────────────────────────────────────────────
-    (Intercept)                     0.37406    0.33679     1.111     0.2842
-    pcf_diff                       -0.09234    0.11613    -0.795     0.4389
-    pcf_sq_diff                     0.00086    0.00149     0.580     0.5703
-    mean_fd_retained_diff          37.20981   32.85671     1.132     0.2752
+    (Intercept)                     0.53373    0.38126     1.400     0.1869
+    pcf_diff                       -0.12342    0.14183    -0.870     0.4013
+    pcf_sq_diff                     0.00161    0.00227     0.709     0.4919
+    mean_fd_retained_diff          36.65289   35.31419     1.038     0.3198
 
   ── EXTERO ──
     Subjects missing ses-01 or ses-02 AUC (2): sub-16, sub-25
-    N entering model: 36
-    R²          = 0.0353  (3.5% variance explained)
-    Adjusted R² = -0.0551
+    N entering model: 32
+    R²          = 0.0307  (3.1% variance explained)
+    Adjusted R² = -0.0731
 
     Coefficient                    Estimate    Std.Err         t          p
     ────────────────────────────────────────────────────────────────────
-    (Intercept)                     0.29878    0.34200     0.874     0.3888
-    pcf_diff                       -0.07280    0.10446    -0.697     0.4909
-    pcf_sq_diff                     0.00063    0.00138     0.456     0.6513
-    mean_fd_retained_diff           9.11127   26.27535     0.347     0.7310
+    (Intercept)                     0.55691    0.33473     1.664     0.1073
+    pcf_diff                       -0.07810    0.09864    -0.792     0.4351
+    pcf_sq_diff                     0.00124    0.00153     0.808     0.4257
+    mean_fd_retained_diff           1.92954   24.79254     0.078     0.9385
 
   ── INTERO ──
     Subjects missing ses-01 or ses-02 AUC (7): sub-05, sub-13, sub-15, sub-17, sub-21, sub-35, sub-37
-    N entering model: 32
-    R²          = 0.0963  (9.6% variance explained)
-    Adjusted R² = -0.0005
+    N entering model: 28
+    R²          = 0.0349  (3.5% variance explained)
+    Adjusted R² = -0.0857
 
     Coefficient                    Estimate    Std.Err         t          p
     ────────────────────────────────────────────────────────────────────
-    (Intercept)                     0.20945    0.35422     0.591     0.5591
-    pcf_diff                       -0.02525    0.08892    -0.284     0.7785
-    pcf_sq_diff                    -0.00041    0.00121    -0.337     0.7384
-    mean_fd_retained_diff          11.57794   26.06439     0.444     0.6603
+    (Intercept)                     0.40724    0.38969     1.045     0.3064
+    pcf_diff                       -0.00578    0.09489    -0.061     0.9519
+    pcf_sq_diff                    -0.00071    0.00166    -0.431     0.6701
+    mean_fd_retained_diff           9.21739   27.94529     0.330     0.7444
 
   ── MENTAL ──
     Subjects missing ses-01 or ses-02 AUC (3): sub-01, sub-04, sub-30
-    N entering model: 36
-    R²          = 0.2347  (23.5% variance explained)
-    Adjusted R² = 0.1630
+    N entering model: 32
+    R²          = 0.2449  (24.5% variance explained)
+    Adjusted R² = 0.1640
 
     Coefficient                    Estimate    Std.Err         t          p
     ────────────────────────────────────────────────────────────────────
-    (Intercept)                     0.66730    0.21495     3.104     0.0040
-    pcf_diff                       -0.08975    0.05600    -1.603     0.1188
-    pcf_sq_diff                     0.00044    0.00076     0.580     0.5660
-    mean_fd_retained_diff          18.98951   16.05187     1.183     0.2455
+    (Intercept)                     0.76098    0.21987     3.461     0.0017
+    pcf_diff                       -0.06893    0.05579    -1.236     0.2269
+    pcf_sq_diff                    -0.00032    0.00094    -0.341     0.7354
+    mean_fd_retained_diff          20.82321   15.85243     1.314     0.1997
 
 ── Output summary ───────────────────────────────────────────────────────
-  Output rows:                   39 subjects
-  Rows with all 6 residuals:     14
+  Output rows:                   35 subjects
+  Rows with all 6 residuals:     11

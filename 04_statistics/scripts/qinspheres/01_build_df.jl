@@ -20,7 +20,7 @@ const ATLAS      = length(ARGS) >= 1 ? ARGS[1] : "qinspheres"   # qinspheres | q
 const ACW_DIR    = ATLAS == "qinspheres" ? "acw" : "acw_parcels"
 const PARTS_TSV  = joinpath(REPO_ROOT, "participants.tsv")
 const CATEGORIES = ["intero", "extero", "mental", "auditory", "motor", "visual"]
-const SUBJECTS   = ["sub-$(lpad(i,2,'0'))" for i in 1:40 if !(i in (12,))]   # n=39
+const SUBJECTS   = ["sub-$(lpad(i,2,'0'))" for i in 1:40 if !(i in (6,8,12,26,36))]   # n=35 (get_included_subjects)
 const SESSIONS   = ["ses-01", "ses-02"]
 
 parts = CSV.read(PARTS_TSV, DataFrame; delim = '\t')
