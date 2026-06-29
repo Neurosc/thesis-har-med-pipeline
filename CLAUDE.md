@@ -297,6 +297,30 @@ superseded by `04_figures.R`).
 
 ---
 
+## G1 flattening analysis (`scripts/glasser_g1/`)
+Whole-cortex **Glasser 360** cortical parcels (NoGSR, 3 pipelines, **n=35** =
+`get_included_subjects`, FD>0.3 exclusions), AUC vs the **Margulies principal gradient (G1)** —
+the "gradient flattening" question. Arm = `participants.condition` (17 verum + 18 placebo).
+
+- **Extract (server):** `02_timeseries_extraction/scripts/glasser_g1/01_extract_glasser_cortex.py`
+  — `NiftiLabelsMasker` over `glasser360MNI.nii.gz` from the existing denoised NIfTIs (no
+  re-denoising). The atlas is **MNI152NLin6 1mm**, the BOLD is **2009cAsym** — no native-2009c
+  Glasser exists (TemplateFlow has Schaefer/HO/DiFuMo but not Glasser), so the atlas is
+  **nearest-neighbor resampled NLin6→2009c** (`--allow-resample`), the same template approximation
+  already in the qinsphere pipeline. Out: `results/glasser360/{pipeline}/…_timeseries.csv` + `manifest.tsv`.
+- **AUC (local):** `03_intrinsic_neural_metrics/scripts/glasser_g1/01_compute_glasser_auc.jl` —
+  reuses the exact `acw()` config (TR 1.8, n_lags 100, 6 dummy dropped, AUC=`acw_results[1]`).
+  Out: `results/glasser360_auc/{pipeline}/glasser360_auc_{pipeline}.csv`.
+- **G1 + plots (local):** `04_statistics/scripts/glasser_g1/02_flattening_plots.py`. G1 = **row 0**
+  of `_archive/reference_data/g1_parcellated.pscalar.nii`, mapped by parcel **name**
+  (INDEX→`GLASSERLABELNAME`→pscalar name; all 360 join). **Critical:** the glasser360 `INDEX` is
+  CAB-NP / L-first, the pscalar/`g1_values.txt` is Glasser / R-first — the old direct-index map
+  (`03_build_keskin_auc_csv.jl`) would MIS-MAP; name-based is the only correct way. Networks from
+  the LabelKey `NETWORK`. Out: `04_statistics/results/glasser_g1/` (tidy df, slopes, 6 figures).
+- **Result:** G1↔AUC coupling is **weak** in every condition (|r| ≤ 0.26). Pre→Post the slope tilts
+  slightly more negative in both arms (maximal Δslope: placebo −0.016, verum −0.010) — placebo
+  shifts *more* than verum and neither flattens toward zero, so **no clear drug-specific flattening**.
+
 ## Things NOT to redo / change
 - Do not reintroduce GSR or the Glasser-parcels atlas into the active flow.
 - Do not reapply a respiratory filter (empirically unnecessary).
