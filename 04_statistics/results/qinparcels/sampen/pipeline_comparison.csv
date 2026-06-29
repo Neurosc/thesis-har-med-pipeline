@@ -1,0 +1,7 @@
+"layer","detrend_raw_full_p","detrend_raw_full_q","detrend_raw_iqr_p","detrend_raw_iqr_q","detrend_resid_full_p","detrend_resid_full_q","detrend_resid_iqr_p","detrend_resid_iqr_q","glm_raw_full_p","glm_raw_full_q","glm_raw_iqr_p","glm_raw_iqr_q","glm_resid_full_p","glm_resid_full_q","glm_resid_iqr_p","glm_resid_iqr_q","maximal_raw_full_p","maximal_raw_full_q","maximal_raw_iqr_p","maximal_raw_iqr_q","maximal_resid_full_p","maximal_resid_full_q","maximal_resid_iqr_p","maximal_resid_iqr_q"
+"visual",0.9557,0.9557,0.7026,0.8738,NA,NA,NA,NA,0.8752,0.9978,0.8752,0.895,NA,NA,NA,NA,0.6578,0.9868,0.6578,0.7894,NA,NA,NA,NA
+"auditory",0.9458,0.9557,0.528,0.8738,NA,NA,NA,NA,0.895,0.9978,0.895,0.895,NA,NA,NA,NA,0.9952,0.9952,0.3441,0.5633,NA,NA,NA,NA
+"motor",0.8748,0.9557,0.8738,0.8738,NA,NA,NA,NA,0.6866,0.9978,0.6445,0.895,NA,NA,NA,NA,0.9039,0.9952,0.9041,0.9041,NA,NA,NA,NA
+"extero",0.8771,0.9557,0.6875,0.8738,NA,NA,NA,NA,0.9978,0.9978,0.5823,0.895,NA,NA,NA,NA,0.1224,0.418,0.3594,0.5633,NA,NA,NA,NA
+"intero",0.7444,0.9557,0.7504,0.8738,NA,NA,NA,NA,0.1725,0.9978,0.3194,0.895,NA,NA,NA,NA,0.209,0.418,0.3756,0.5633,NA,NA,NA,NA
+"mental",0.8018,0.9557,0.5441,0.8738,NA,NA,NA,NA,0.5742,0.9978,0.4576,0.895,NA,NA,NA,NA,0.144,0.418,0.2519,0.5633,NA,NA,NA,NA

@@ -304,6 +304,20 @@ the always-residualize rule still applies to all *other* analyses).
 [intero/glm], smallest FDR q = 0.61). Exteroception SampEn p=0.32–0.97, so the AUC-exteroception
 effect is **timescale-specific, not reflected in signal irregularity (SampEn)**.
 
+**Parcel version (`qinparcels`):** the same 6 regions as **whole Glasser parcels** (self from the
+Keskin focus-point→parcel mapping in `glasser_self_metadata.tsv` — intero 14 / extero 16 / mental 12;
+nonself from CA networks minus self — visual 55 / motor 36 / auditory 14), built by subsetting the
+existing glasser360 timeseries (`02_build_qin_parcel_timeseries.py`, **n=35**) → `qinparcels` TS.
+Parallel ACW (`03_…/scripts/qinparcels/01_compute_acw_parcels.jl` → `results/acw_parcels/`) + SampEn
+(`…/qinparcels/02_compute_sampen_parcels.py` → `results/sampen_parcels/`), identical configs. The
+stats/figures reuse the same scripts via an **`atlas` arg** (`qinspheres|qinparcels`): the 4 R
+pipeline-metric scripts take it as the **3rd** trailing arg, `05` as the **2nd**, `01_build_df.jl`
+as `ARGS[1]`, `01_build_sampen_df.py` as `argv[1]`. Outputs at `results/qinparcels/{pipeline}/`
+(AUC, residualized) + `qinparcels/sampen/{pipeline}/` (SampEn, raw). **Result: both AUC and SampEn
+are null** (nothing past FDR) — and crucially the **exteroception AUC effect does NOT replicate with
+parcels** (resid p=0.26/0.81/0.46 detrend/glm/maximal), confirming it is specific to the Qin 4mm
+spheres. → final layout = 4 categories: `acw{qin,parcel}` × `sampen{qin,parcel}`, each 3 pipelines.
+
 ---
 
 ## Whole-cortex Glasser network analysis (`scripts/glasser_g1/`)

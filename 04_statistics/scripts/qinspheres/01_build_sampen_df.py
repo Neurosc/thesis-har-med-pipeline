@@ -14,13 +14,15 @@ Out: 04_statistics/results/qinspheres/sampen/{pipeline}/tables/qinspheres_sampen
 Run from repo root: python 04_statistics/scripts/qinspheres/01_build_sampen_df.py
 """
 import re
+import sys
 from pathlib import Path
 import pandas as pd
 
 REPO    = Path(__file__).resolve().parents[3]
-SAMPEN  = REPO / "03_intrinsic_neural_metrics" / "results" / "sampen"
+ATLAS   = sys.argv[1] if len(sys.argv) > 1 else "qinspheres"   # qinspheres | qinparcels
+SAMPEN  = REPO / "03_intrinsic_neural_metrics" / "results" / ("sampen" if ATLAS == "qinspheres" else "sampen_parcels")
 PARTS   = REPO / "participants.tsv"
-OUTBASE = REPO / "04_statistics" / "results" / "qinspheres" / "sampen"
+OUTBASE = REPO / "04_statistics" / "results" / ATLAS / "sampen"
 PIPELINES = ["detrend", "glm", "maximal"]
 LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
 
