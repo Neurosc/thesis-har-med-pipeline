@@ -2,12 +2,12 @@
 #
 # Ports the parcels_NoGSR/intrinsic_timescale/04_figures.R aesthetic (ggdist
 # raincloud + serif theme_minimal + significance brackets + patchwork) to the
-# 6-layer qinspheres design. Self-contained: reads qinspheres_auc.csv, computes
-# its own paired-t (retreat) and baseline p-values, and reads the per-layer
-# drug-effect permutation p from layer_drug_effect.csv (run statistics.R first).
+# 6-layer qinspheres design. Reads qinspheres_auc.csv, computes its own within-group
+# paired (retreat/verum) and baseline p-values, and reads the per-region **LMM DiD**
+# (session:arm) p/q from results/mixed_models/{atlas}_{pipeline}_did.csv (run 03_mixed_models.R first).
 #
-# Input : 04_statistics/results/qinspheres/tables/qinspheres_auc.csv
-#         04_statistics/results/qinspheres/tables/layer_drug_effect.csv  (drug bracket)
+# Input : 04_statistics/results/{atlas}/{pipeline}/tables/qinspheres_auc.csv
+#         04_statistics/results/mixed_models/{atlas}_{pipeline}_did.csv  (drug-effect bracket = LMM DiD)
 # Output: 04_statistics/results/qinspheres/figures/qin_*.png  (300 dpi)
 #         04_statistics/results/qinspheres/tables/descriptive_pvalues.csv
 #
@@ -45,7 +45,8 @@ FIGS_DIR   <- file.path(QIN_DIR, "figures")
 dir.create(FIGS_DIR, showWarnings = FALSE, recursive = TRUE)
 
 DATA_CSV <- file.path(TABLES_DIR, paste0("qinspheres_", METRIC, ".csv"))
-DRUG_CSV <- file.path(TABLES_DIR, "layer_drug_effect.csv")
+DRUG_CSV <- file.path(REPO_ROOT, "04_statistics", "results", "mixed_models",
+                      sprintf("%s_%s_did.csv", ATLAS, PIPELINE))   # LMM DiD (session:arm)
 if (!file.exists(DATA_CSV)) stop("Input not found — run 01_build_df.jl first: ", DATA_CSV)
 
 SEP <- strrep("=", 70)
@@ -193,15 +194,18 @@ cat(sprintf("Saved: descriptive_pvalues.csv (%d rows)\n", nrow(pvalues)))
 
 # Drug-effect permutation p (from statistics.R)
 drug_p <- function(layer) c(p = NA_real_, q = NA_real_)
+DIDREG <- c(intero="intero", extero="extero", mental="cognition",
+            visual="visual", motor="motor", auditory="auditory")   # category -> LMM region label
 if (file.exists(DRUG_CSV)) {
-  drug_tbl <- read.csv(DRUG_CSV, stringsAsFactors = FALSE)
+  drug_tbl <- read.csv(DRUG_CSV, stringsAsFactors = FALSE)   # 03_mixed_models.R DiD output
   drug_p <- function(layer) {
-    r <- drug_tbl[drug_tbl$layer == layer, ]
+    r <- drug_tbl[drug_tbl$region == DIDREG[[layer]], ]
     if (!nrow(r)) return(c(p = NA_real_, q = NA_real_))
-    c(p = r$perm_p_raw[1], q = if ("perm_p_fdr" %in% names(r)) r$perm_p_fdr[1] else NA_real_)
+    c(p = r$p[1], q = r$q[1])   # Kenward-Roger p, BH-FDR q
   }
 } else {
-  cat(sprintf("Note: %s not found — drug-effect brackets show n/a (run statistics.R)\n", DRUG_CSV))
+  cat(sprintf("Note: %s not found — drug brackets n/a (run 03_mixed_models.R %s %s)\n",
+              DRUG_CSV, PIPELINE, ATLAS))
 }
 
 # ── Figure 1: overview raincloud (4 conditions) per layer ──────────────────────
@@ -252,7 +256,7 @@ out_png("qin_drug_delta_per_layer.png",
                   sprintf("Post − Pre %s change per layer (qinspheres %s)", MLAB, PIPELINE)), 14, 8)
 out_png("qin_drug_effect_significance.png",
         assemble6(lapply(LAYER_ORDER, function(c) make_delta(c, with_sig = TRUE)),
-                  "Drug effect per layer — permutation p (q = FDR across 6 layers)"), 14, 8)
+                  "Drug effect per region — LMM DiD session:arm (Kenward-Roger p; q = BH-FDR / 6 regions)"), 14, 8)
 
 # ── Retreat effect (placebo, pre vs post; paired-t bracket) ────────────────────
 plac_means <- subj_means[subj_means$group == "placebo", ]
@@ -353,45 +357,8 @@ out_png("qin_overall_auc_density.png",
     labs(title = sprintf("Overall %s distribution (qinspheres %s)", MLAB, PIPELINE),
          x = paste0(MLAB, XUNIT), y = "Density") + dist_theme(), 8, 6)
 
-# ── Residualized drug-effect figure (parcels style) — only where residuals exist ───
-# (residualization is run for maximal only, so this is generated for maximal.)
-RESID_CSV      <- file.path(TABLES_DIR, "auc_diff_quality_residuals.csv")
-DRUG_RESID_CSV <- file.path(TABLES_DIR, "layer_drug_effect_resid.csv")
-if (file.exists(RESID_CSV) && file.exists(DRUG_RESID_CSV)) {
-  rcols  <- paste0(LAYER_ORDER, "_resid")
-  rlong  <- read.csv(RESID_CSV, stringsAsFactors = FALSE) %>%
-    select(subject, drug_group, all_of(rcols)) %>%
-    pivot_longer(all_of(rcols), names_to = "layer", values_to = "resid") %>%
-    mutate(layer = factor(sub("_resid$", "", layer), levels = LAYER_ORDER),
-           group = factor(drug_group, levels = c("placebo", "verum"))) %>%
-    filter(!is.na(resid))
-  drug_resid <- read.csv(DRUG_RESID_CSV, stringsAsFactors = FALSE)
-  drug_resid_pq <- function(L) {
-    r <- drug_resid[drug_resid$layer == L, ]
-    if (!nrow(r)) return(c(p = NA_real_, q = NA_real_))
-    c(p = r$perm_p_raw[1], q = if ("perm_p_fdr" %in% names(r)) r$perm_p_fdr[1] else NA_real_)
-  }
-  make_resid_sig <- function(L) {
-    d <- add_x(as.data.frame(rlong[as.character(rlong$layer) == L, ]), "group")
-    p <- ggplot(d, aes(x = x_cond, y = resid, fill = group, color = group, group = group)) +
-      geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
-      rain_layers() +
-      scale_fill_manual(values = DELTA_COLORS, guide = "none") +
-      scale_color_manual(values = DELTA_COLORS, guide = "none") +
-      scale_x_continuous(breaks = (1:2) * 2, labels = c("Placebo", "Verum"),
-                         expand = expansion(add = c(0.65, 1.00))) +
-      labs(title = LAYER_LABELS[[L]],
-           y = paste0("Quality-adj. Δ", MLAB, " (residual)"), x = NULL) + panel_theme()
-    pq <- drug_resid_pq(L); star <- sig_star(pq[["q"]])
-    lab <- if (is.na(pq[["p"]])) "n/a"
-           else sprintf("%sp=%.3f (q=%.3f)", if (star != "") paste0(star, " ") else "",
-                        pq[["p"]], pq[["q"]])
-    sig_bracket(p, 1.6, 3.6, d$resid, lab)
-  }
-  out_png("qin_drug_effect_significance_resid.png",
-          assemble6(lapply(LAYER_ORDER, make_resid_sig),
-                    sprintf("Drug effect per layer — MOTION-RESIDUALIZED %s (q = FDR across 6 layers, %s)",
-                            MLAB, PIPELINE)), 14, 8)
-}
+# (The old motion-residualized drug-effect figure was removed — the LMM DiD in
+# `03_mixed_models.R` already partials out pcf/pcf_sq/mean_fd, so the drug-effect figure
+# above IS the covariate-adjusted effect.)
 
 cat("\n", SEP, "\nDONE\n", SEP, "\n", sep = "")
