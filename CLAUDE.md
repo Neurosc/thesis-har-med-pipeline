@@ -233,27 +233,25 @@ sub-06/08/12/26/36): the ACW/SampEn *compute* loops n=39 (keeps high-motion for 
 robustness), but `01_build_df.jl` / `01_build_sampen_df.py` filter to **n=35** so all stats
 (spheres AND parcels) are on the same FD-included sample.
 
-**Design:** per-layer (6 layers, kept separate) subject-level drug-effect test —
-ΔAUC = mean post − pre per subject×layer; statistic = mean(verum Δ) − mean(placebo Δ);
-Shapiro→Welch/Mann-Whitney + 10k permutation; BH-FDR across the 6 layers; ±2.5SD / 1.5×IQR
-outlier-sensitivity variants. Both raw ΔAUC and **motion-quality-residualized** ΔAUC
-(partialled for `pcf_diff`/`pcf_sq_diff`/`mean_fd_retained_diff` from
-`99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`) are run for **all three
-pipelines** — the residualization removes the **session-wise FD/motion** confound, which
-matters most for detrend/glm (they don't censor, so motion stays in the data). Run
-`qc_residualize_auc.R` + `statistics_resid.R` per pipeline.
+**Design (current — mixed models).** Stats are `03_mixed_models.R` — per region, REML LMMs with
+**Kenward-Roger df** (lmerTest + pbkrtest) on the long table (subject × session × region), with
+**session-specific motion covariates** `pcf`, `pcf_sq = pcf²`, `mean_fd` (from
+`99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`):
+- **Retreat** (placebo only): `AUC ~ session + pcf + pcf_sq + mean_fd + (1|subject)` → `sessionpost` coef (post−pre).
+- **DiD / drug effect** (both arms): `AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)` → `sessionpost:armverum` coef.
+BH-FDR across the 6 regions; singular fit → permutation fallback. Parameterized `[pipeline] [atlas]`
+(default `maximal qinspheres`). Out: `results/mixed_models/{atlas}_{pipeline}_{longtable,retreat,did}.csv`.
 
-Scripts are **pipeline × metric × atlas-parameterized**: R scripts take
-`<pipeline> <metric> <atlas>` trailing args (metric ∈ `auc` | `sampen`; atlas ∈
-`qinspheres` | `qinparcels`; default `maximal auc qinspheres`). AUC stays at the top-level
-`results/{atlas}/{pipeline}/`; other metrics nest at `results/{atlas}/{metric}/{pipeline}/`.
-`01_build_df.jl` emits AUC (`acw_results[1]`; value column named `auc`). `safe_sw()` guards
-Shapiro-Wilk against degenerate (all-identical) groups. **ACW-50 and τ were removed** — they
-were defective operationalizations (ACW-50 is TR-quantized/discrete; τ a noisy single-parameter
-fit), so their failure to "replicate" the AUC effect is **not** valid evidence and they are not
-reported.
+**Reorg note:** the earlier **per-layer permutation/residualization pipeline** (`statistics.R`,
+`statistics_resid.R`, `qc_residualize_auc.R`, `05_pipeline_comparison.R`, `06_interaction.R`) plus
+the summary/global scripts (`07_summary_table.R`, `08_global_coupling_motion_tests.R`) were
+**archived to `_archive/qinspheres_permutation_stats/`**. Their committed result tables under
+`results/{atlas}/…` (`layer_drug_effect*.csv`, `pipeline_comparison.csv`) + `results/summary/`
+remain as a **static record** and still feed `04_figures.R`. **ACW-50 and τ were removed** as
+defective operationalizations. Builds are `01_build_auc.jl` / `02_build_sampen.py` (both filter to
+n=35); plots are `04_figures.R`.
 
-**Non-positive AUC dropped:** `01_build_df.jl` removes ROIs with `auc ≤ 0` (AUC metric only).
+**Non-positive AUC dropped:** `01_build_auc.jl` removes ROIs with `auc ≤ 0` (AUC metric only).
 Without bandpass, the broadband signal's autocorrelation collapses to/below zero, giving 0 or
 negative "area" — not a valid timescale. This is a **detrend/glm** problem (≈1042 / 1665 ROIs
 dropped, concentrated in motor); **maximal** (bandpassed) has **none** (0 dropped) and is
@@ -261,16 +259,14 @@ unaffected. Underlying ACW values are still in the JLD2; only the analysis CSV i
 
 **Run order** (from repo root; Rscript at `C:\Program Files\R\R-4.6.0\bin\Rscript.exe`):
 ```
-julia   04_statistics/scripts/qinspheres/01_build_df.jl [atlas]                # AUC × pipelines (n=35)
-python  04_statistics/scripts/qinspheres/01_build_sampen_df.py [atlas]         # SampEn × pipelines (n=35)
-# then per (pipeline, metric, atlas), e.g. detrend auc qinparcels:
-Rscript 04_statistics/scripts/qinspheres/qc_residualize_auc.R detrend auc qinparcels
-Rscript 04_statistics/scripts/qinspheres/statistics.R        detrend auc qinparcels
-Rscript 04_statistics/scripts/qinspheres/statistics_resid.R  detrend auc qinparcels
-Rscript 04_statistics/scripts/qinspheres/04_figures.R        detrend auc qinparcels
-Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R auc qinparcels   # per-metric/atlas comparison
+julia   04_statistics/scripts/qinspheres/01_build_auc.jl [atlas]                     # build AUC df (n=35)
+python  04_statistics/scripts/qinspheres/02_build_sampen.py [atlas]                  # build SampEn df (n=35)
+Rscript 04_statistics/scripts/qinspheres/03_mixed_models.R [pipeline] [atlas]        # retreat + DiD LMMs -> results/mixed_models/
+Rscript 04_statistics/scripts/qinspheres/04_figures.R [pipeline] [metric] [atlas]    # figures
 ```
-`04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to 6 layers.
+`04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to 6 layers (its
+significance brackets still read the archived permutation `layer_drug_effect.csv`; repoint to
+the mixed-model outputs when convenient).
 (The legacy `02_scatter.R` / `03_drug_effect_figures.R` figure scripts were **removed** — they
 were superseded by `04_figures.R`; two of their static outputs, `qinspheres_extero_significance.png`
 and `qinspheres_drug_effect_raw_vs_resid.png`, were kept in maximal/figures.)

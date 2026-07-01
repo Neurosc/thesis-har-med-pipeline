@@ -17,7 +17,7 @@ suppressPackageStartupMessages({library(lmerTest); library(pbkrtest); library(dp
 a <- commandArgs(trailingOnly=TRUE)
 PIPELINE <- if (length(a)>=1) a[1] else "maximal"
 ATLAS    <- if (length(a)>=2) a[2] else "qinspheres"
-REPO <- normalizePath(file.path(dirname(sub("^--file=","",grep("^--file=",commandArgs(FALSE),value=TRUE)[1])),"..",".."))
+REPO <- normalizePath(file.path(dirname(sub("^--file=","",grep("^--file=",commandArgs(FALSE),value=TRUE)[1])),"..","..",".."))
 TBL  <- file.path(REPO,"04_statistics","results",ATLAS,PIPELINE,"tables","qinspheres_auc.csv")
 QC   <- file.path(REPO,"99_QC","01_motion_qc","results","fd_covariates_wide_thresh03.csv")
 OUT  <- file.path(REPO,"04_statistics","results","mixed_models"); dir.create(OUT,recursive=TRUE,showWarnings=FALSE)
