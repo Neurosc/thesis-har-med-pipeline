@@ -207,6 +207,19 @@ if (file.exists(DRUG_CSV)) {
               DRUG_CSV, PIPELINE, ATLAS))
 }
 
+# Retreat effect p/q (from 03_mixed_models.R — placebo session coef, KR p, BH-FDR q)
+RETREAT_CSV <- file.path(REPO_ROOT, "04_statistics", "results", "mixed_models",
+                         sprintf("%s_%s_retreat.csv", ATLAS, PIPELINE))
+retreat_p <- function(layer) c(p = NA_real_, q = NA_real_)
+if (file.exists(RETREAT_CSV)) {
+  ret_tbl <- read.csv(RETREAT_CSV, stringsAsFactors = FALSE)
+  retreat_p <- function(layer) {
+    r <- ret_tbl[ret_tbl$region == DIDREG[[layer]], ]
+    if (!nrow(r)) return(c(p = NA_real_, q = NA_real_))
+    c(p = r$p[1], q = r$q[1])
+  }
+}
+
 # ── Figure 1: overview raincloud (4 conditions) per layer ──────────────────────
 make_overview <- function(cat) {
   d <- add_x(as.data.frame(subj_means[as.character(subj_means$category) == cat, ]),
@@ -270,11 +283,15 @@ make_retreat <- function(cat) {
     scale_x_continuous(breaks = (1:2) * 2, labels = c("Pre", "Post"),
                        expand = expansion(add = c(0.65, 1.00))) +
     labs(title = LAYER_LABELS[[cat]], y = paste("Mean", MUNIT), x = NULL) + panel_theme()
-  sig_bracket(p, 1.6, 3.6, d$mean_auc, fmt_p(pp(cat, "placebo")))
+  pq <- retreat_p(cat); star <- sig_star(pq[["q"]])
+  lab <- if (is.na(pq[["p"]])) fmt_p(pp(cat, "placebo"))
+         else sprintf("%sp=%.3f (q=%.3f)", if (star != "") paste0(star, " ") else "",
+                      pq[["p"]], pq[["q"]])
+  sig_bracket(p, 1.6, 3.6, d$mean_auc, lab)
 }
 out_png("qin_retreat_per_layer.png",
         assemble6(lapply(LAYER_ORDER, make_retreat),
-                  "Meditation retreat effect (placebo group, paired t)"), 14, 8)
+                  "Meditation retreat effect (placebo; LMM session coef — KR p, BH-FDR q / 5 regions)"), 14, 8)
 
 # ── Baseline balance (placebo vs verum at ses-01) ──────────────────────────────
 make_base <- function(d_in, panel_title) {
