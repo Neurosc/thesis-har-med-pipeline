@@ -256,7 +256,7 @@ out_png("qin_drug_delta_per_layer.png",
                   sprintf("Post − Pre %s change per layer (qinspheres %s)", MLAB, PIPELINE)), 14, 8)
 out_png("qin_drug_effect_significance.png",
         assemble6(lapply(LAYER_ORDER, function(c) make_delta(c, with_sig = TRUE)),
-                  "Drug effect per region — LMM DiD session:arm (Kenward-Roger p; q = BH-FDR / 6 regions)"), 14, 8)
+                  "Drug effect per region — LMM DiD session:arm (Kenward-Roger p; q = BH-FDR / 5 regions, motor excluded)"), 14, 8)
 
 # ── Retreat effect (placebo, pre vs post; paired-t bracket) ────────────────────
 plac_means <- subj_means[subj_means$group == "placebo", ]

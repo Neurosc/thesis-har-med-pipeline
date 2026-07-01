@@ -239,7 +239,8 @@ robustness), but `01_build_df.jl` / `01_build_sampen_df.py` filter to **n=35** s
 `99_QC/01_motion_qc/results/fd_covariates_wide_thresh03.csv`):
 - **Retreat** (placebo only): `AUC ~ session + pcf + pcf_sq + mean_fd + (1|subject)` → `sessionpost` coef (post−pre).
 - **DiD / drug effect** (both arms): `AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)` → `sessionpost:armverum` coef.
-BH-FDR across the 6 regions; singular fit → permutation fallback. Parameterized `[pipeline] [atlas]`
+BH-FDR across the **5 regions** (**motor excluded** — the region worst-hit by the broadband-AUC
+degeneration); singular fit → permutation fallback. Parameterized `[pipeline] [atlas]`
 (default `maximal qinspheres`). Out: `results/mixed_models/{atlas}_{pipeline}_{longtable,retreat,did}.csv`.
 
 **Reorg note:** the earlier **per-layer permutation/residualization pipeline** (`statistics.R`,

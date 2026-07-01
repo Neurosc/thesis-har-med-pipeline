@@ -22,7 +22,7 @@ TBL  <- file.path(REPO,"04_statistics","results",ATLAS,PIPELINE,"tables","qinsph
 QC   <- file.path(REPO,"99_QC","01_motion_qc","results","fd_covariates_wide_thresh03.csv")
 OUT  <- file.path(REPO,"04_statistics","results","mixed_models"); dir.create(OUT,recursive=TRUE,showWarnings=FALSE)
 LAB  <- c(intero="intero",extero="extero",mental="cognition",visual="visual",motor="motor",auditory="auditory")
-REGS <- unname(LAB)
+REGS <- setdiff(unname(LAB), "motor")   # motor EXCLUDED from analysis (broadband-AUC degeneration control); FDR across the 5 remaining
 
 # ── 1. long table ──
 auc <- read.csv(TBL) %>% filter(auc>0, is.finite(auc)) %>%
@@ -39,6 +39,7 @@ dat <- auc %>% mutate(session=ifelse(session=="ses-01","pre","post"), region=LAB
          session=factor(session, levels=c("pre","post")),
          arm=factor(drug_group, levels=c("placebo","verum")),
          region=factor(region, levels=REGS)) %>%
+  filter(!is.na(region)) %>%   # drop motor rows (excluded from analysis)
   select(AUC, subject, session, arm, region, pcf, pcf_sq, mean_fd)
 write.csv(dat, file.path(OUT, sprintf("%s_%s_longtable.csv",ATLAS,PIPELINE)), row.names=FALSE)
 cat(sprintf("long table: %d rows | factors: subject=%s session=%s(%s) arm=%s(%s) region=%s\n",
