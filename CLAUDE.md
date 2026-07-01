@@ -271,8 +271,9 @@ Rscript 04_statistics/scripts/qinspheres/04_figures.R        detrend auc qinparc
 Rscript 04_statistics/scripts/qinspheres/05_pipeline_comparison.R auc qinparcels   # per-metric/atlas comparison
 ```
 `04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to 6 layers.
-`02_scatter.R` / `03_drug_effect_figures.R` are earlier simpler-style figures (AUC only,
-superseded by `04_figures.R`).
+(The legacy `02_scatter.R` / `03_drug_effect_figures.R` figure scripts were **removed** — they
+were superseded by `04_figures.R`; two of their static outputs, `qinspheres_extero_significance.png`
+and `qinspheres_drug_effect_raw_vs_resid.png`, were kept in maximal/figures.)
 
 **Results:**
 - **AUC (n=35):** exteroception ΔAUC reduction under verum (after dropping non-positive AUC).
