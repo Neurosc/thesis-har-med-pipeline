@@ -59,7 +59,7 @@ cat(SEP, "\n04_figures.R — qinspheres (6 layers, maximal)\n", SEP, "\n\n", sep
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 # Display order: self layers (row 1) then nonself (row 2)
-LAYER_ORDER  <- c("intero", "extero", "mental", "visual", "motor", "auditory")
+LAYER_ORDER  <- c("intero", "extero", "mental", "visual", "auditory")   # motor excluded from analysis
 LAYER_LABELS <- c(intero = "Interoception", extero = "Exteroception",
                   mental = "Cognition",     visual = "Visual",
                   motor  = "Motor",         auditory = "Auditory")
@@ -98,9 +98,8 @@ add_x <- function(d, col, jit = 0.10) {
 }
 
 # 6 panels → 2 rows × 3 cols (self on top, nonself below)
-assemble6 <- function(panels, title)
-  ((panels[[1]] | panels[[2]] | panels[[3]]) /
-   (panels[[4]] | panels[[5]] | panels[[6]])) +
+assemble6 <- function(panels, title)   # flexible layout (5 regions, motor excluded)
+  patchwork::wrap_plots(panels, ncol = 3) +
   plot_annotation(title = title,
     theme = theme(plot.title = element_text(face = "plain", hjust = 0.5,
                                             size = 13, family = "serif")))

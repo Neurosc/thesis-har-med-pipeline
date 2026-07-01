@@ -7,13 +7,11 @@
 "mental","verum_prepost_pairedt",17,2.47107496068972,0.0250906036273979
 "visual","placebo_prepost_pairedt",18,2.48316676878106,0.02375141589946
 "visual","verum_prepost_pairedt",17,2.03022537567697,0.0592993842642694
-"motor","placebo_prepost_pairedt",6,1.36959516221103,0.229120653561084
-"motor","verum_prepost_pairedt",5,2.86956296619644,0.0454886390782019
 "auditory","placebo_prepost_pairedt",15,0.958345788393414,0.354147107053356
 "auditory","verum_prepost_pairedt",13,0.548634158476109,0.59331751271512
-"Pooled","baseline_welch_t",35,0.522491934162806,0.604826109072043
-"Pooled","baseline_mannwhitney",35,171,0.563543616078971
-"Pooled","baseline_cohens_d",35,0.176153448819789,NA
+"Pooled","baseline_welch_t",35,0.855766820621139,0.398535836093119
+"Pooled","baseline_mannwhitney",35,177,0.43797600121511
+"Pooled","baseline_cohens_d",35,0.287263112333478,NA
 "intero","baseline_welch_t",35,-0.154974243048211,0.87778623043618
 "intero","baseline_mannwhitney",35,146,0.830132240640216
 "intero","baseline_cohens_d",35,-0.0522832022919179,NA
@@ -26,9 +24,6 @@
 "visual","baseline_welch_t",35,1.32309652196719,0.19604077305224
 "visual","baseline_mannwhitney",35,188,0.254840955804296
 "visual","baseline_cohens_d",35,0.442101542745035,NA
-"motor","baseline_welch_t",18,-0.427313157523009,0.677174990524342
-"motor","baseline_mannwhitney",18,42,0.893973132390217
-"motor","baseline_cohens_d",18,-0.213224653274063,NA
 "auditory","baseline_welch_t",31,-0.285040641779664,0.77779686688973
 "auditory","baseline_mannwhitney",31,120,1
 "auditory","baseline_cohens_d",31,-0.103180263478409,NA

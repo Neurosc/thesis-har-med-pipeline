@@ -265,7 +265,8 @@ python  04_statistics/scripts/qinspheres/02_build_sampen.py [atlas]             
 Rscript 04_statistics/scripts/qinspheres/03_mixed_models.R [pipeline] [atlas]        # retreat + DiD LMMs -> results/mixed_models/
 Rscript 04_statistics/scripts/qinspheres/04_figures.R [pipeline] [metric] [atlas]    # figures
 ```
-`04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to 6 layers (its
+`04_figures.R` ports the parcels raincloud/serif/bracket aesthetic to the **5 layers**
+(motor excluded; flexible `wrap_plots` layout). Its
 significance brackets still read the archived permutation `layer_drug_effect.csv`; repoint to
 the mixed-model outputs when convenient).
 (The legacy `02_scatter.R` / `03_drug_effect_figures.R` figure scripts were **removed** — they
