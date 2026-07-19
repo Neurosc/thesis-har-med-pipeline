@@ -1,0 +1,140 @@
+==============================================================================
+FD LOW-PASS DIAGNOSTIC — comparison only, nothing in the pipeline changes
+==============================================================================
+FD formula (UNCHANGED, from utils.motion_qc.compute_custom_fd):
+    Power et al. 2012 — 1-TR backward differences,
+    rotations converted with a 50 mm radius sphere,
+    FD_t = sum of 6 absolute differences, all frames, TR = 1.8 s.
+Filter applied to the 6 motion parameters BEFORE differencing:
+    Butterworth low-pass, order 4, zero-phase via
+    scipy.signal.filtfilt(padtype='odd') -> effective magnitude order
+    8, no phase distortion.
+    Cutoffs: lp008 = 0.08 Hz, lp010 = 0.1 Hz, lp020 = 0.2 Hz   (primary = 0.1 Hz)
+Sampling: fs = 0.5556 Hz, Nyquist = 0.2778 Hz.
+    Note: the respiratory band (~0.2-0.5 Hz) lies largely AT OR ABOVE
+    Nyquist at this TR, hence low-pass rather than a Power 2019 notch.
+Output directory: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic
+
+participants.tsv: 40 subjects (20 verum / 20 placebo)
+Discovered 80 subject(s), 80 run(s). All confounds files present.
+
+  sub-01 ses-01  meanFD 0.216 -> 0.031 mm   %cens(0.3) 22.1 -> 0.0
+  sub-01 ses-02  meanFD 0.201 -> 0.033 mm   %cens(0.3) 17.1 -> 0.0
+  sub-02 ses-01  meanFD 0.130 -> 0.086 mm   %cens(0.3) 1.2 -> 0.0
+  sub-02 ses-02  meanFD 0.210 -> 0.045 mm   %cens(0.3) 15.4 -> 0.0
+  sub-03 ses-01  meanFD 0.182 -> 0.051 mm   %cens(0.3) 10.4 -> 0.0
+  sub-03 ses-02  meanFD 0.247 -> 0.072 mm   %cens(0.3) 19.6 -> 0.4
+  sub-04 ses-01  meanFD 0.182 -> 0.079 mm   %cens(0.3) 12.1 -> 0.4
+  sub-04 ses-02  meanFD 0.194 -> 0.037 mm   %cens(0.3) 13.3 -> 0.0
+  sub-05 ses-01  meanFD 0.252 -> 0.049 mm   %cens(0.3) 30.8 -> 0.0
+  sub-05 ses-02  meanFD 0.254 -> 0.035 mm   %cens(0.3) 31.2 -> 0.0
+  sub-06 ses-01  meanFD 0.350 -> 0.064 mm   %cens(0.3) 51.2 -> 2.1
+  sub-06 ses-02  meanFD 0.270 -> 0.055 mm   %cens(0.3) 37.9 -> 1.7
+  sub-07 ses-01  meanFD 0.201 -> 0.040 mm   %cens(0.3) 15.0 -> 0.0
+  sub-07 ses-02  meanFD 0.276 -> 0.081 mm   %cens(0.3) 36.7 -> 0.0
+  sub-08 ses-01  meanFD 0.183 -> 0.034 mm   %cens(0.3) 15.0 -> 0.0
+  sub-08 ses-02  meanFD 0.485 -> 0.221 mm   %cens(0.3) 50.4 -> 25.4
+  sub-09 ses-01  meanFD 0.171 -> 0.122 mm   %cens(0.3) 10.0 -> 0.0
+  sub-09 ses-02  meanFD 0.171 -> 0.045 mm   %cens(0.3) 7.9 -> 0.0
+  sub-10 ses-01  meanFD 0.276 -> 0.036 mm   %cens(0.3) 39.2 -> 0.0
+  sub-10 ses-02  meanFD 0.297 -> 0.044 mm   %cens(0.3) 47.9 -> 0.0
+  sub-11 ses-01  meanFD 0.316 -> 0.102 mm   %cens(0.3) 49.2 -> 0.4
+  sub-11 ses-02  meanFD 0.254 -> 0.065 mm   %cens(0.3) 32.5 -> 0.4
+  sub-12 ses-01  meanFD 0.482 -> 0.067 mm   %cens(0.3) 80.8 -> 0.4
+  sub-12 ses-02  meanFD 0.485 -> 0.061 mm   %cens(0.3) 85.8 -> 0.8
+  sub-13 ses-01  meanFD 0.195 -> 0.029 mm   %cens(0.3) 15.4 -> 0.0
+  sub-13 ses-02  meanFD 0.224 -> 0.043 mm   %cens(0.3) 21.2 -> 0.0
+  sub-14 ses-01  meanFD 0.130 -> 0.039 mm   %cens(0.3) 2.5 -> 0.0
+  sub-14 ses-02  meanFD 0.116 -> 0.036 mm   %cens(0.3) 1.2 -> 0.0
+  sub-15 ses-01  meanFD 0.279 -> 0.154 mm   %cens(0.3) 41.2 -> 1.2
+  sub-15 ses-02  meanFD 0.319 -> 0.142 mm   %cens(0.3) 43.8 -> 10.0
+  sub-16 ses-01  meanFD 0.246 -> 0.049 mm   %cens(0.3) 32.9 -> 0.0
+  sub-16 ses-02  meanFD 0.244 -> 0.048 mm   %cens(0.3) 32.9 -> 0.0
+  sub-17 ses-01  meanFD 0.266 -> 0.042 mm   %cens(0.3) 39.2 -> 0.0
+  sub-17 ses-02  meanFD 0.253 -> 0.032 mm   %cens(0.3) 35.0 -> 0.0
+  sub-18 ses-01  meanFD 0.120 -> 0.058 mm   %cens(0.3) 0.0 -> 0.0
+  sub-18 ses-02  meanFD 0.125 -> 0.067 mm   %cens(0.3) 0.8 -> 0.0
+  sub-19 ses-01  meanFD 0.163 -> 0.034 mm   %cens(0.3) 5.4 -> 0.0
+  sub-19 ses-02  meanFD 0.200 -> 0.035 mm   %cens(0.3) 18.8 -> 0.0
+  sub-20 ses-01  meanFD 0.190 -> 0.133 mm   %cens(0.3) 12.1 -> 0.0
+  sub-20 ses-02  meanFD 0.214 -> 0.161 mm   %cens(0.3) 18.8 -> 1.2
+  sub-21 ses-01  meanFD 0.326 -> 0.228 mm   %cens(0.3) 48.3 -> 26.7
+  sub-21 ses-02  meanFD 0.270 -> 0.075 mm   %cens(0.3) 34.6 -> 2.1
+  sub-22 ses-01  meanFD 0.210 -> 0.038 mm   %cens(0.3) 19.2 -> 0.0
+  sub-22 ses-02  meanFD 0.264 -> 0.073 mm   %cens(0.3) 32.1 -> 0.0
+  sub-23 ses-01  meanFD 0.221 -> 0.090 mm   %cens(0.3) 19.6 -> 0.4
+  sub-23 ses-02  meanFD 0.199 -> 0.039 mm   %cens(0.3) 16.7 -> 0.0
+  sub-24 ses-01  meanFD 0.278 -> 0.095 mm   %cens(0.3) 32.5 -> 0.0
+  sub-24 ses-02  meanFD 0.247 -> 0.046 mm   %cens(0.3) 31.7 -> 0.0
+  sub-25 ses-01  meanFD 0.224 -> 0.054 mm   %cens(0.3) 26.7 -> 0.0
+  sub-25 ses-02  meanFD 0.154 -> 0.034 mm   %cens(0.3) 3.8 -> 0.0
+  sub-26 ses-01  meanFD 0.353 -> 0.095 mm   %cens(0.3) 56.2 -> 1.2
+  sub-26 ses-02  meanFD 0.250 -> 0.040 mm   %cens(0.3) 30.0 -> 0.0
+  sub-27 ses-01  meanFD 0.194 -> 0.063 mm   %cens(0.3) 18.8 -> 0.0
+  sub-27 ses-02  meanFD 0.161 -> 0.037 mm   %cens(0.3) 5.4 -> 0.0
+  sub-28 ses-01  meanFD 0.180 -> 0.050 mm   %cens(0.3) 9.2 -> 0.0
+  sub-28 ses-02  meanFD 0.152 -> 0.057 mm   %cens(0.3) 4.2 -> 0.0
+  sub-29 ses-01  meanFD 0.243 -> 0.040 mm   %cens(0.3) 32.5 -> 0.4
+  sub-29 ses-02  meanFD 0.264 -> 0.041 mm   %cens(0.3) 35.8 -> 0.0
+  sub-30 ses-01  meanFD 0.275 -> 0.044 mm   %cens(0.3) 40.0 -> 0.0
+  sub-30 ses-02  meanFD 0.217 -> 0.042 mm   %cens(0.3) 21.2 -> 0.0
+  sub-31 ses-01  meanFD 0.204 -> 0.045 mm   %cens(0.3) 15.0 -> 0.0
+  sub-31 ses-02  meanFD 0.176 -> 0.031 mm   %cens(0.3) 5.8 -> 0.0
+  sub-32 ses-01  meanFD 0.144 -> 0.059 mm   %cens(0.3) 5.0 -> 0.0
+  sub-32 ses-02  meanFD 0.214 -> 0.077 mm   %cens(0.3) 13.3 -> 0.0
+  sub-33 ses-01  meanFD 0.301 -> 0.211 mm   %cens(0.3) 42.1 -> 17.1
+  sub-33 ses-02  meanFD 0.313 -> 0.119 mm   %cens(0.3) 49.6 -> 1.2
+  sub-34 ses-01  meanFD 0.298 -> 0.075 mm   %cens(0.3) 35.0 -> 2.5
+  sub-34 ses-02  meanFD 0.203 -> 0.048 mm   %cens(0.3) 14.2 -> 0.4
+  sub-35 ses-01  meanFD 0.212 -> 0.030 mm   %cens(0.3) 14.6 -> 0.4
+  sub-35 ses-02  meanFD 0.168 -> 0.038 mm   %cens(0.3) 6.7 -> 1.2
+  sub-36 ses-01  meanFD 0.232 -> 0.061 mm   %cens(0.3) 26.2 -> 0.0
+  sub-36 ses-02  meanFD 0.313 -> 0.068 mm   %cens(0.3) 52.1 -> 0.0
+  sub-37 ses-01  meanFD 0.170 -> 0.038 mm   %cens(0.3) 7.5 -> 0.0
+  sub-37 ses-02  meanFD 0.208 -> 0.044 mm   %cens(0.3) 17.9 -> 0.0
+  sub-38 ses-01  meanFD 0.217 -> 0.061 mm   %cens(0.3) 15.4 -> 1.7
+  sub-38 ses-02  meanFD 0.189 -> 0.041 mm   %cens(0.3) 9.6 -> 0.4
+  sub-39 ses-01  meanFD 0.179 -> 0.021 mm   %cens(0.3) 10.0 -> 0.0
+  sub-39 ses-02  meanFD 0.160 -> 0.023 mm   %cens(0.3) 4.6 -> 0.0
+  sub-40 ses-01  meanFD 0.155 -> 0.091 mm   %cens(0.3) 2.9 -> 0.0
+  sub-40 ses-02  meanFD 0.140 -> 0.056 mm   %cens(0.3) 3.3 -> 0.0
+
+Per-run CSV saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic/fd_lowpass_per_run.csv  (80 runs)
+
+── Group summary: percent frames censored at FD > 0.3 mm ──
+condition             median    mean     min     max   >30%   >50%   meanFD
+unfiltered              19.0    24.0     0.0    85.8     31      6    0.231
+low-pass 0.08 Hz         0.0     0.6     0.0    20.8      0      0    0.049
+low-pass 0.1 Hz          0.0     1.3     0.0    26.7      0      0    0.065
+low-pass 0.2 Hz          5.0    12.3     0.0    83.8     11      2    0.162
+
+Group summary saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic/fd_lowpass_group_summary.csv
+
+── Percent frames above 0.2 mm (secondary threshold) ──
+  unfiltered           median   50.8   mean   49.7
+  low-pass 0.08 Hz     median    0.0   mean    1.8
+  low-pass 0.1 Hz      median    0.8   mean    4.0
+  low-pass 0.2 Hz      median   21.5   mean   26.9
+
+── Example runs for the trace figure (2 per motion tertile, largest change first) ──
+  sub-32 ses-02  [ low motion]  %cens 13.3 -> 0.0  (-13.3 pts)
+  sub-34 ses-02  [ low motion]  %cens 14.2 -> 0.4  (-13.8 pts)
+  sub-24 ses-02  [ mid motion]  %cens 31.7 -> 0.0  (-31.7 pts)
+  sub-22 ses-02  [ mid motion]  %cens 32.1 -> 0.0  (-32.1 pts)
+  sub-12 ses-01  [high motion]  %cens 80.8 -> 0.4  (-80.4 pts)
+  sub-12 ses-02  [high motion]  %cens 85.8 -> 0.8  (-85.0 pts)
+
+Trace figure saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic/fd_lowpass_example_traces.png
+Scatter figure saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic/fd_lowpass_pct_censored_scatter.png
+
+── Done ──
+  Runs processed : 80  (10 from FD-excluded subjects)
+  Nothing in the pipeline was modified. The filtered FD is not applied
+  anywhere — this is a comparison only.
+
+  Outputs in /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic:
+    fd_lowpass_per_run.csv
+    fd_lowpass_group_summary.csv
+    fd_lowpass_example_traces.png
+    fd_lowpass_pct_censored_scatter.png
+    fd_lowpass_diagnostic_log.txt
