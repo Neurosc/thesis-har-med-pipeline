@@ -1,6 +1,6 @@
 # 01_compute_acw.jl — Compute ACW for the three-pipeline DMT-MED design.
 #
-# Loops the three denoising pipelines (detrend/glm/maximal) × six sphere layers,
+# Loops the two denoising pipelines (detrend/maximal) × six sphere layers,
 # reading the qinspheres timeseries and writing one JLD2 per (pipeline, layer,
 # subject, session). Sample = 39 (all minus sub-12), matching the extraction; the
 # 35-subject inclusion filter is applied later at the statistics stage.
@@ -27,7 +27,8 @@ const ACW_TYPES     = [:auc]   # [1]=AUC (ACW-50 removed — defective metric)
 const SKIP_ZERO_LAG = false
 
 # ── Design ───────────────────────────────────────────────────────────────────
-const PIPELINES = ["detrend", "glm", "maximal"]
+# Override with env PIPELINES="maximal_nocensor" to compute a control pipeline in isolation.
+const PIPELINES = haskey(ENV, "PIPELINES") ? String.(split(ENV["PIPELINES"], ",")) : ["detrend", "maximal"]
 const LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
 
 # 39 subjects (all minus sub-12) — matches utils/subject_filter.py:get_pipeline_subjects()
