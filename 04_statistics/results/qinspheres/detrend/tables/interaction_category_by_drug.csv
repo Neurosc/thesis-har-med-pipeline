@@ -1,5 +1,0 @@
-"model","term","F","df1","df2","p_param","p_perm"
-"raw","category:drug_group",1.474,5,154.7,0.2014,0.1514
-"raw_novisual","category:drug_group",1.722,4,118.7,0.1497,NA
-"resid","category:drug_group",1.434,5,155.3,0.2149,0.1694
-"resid_novisual","category:drug_group",1.718,4,119.2,0.1506,NA
