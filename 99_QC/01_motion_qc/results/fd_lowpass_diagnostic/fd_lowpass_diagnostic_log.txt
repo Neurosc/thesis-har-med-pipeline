@@ -16,7 +16,7 @@ Sampling: fs = 0.5556 Hz, Nyquist = 0.2778 Hz.
 Output directory: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic
 
 participants.tsv: 40 subjects (20 verum / 20 placebo)
-Discovered 80 subject(s), 80 run(s). All confounds files present.
+Discovered 40 subject(s), 80 run(s). All confounds files present.
 
   sub-01 ses-01  meanFD 0.216 -> 0.031 mm   %cens(0.3) 22.1 -> 0.0
   sub-01 ses-02  meanFD 0.201 -> 0.033 mm   %cens(0.3) 17.1 -> 0.0
@@ -116,13 +116,13 @@ Group summary saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/0
   low-pass 0.1 Hz      median    0.8   mean    4.0
   low-pass 0.2 Hz      median   21.5   mean   26.9
 
-── Example runs for the trace figure (2 per motion tertile, largest change first) ──
-  sub-32 ses-02  [ low motion]  %cens 13.3 -> 0.0  (-13.3 pts)
-  sub-34 ses-02  [ low motion]  %cens 14.2 -> 0.4  (-13.8 pts)
-  sub-24 ses-02  [ mid motion]  %cens 31.7 -> 0.0  (-31.7 pts)
-  sub-22 ses-02  [ mid motion]  %cens 32.1 -> 0.0  (-32.1 pts)
-  sub-12 ses-01  [high motion]  %cens 80.8 -> 0.4  (-80.4 pts)
-  sub-12 ses-02  [high motion]  %cens 85.8 -> 0.8  (-85.0 pts)
+── Example runs for the trace figure (3 collapsed + 3 retained) ──
+  sub-34 ses-02  [ low motion, collapsed]  %cens 14.2 -> 0.4  (-13.8 pts)
+  sub-22 ses-02  [ mid motion, collapsed]  %cens 32.1 -> 0.0  (-32.1 pts)
+  sub-12 ses-02  [high motion, collapsed]  %cens 85.8 -> 0.8  (-85.0 pts)
+  sub-33 ses-01  [high motion,  retained]  %cens 42.1 -> 17.1  (-25.0 pts)
+  sub-21 ses-01  [high motion,  retained]  %cens 48.3 -> 26.7  (-21.7 pts)
+  sub-08 ses-02  [high motion,  retained]  %cens 50.4 -> 25.4  (-25.0 pts)
 
 Trace figure saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic/fd_lowpass_example_traces.png
 Scatter figure saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/99_QC/01_motion_qc/results/fd_lowpass_diagnostic/fd_lowpass_pct_censored_scatter.png
