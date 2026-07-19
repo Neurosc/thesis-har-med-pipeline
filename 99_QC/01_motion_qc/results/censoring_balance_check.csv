@@ -1,0 +1,21 @@
+"section","term","n_subject","estimate","se","ci_low","ci_high","t","df","p","singular"
+"sample_summary","all-40 (Stage 2b threshold table) :: median",40,18.95835,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","all-40 (Stage 2b threshold table) :: mean",40,24.0416675,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","all-40 (Stage 2b threshold table) :: min",40,0,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","all-40 (Stage 2b threshold table) :: max",40,85.8333,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","n=35 (current analysis sample) :: median",35,17.5,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","n=35 (current analysis sample) :: mean",35,20.5357157142857,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","n=35 (current analysis sample) :: min",35,0,NA,NA,NA,NA,NA,NA,NA
+"sample_summary","n=35 (current analysis sample) :: max",35,49.5833,NA,NA,NA,NA,NA,NA,NA
+"descriptives_by_session","pre",NA,24.0625025,17.9708068852634,NA,NA,NA,NA,NA,NA
+"descriptives_by_session","post",NA,24.0208325,18.0799173316749,NA,NA,NA,NA,NA,NA
+"descriptives_by_arm","placebo",NA,22.16667,15.0785045677818,NA,NA,NA,NA,NA,NA
+"descriptives_by_arm","verum",NA,25.916665,20.377963147775,NA,NA,NA,NA,NA,NA
+"descriptives_by_arm_x_session","placebo/pre",NA,22.458335,16.9234087809343,NA,NA,NA,NA,NA,NA
+"descriptives_by_arm_x_session","placebo/post",NA,21.875005,13.420436949843,NA,NA,NA,NA,NA,NA
+"descriptives_by_arm_x_session","verum/pre",NA,25.66667,19.2633800921279,NA,NA,NA,NA,NA,NA
+"descriptives_by_arm_x_session","verum/post",NA,26.16666,21.9355702013731,NA,NA,NA,NA,NA,NA
+"paired_t_post_minus_pre","post - pre",40,-0.0416700000000001,NA,-4.19244523753345,4.10910523753345,-0.020305973177198,39,0.983902826480685,NA
+"lmm_pcf_session_x_arm","session (post-pre, placebo arm)",NA,-0.583330000000001,2.93742591125753,NA,NA,NA,38,0.843645718923628,FALSE
+"lmm_pcf_session_x_arm","arm (verum-placebo, baseline)",NA,3.20833500000006,5.74185721164849,NA,NA,NA,49.1888901147229,0.578858773577163,FALSE
+"lmm_pcf_session_x_arm","session:arm interaction (DiD)",NA,1.08332,4.15414756216655,NA,NA,NA,38,0.795669989804142,FALSE

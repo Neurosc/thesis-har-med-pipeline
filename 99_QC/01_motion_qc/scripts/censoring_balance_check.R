@@ -72,6 +72,11 @@ PARTICIPANTS    <- file.path(REPO, "participants.tsv")
 OUT_CSV         <- file.path(REPO, "99_QC", "01_motion_qc", "results",
                              "censoring_balance_check.csv")
 
+# Source of truth for the 5 exclusions is utils/subject_filter.py:_EXCLUDED.
+# Hardcoded here for the same reason 04_statistics/scripts/qin/01_build_auc.jl:24
+# hardcodes it: no R binding to the Python filter exists.
+EXCLUDED <- c("sub-06", "sub-08", "sub-12", "sub-26", "sub-36")
+
 # Fail loud if an input is missing (task: "stop and tell me; do not substitute defaults").
 for (f in c(COVARIATES_LONG, PARTICIPANTS))
   if (!file.exists(f)) stop(sprintf("Required input not found: %s", f), call. = FALSE)
@@ -146,6 +151,34 @@ descriptives <- bind_rows(by_session, by_arm, by_cell)
 
 cat("\n==== pcf descriptives (percent frames censored, FD>0.3mm) ====\n")
 print(as.data.frame(descriptives), row.names = FALSE, digits = 4)
+
+
+# ---------------------------------------------------------------------------
+# 3b. Distribution of pcf in BOTH samples, explicitly labelled.
+#
+#   all-40  = every subject with data. THIS is the sample the Stage 2b
+#             exclusion-threshold table operates over, so it is the relevant
+#             one for choosing a cutoff.
+#   n=35    = the current analysis sample (all-40 minus the 5 subjects already
+#             dropped by the >50%-censoring rule). Reported so the two are
+#             never confused when quoted.
+# ---------------------------------------------------------------------------
+sample_stats <- function(x, label, n_subj) {
+  data.frame(sample = label, n_subject = n_subj, n_runs = length(x),
+             median = median(x), mean = mean(x), min = min(x), max = max(x),
+             stringsAsFactors = FALSE)
+}
+pcf_all40 <- dat$pcf
+pcf_n35   <- dat$pcf[!as.character(dat$subject) %in% EXCLUDED]
+n35_subj  <- length(setdiff(levels(dat$subject), EXCLUDED))
+
+samples <- bind_rows(
+  sample_stats(pcf_all40, "all-40 (Stage 2b threshold table)", n_subj),
+  sample_stats(pcf_n35,   "n=35 (current analysis sample)",    n35_subj)
+)
+
+cat("\n==== pcf distribution by sample (label which is which when quoting) ====\n")
+print(as.data.frame(samples), row.names = FALSE, digits = 4)
 
 
 # ===========================================================================
@@ -252,23 +285,51 @@ lmm_out <- lmm_rows %>%
             estimate, se, ci_low = NA_real_, ci_high = NA_real_,
             t = NA_real_, df, p, singular)
 
-out <- bind_rows(descriptives_out, paired_out, lmm_out)
+samples_out <- samples %>%
+  tidyr::pivot_longer(c(median, mean, min, max),
+                      names_to = "stat", values_to = "value") %>%
+  transmute(section = "sample_summary", term = paste0(sample, " :: ", stat),
+            n_subject, estimate = value, se = NA_real_,
+            ci_low = NA_real_, ci_high = NA_real_,
+            t = NA_real_, df = NA_real_, p = NA_real_, singular = NA)
+
+out <- bind_rows(samples_out, descriptives_out, paired_out, lmm_out)
 write.csv(out, OUT_CSV, row.names = FALSE)
 cat(sprintf("\nSaved: %s  (%d rows)\n", OUT_CSV, nrow(out)))
 
-# ---- short summary line ---------------------------------------------------
-cat("\n==== SUMMARY ====\n")
-cat(sprintf("n=%d subjects, %d runs. pcf pre=%.2f%%(SD %.2f) post=%.2f%%(SD %.2f); ",
-            n_subj, n_rows,
-            by_session$mean_pcf[by_session$level == "pre"],
-            by_session$sd_pcf[by_session$level == "pre"],
-            by_session$mean_pcf[by_session$level == "post"],
-            by_session$sd_pcf[by_session$level == "post"]))
-cat(sprintf("placebo=%.2f%% verum=%.2f%%.\n",
-            by_arm$mean_pcf[by_arm$level == "placebo"],
-            by_arm$mean_pcf[by_arm$level == "verum"]))
-cat(sprintf("Paired post-pre: p=%.4f. LMM session p=%.4f; interaction p=%.4f%s.\n",
-            paired_row$p,
+# ---- summary, phrased for direct use in the write-up ----------------------
+# Deliberately CI-first, not p-first: "p = 0.98" only says we failed to detect
+# an imbalance, whereas the interval states how large an imbalance is still
+# compatible with the data — which is the quantity the robustness argument
+# actually rests on.
+placebo_mean <- by_arm$mean_pcf[by_arm$level == "placebo"]
+verum_mean   <- by_arm$mean_pcf[by_arm$level == "verum"]
+arm_gap      <- verum_mean - placebo_mean
+arm_p        <- lmm_rows$p[lmm_rows$term == "arm (verum-placebo, baseline)"]
+
+cat("\n==== SUMMARY (lead with the interval, not the p-value) ====\n")
+cat(sprintf(
+  "Sessions differed by %.2f pp, 95%% CI [%.2f, %+.2f] (paired t, p = %.3f).\n",
+  paired_row$estimate, paired_row$ci_low, paired_row$ci_high, paired_row$p))
+cat(sprintf(
+  "  pre = %.2f%% (SD %.2f), post = %.2f%% (SD %.2f), n = %d subjects / %d runs.\n",
+  by_session$mean_pcf[by_session$level == "pre"],
+  by_session$sd_pcf[by_session$level == "pre"],
+  by_session$mean_pcf[by_session$level == "post"],
+  by_session$sd_pcf[by_session$level == "post"], n_subj, n_rows))
+cat(sprintf("  LMM session p = %.3f; session:arm interaction p = %.3f%s.\n",
             lmm_rows$p[lmm_rows$term == "session (post-pre, placebo arm)"],
             lmm_rows$p[lmm_rows$term == "session:arm interaction (DiD)"],
             if (singular) " (singular fit)" else ""))
+cat(sprintf(
+  "Arm: verum %.2f%% vs placebo %.2f%% (+%.2f pp, ns, LMM p = %.3f).\n",
+  verum_mean, placebo_mean, arm_gap, arm_p))
+cat("  Heavier censoring in verum biases verum INT SHORTER, i.e. against the\n")
+cat("  drug effect, not for it.\n")
+
+cat("\nSample summaries (label which is which when quoting):\n")
+for (i in seq_len(nrow(samples))) {
+  s <- samples[i, ]
+  cat(sprintf("  %-34s median %.2f%%, mean %.2f%%, min %.2f%%, max %.2f%%  (%d runs)\n",
+              s$sample, s$median, s$mean, s$min, s$max, s$n_runs))
+}
