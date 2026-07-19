@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Sphere-based timeseries extraction — DMT-MED dataset (three denoising pipelines).
+Sphere-based timeseries extraction — DMT-MED dataset (two denoising pipelines).
 
 Extracts mean BOLD timeseries for all six self/nonself layers using 4mm-radius
-sphere ROIs in native BOLD space, from EACH of the three denoising pipelines
-(detrend, glm, maximal), so the downstream ACW/SampEn robustness analysis can
+sphere ROIs in native BOLD space, from EACH of the two denoising pipelines
+(detrend, maximal), so the downstream ACW/SampEn robustness analysis can
 compare across denoising choice.
 
 Self layers  (Qin et al. 2020 MNI coordinates, 37 ROIs, 11/14/12 per layer):
@@ -16,7 +16,7 @@ glasser360MNI.nii.gz; self-overlapping parcels excluded):
 Sample: 39 subjects (get_pipeline_subjects, all minus sub-12) × 2 sessions, to
 match the three-pipeline denoising. The 35-subject inclusion filter is applied
 later at the statistics stage.
-Per pipeline: 39 × 2 × 6 = 468 CSVs; three pipelines = 1404 CSVs.
+Per pipeline: 39 × 2 × 6 = 468 CSVs; two pipelines = 936 CSVs.
 
 Inputs  : 01_denoising/results/{pipeline}/sub-XX_ses-YY_task-rest_desc-{pipeline}_bold.nii.gz
 Outputs : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/
@@ -30,6 +30,7 @@ Run on server:
   python 02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py
 """
 
+import os
 import sys
 import csv
 import time
@@ -56,8 +57,9 @@ CABNP_KEY    = ATLAS_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGS
 OUT_ROOT = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
 LOG_PATH = OUT_ROOT / "_sphere_extraction_log.tsv"
 
-# The three denoising pipelines to extract from (folder + desc- tag use the same name).
-PIPELINES = ["detrend", "glm", "maximal"]
+# The two denoising pipelines to extract from (folder + desc- tag use the same name).
+# Override with env PIPELINES="maximal_nocensor" to extract a control pipeline in isolation.
+PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
 
 LAYER_DIR = {
     "Interoception": "intero",

@@ -2,9 +2,9 @@
 """
 Single-subject denoising test (sub-01, ses-01) for one pipeline.
 
-Runs one of the three pipelines (detrend | glm | maximal) on sub-01 ses-01 with
-verbose stage diagnostics + sanity checks. Use to eyeball a pipeline before the
-full 78-run batch. Core logic lives in denoise_pipelines.py.
+Runs one of the pipelines (detrend | maximal; or the maximal_nocensor control) on
+sub-01 ses-01 with verbose stage diagnostics + sanity checks. Use to eyeball a
+pipeline before the full 78-run batch. Core logic lives in denoise_pipelines.py.
 
 Usage (on server):
   conda activate fmri

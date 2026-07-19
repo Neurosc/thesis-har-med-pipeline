@@ -1,15 +1,14 @@
 """
 Denoising pipelines library — shared by 00_test_one_subject.py and 01_denoise_all.py.
 
-One parameterized core drives three independent denoising pipelines (selected by the
+One parameterized core drives two independent denoising pipelines (selected by the
 `pipeline` argument) so the final results can be shown robust to denoising choice:
 
   - "detrend" (Keskin et al. 2025 style): polynomial detrend only. No nuisance GLM,
     no censoring, no interpolation, no bandpass.
-  - "glm": full nuisance GLM (WM, CSF, 6 motion + 6 derivatives) on detrended BOLD.
-    No censoring, no interpolation, no bandpass.
-  - "maximal" (Goldberg et al. 2024): the "glm" regressors PLUS FD>0.3 frame censoring,
-    CBIG Lomb-Scargle interpolation, and bandpass 0.01–0.1 Hz (frequency-domain mask).
+  - "maximal" (Goldberg et al. 2024): full nuisance GLM (WM, CSF, 6 motion + 6
+    derivatives) on detrended BOLD, PLUS FD>0.3 frame censoring, CBIG Lomb-Scargle
+    interpolation, and bandpass 0.01–0.1 Hz (frequency-domain mask).
 
 No pipeline does global-signal regression (GSR is retired entirely). The step
 toggles for each pipeline live in PIPELINE_PRESETS below.
@@ -58,10 +57,15 @@ DERIV_COLS  = [
 PIPELINE_PRESETS = {
     "detrend": dict(desc="detrend", detrend_order=1,
                     do_nuisance=False, do_censor=False, do_ls=False),
-    "glm":     dict(desc="glm",     detrend_order=1,
-                    do_nuisance=True,  do_censor=False, do_ls=False),
     "maximal": dict(desc="maximal", detrend_order=1,
                     do_nuisance=True,  do_censor=True,  do_ls=True),
+    # Control for the interpolation robustness check: identical to "maximal"
+    # (same GLM + 0.01–0.1 Hz band-pass) but with FD censoring / Lomb-Scargle
+    # interpolation OFF. The SAME LS band-pass is applied to the full continuous
+    # series (empty outlier set → no frames interpolated), so "maximal" vs this
+    # isolates the effect of censoring+interpolation. Not part of the main flow.
+    "maximal_nocensor": dict(desc="maximal_nocensor", detrend_order=1,
+                    do_nuisance=True,  do_censor=False, do_ls=True),
 }
 
 _RED   = "\033[91m"
@@ -84,7 +88,7 @@ def build_fmriprep_paths(subject: str, session: str, fmriprep_root: Path) -> dic
 def build_output_path(subject: str, session: str, output_dir: Path, desc: str) -> Path:
     """Return the denoised NIfTI output path for one subject-session × pipeline.
 
-    desc is the pipeline tag ("detrend" | "glm" | "maximal"), embedded in the
+    desc is the pipeline tag ("detrend" | "maximal"), embedded in the
     filename so the file is self-identifying even if moved.
     """
     tag = f"{subject}_{session}_{TASK}"
@@ -383,7 +387,11 @@ def denoise(
                   f"({X.shape[1]} regressors)")
 
         if config["do_ls"]:
-            result = _run_ls_interp_bandpass(result, spike_idx, n_times, verbose)
+            # When censoring is off (maximal_nocensor control), pass an empty
+            # outlier set: the LS routine then applies the SAME band-pass to the
+            # full continuous series without interpolating any frames.
+            ls_spikes = spike_idx if config["do_censor"] else np.empty(0, dtype=int)
+            result = _run_ls_interp_bandpass(result, ls_spikes, n_times, verbose)
 
     out_2d = np.zeros_like(bold_2d)
     out_2d[mask_flat] = result
@@ -412,7 +420,7 @@ def denoise_run(
     session      : e.g. "ses-01"
     fmriprep_root: root of fMRIPrep derivatives directory
     output_dir   : directory to write the denoised NIfTI (one per pipeline)
-    pipeline     : "detrend" | "glm" | "maximal"
+    pipeline     : "detrend" | "maximal"
     verbose      : print stage diagnostics (True for single-subject, False for batch)
 
     Returns

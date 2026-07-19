@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Batch denoising — runs ONE of the three pipelines over the n=39 sample.
+Batch denoising — runs ONE of the two pipelines over the n=39 sample.
 
-Three pipelines (select with --pipeline): detrend | glm | maximal. All share the
+Two pipelines (select with --pipeline): detrend | maximal. All share the
 same sample of 39 subjects (all minus sub-12) × 2 sessions = 78 runs, so the only
 thing that differs between them is the denoising. See denoise_pipelines.PIPELINE_PRESETS.
+(maximal_nocensor is an optional control preset, not part of the main flow.)
 
 Usage (on server):
   conda activate fmri
   python 01_denoising/scripts/01_denoise_all.py --pipeline detrend
-  python 01_denoising/scripts/01_denoise_all.py --pipeline glm
   python 01_denoising/scripts/01_denoise_all.py --pipeline maximal
 
 Outputs (one self-identifying folder per pipeline)
