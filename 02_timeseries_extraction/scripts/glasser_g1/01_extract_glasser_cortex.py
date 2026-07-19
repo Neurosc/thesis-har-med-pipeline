@@ -5,7 +5,7 @@ Glasser whole-cortex parcel-mean timeseries extraction (G1-flattening analysis).
 Extracts mean denoised BOLD for ALL 360 cortical Cole-Anticevic / Glasser parcels
 (cortex only; CA subcortex is out of scope — no clean cortical gradient value), one
 file per subject x session, from EACH of the three NoGSR denoising pipelines
-(detrend / glm / maximal). Reuses the already-denoised NIfTIs in 01_denoising/results/
+(detrend / maximal). Reuses the already-denoised NIfTIs in 01_denoising/results/
 (NO re-denoising; NoGSR throughout — `wSubcorGSR` is only the atlas's build name).
 
 Sample: utils.subject_filter.get_included_subjects() -> n=35 (FD>0.3 exclusions:
@@ -40,6 +40,7 @@ Run on server (DO NOT silently resample):
 """
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -52,7 +53,9 @@ from nilearn import image as nimg
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
-from utils.subject_filter import get_included_subjects   # noqa: E402
+from utils.subject_filter import (                        # noqa: E402
+    get_included_subjects, get_pipeline_subjects,
+)
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DENOISING_DIR = REPO_ROOT / "01_denoising" / "results"
@@ -64,7 +67,21 @@ FD_COV        = REPO_ROOT / "99_QC" / "01_motion_qc" / "results" / "fd_covariate
 OUT_ROOT      = REPO_ROOT / "02_timeseries_extraction" / "results" / "glasser360"
 MANIFEST      = OUT_ROOT / "manifest.tsv"
 
-PIPELINES = ["detrend", "glm", "maximal"]
+# Defaults reproduce the original behaviour exactly. Both are overridable by env
+# var so the maximal_nocensor sensitivity analysis can be extracted in isolation
+# without editing this file — the same convention 01_extract_sphere_timeseries.py
+# already uses for PIPELINES.
+#   PIPELINES=maximal_nocensor   SUBJECT_SET=pipeline   (n=39, all minus sub-12)
+PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
+
+_SUBJECT_SETS = {
+    "included": (get_included_subjects, "get_included_subjects, FD>0.3, n=35"),
+    "pipeline": (get_pipeline_subjects, "get_pipeline_subjects, all minus sub-12, n=39"),
+}
+SUBJECT_SET = os.environ.get("SUBJECT_SET", "included")
+if SUBJECT_SET not in _SUBJECT_SETS:
+    sys.exit(f"FATAL: SUBJECT_SET='{SUBJECT_SET}' is not one of {sorted(_SUBJECT_SETS)}.")
+
 SESSIONS  = ["ses-01", "ses-02"]
 N_CORTICAL = 360
 
@@ -85,12 +102,14 @@ def main():
                     help="permit nearest-neighbor resampling of the atlas to the BOLD grid")
     args = ap.parse_args()
 
-    subjects = get_included_subjects()
+    subject_fn, subject_desc = _SUBJECT_SETS[SUBJECT_SET]
+    subjects = subject_fn()
     part = pd.read_csv(PARTICIPANTS, sep="\t")
     arm = dict(zip(part["participant_id"], part["condition"]))
     n_verum   = sum(arm.get(s) == "verum"   for s in subjects)
     n_placebo = sum(arm.get(s) == "placebo" for s in subjects)
-    print(f"Subjects (get_included_subjects, FD>0.3): n={len(subjects)} "
+    print(f"Pipelines: {PIPELINES}")
+    print(f"Subjects ({subject_desc}): n={len(subjects)} "
           f"({n_verum} verum + {n_placebo} placebo)")
     print("  " + ", ".join(subjects))
 
@@ -183,7 +202,22 @@ def main():
                                  arm=arm.get(sub, "unknown"), n_TR=n_tr,
                                  pct_censored_fd03=pct_cens.get((sub, ses), "")))
 
-    pd.DataFrame(rows).to_csv(MANIFEST, sep="\t", index=False)
+    # Merge, do not clobber. This run only walked PIPELINES, so writing `rows`
+    # straight out would delete the manifest entries of every OTHER pipeline
+    # whenever one pipeline is extracted in isolation (e.g. maximal_nocensor).
+    # Keep foreign rows, replace only the pipelines this run touched.
+    new_manifest = pd.DataFrame(rows)
+    if MANIFEST.exists():
+        old = pd.read_csv(MANIFEST, sep="\t")
+        if "pipeline" in old.columns:
+            kept = old[~old["pipeline"].isin(PIPELINES)]
+            n_kept = len(kept)
+            new_manifest = pd.concat([kept, new_manifest], ignore_index=True)
+            print(f"manifest: kept {n_kept} row(s) from other pipeline(s), "
+                  f"replaced {len(rows)} row(s) for {PIPELINES}")
+    new_manifest = new_manifest.sort_values(
+        ["pipeline", "subject", "session"]).reset_index(drop=True)
+    new_manifest.to_csv(MANIFEST, sep="\t", index=False)
     print(f"\n─── summary ───\nextracted={n_done}  skipped={n_skip}  missing={n_miss}")
     print(f"manifest -> {MANIFEST}")
 

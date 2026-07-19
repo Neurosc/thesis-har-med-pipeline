@@ -17,6 +17,7 @@ Out: 02_timeseries_extraction/results/qinparcels/{pipeline}/{layer}/{sub}_{ses}_
 
 Run from repo root: python 02_timeseries_extraction/scripts/02_build_qin_parcel_timeseries.py
 """
+import os
 import re
 from pathlib import Path
 import pandas as pd
@@ -27,7 +28,11 @@ SELFMETA = REPO / "02_timeseries_extraction" / "atlases" / "glasser_self_metadat
 KEY      = REPO / "02_timeseries_extraction" / "atlases" / \
            "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt"
 OUT      = REPO / "02_timeseries_extraction" / "results" / "qinparcels"
-PIPELINES = ["detrend", "glm", "maximal"]
+# Default reproduces the original behaviour. Override to build a pipeline in
+# isolation, e.g. PIPELINES=maximal_nocensor (same convention as the sphere and
+# glasser360 extractors). Whatever runs exist in glasser360/{pipeline}/ are
+# subset, so the sample follows that directory rather than being set here.
+PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
 
 # ── self layers from Keskin parcel mapping (a parcel may belong to 2 layers) ──
 sm = pd.read_csv(SELFMETA, sep="\t")
@@ -55,7 +60,20 @@ for l in ["intero", "extero", "mental", "visual", "motor", "auditory"]:
 FN = re.compile(r"^(sub-\d+)_(ses-\d+)_glasser360_timeseries\.csv$")
 n_written = 0
 for pl in PIPELINES:
-    files = sorted((GL360 / pl).glob("*_glasser360_timeseries.csv"))
+    src = GL360 / pl
+    if not src.is_dir():
+        raise SystemExit(
+            f"FATAL: no glasser360 timeseries directory for pipeline '{pl}':\n"
+            f"  expected {src}\n"
+            f"  Run 02_timeseries_extraction/scripts/glasser_g1/01_extract_glasser_cortex.py "
+            f"for this pipeline first."
+        )
+    files = sorted(src.glob("*_glasser360_timeseries.csv"))
+    if not files:
+        raise SystemExit(
+            f"FATAL: {src} exists but contains no *_glasser360_timeseries.csv.\n"
+            f"  Refusing to write zero parcel CSVs silently."
+        )
     for f in files:
         m = FN.match(f.name); sub, ses = m.group(1), m.group(2)
         df = pd.read_csv(f, index_col=0)            # Timepoint index, cols "1".."360"
