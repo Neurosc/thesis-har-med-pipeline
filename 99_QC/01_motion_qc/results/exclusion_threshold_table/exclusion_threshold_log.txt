@@ -1,0 +1,140 @@
+==============================================================================
+STAGE 2b — EXCLUSION THRESHOLD TABLE.  NO THRESHOLD IS APPLIED.
+==============================================================================
+Frame criterion : FD > 0.3 mm (fixed, matches the pipeline)
+Varying         : subject-level cutoff on % frames exceeding it
+Rule            : if EITHER session exceeds the cutoff, drop BOTH
+Subjects        : 40
+Source          : fd_covariates_wide_thresh03.csv
+
+── Distribution of % frames > 0.3 mm ──
+                             min      Q1   median      Q3     max    mean
+  per run (80 runs)         0.00   10.00    18.96   35.00   85.83   24.04
+  per subject (worst)       0.83   15.31    24.38   40.94   85.83   28.91
+
+  'per subject (worst)' is the quantity the cutoff acts on, so that is
+  the row against which to read where each candidate cutoff falls.
+
+── What each cutoff would do ──
+
+  cutoff > 20%   excluded by cutoff: 22   -> resulting n = 18
+      sub-01 (22.1%)
+      sub-05 (31.2%)
+      sub-06 (51.2%; already dropped at n=35)
+      sub-07 (36.7%)
+      sub-08 (50.4%; already dropped at n=35)
+      sub-10 (47.9%)
+      sub-11 (49.2%)
+      sub-12 (85.8%; already dropped at n=35, no denoised data)
+      sub-13 (21.2%)
+      sub-15 (43.8%)
+      sub-16 (32.9%)
+      sub-17 (39.2%)
+      sub-21 (48.3%)
+      sub-22 (32.1%)
+      sub-24 (32.5%)
+      sub-25 (26.7%)
+      sub-26 (56.2%; already dropped at n=35)
+      sub-29 (35.8%)
+      sub-30 (40.0%)
+      sub-33 (49.6%)
+      sub-34 (35.0%)
+      sub-36 (52.1%; already dropped at n=35)
+
+  cutoff > 25%   excluded by cutoff: 20   -> resulting n = 20
+      sub-05 (31.2%)
+      sub-06 (51.2%; already dropped at n=35)
+      sub-07 (36.7%)
+      sub-08 (50.4%; already dropped at n=35)
+      sub-10 (47.9%)
+      sub-11 (49.2%)
+      sub-12 (85.8%; already dropped at n=35, no denoised data)
+      sub-15 (43.8%)
+      sub-16 (32.9%)
+      sub-17 (39.2%)
+      sub-21 (48.3%)
+      sub-22 (32.1%)
+      sub-24 (32.5%)
+      sub-25 (26.7%)
+      sub-26 (56.2%; already dropped at n=35)
+      sub-29 (35.8%)
+      sub-30 (40.0%)
+      sub-33 (49.6%)
+      sub-34 (35.0%)
+      sub-36 (52.1%; already dropped at n=35)
+
+  cutoff > 30%   excluded by cutoff: 19   -> resulting n = 21
+      sub-05 (31.2%)
+      sub-06 (51.2%; already dropped at n=35)
+      sub-07 (36.7%)
+      sub-08 (50.4%; already dropped at n=35)
+      sub-10 (47.9%)
+      sub-11 (49.2%)
+      sub-12 (85.8%; already dropped at n=35, no denoised data)
+      sub-15 (43.8%)
+      sub-16 (32.9%)
+      sub-17 (39.2%)
+      sub-21 (48.3%)
+      sub-22 (32.1%)
+      sub-24 (32.5%)
+      sub-26 (56.2%; already dropped at n=35)
+      sub-29 (35.8%)
+      sub-30 (40.0%)
+      sub-33 (49.6%)
+      sub-34 (35.0%)
+      sub-36 (52.1%; already dropped at n=35)
+
+  cutoff > 35%   excluded by cutoff: 14   -> resulting n = 26
+      sub-06 (51.2%; already dropped at n=35)
+      sub-07 (36.7%)
+      sub-08 (50.4%; already dropped at n=35)
+      sub-10 (47.9%)
+      sub-11 (49.2%)
+      sub-12 (85.8%; already dropped at n=35, no denoised data)
+      sub-15 (43.8%)
+      sub-17 (39.2%)
+      sub-21 (48.3%)
+      sub-26 (56.2%; already dropped at n=35)
+      sub-29 (35.8%)
+      sub-30 (40.0%)
+      sub-33 (49.6%)
+      sub-36 (52.1%; already dropped at n=35)
+
+  cutoff > 40%   excluded by cutoff: 10   -> resulting n = 30
+      sub-06 (51.2%; already dropped at n=35)
+      sub-08 (50.4%; already dropped at n=35)
+      sub-10 (47.9%)
+      sub-11 (49.2%)
+      sub-12 (85.8%; already dropped at n=35, no denoised data)
+      sub-15 (43.8%)
+      sub-21 (48.3%)
+      sub-26 (56.2%; already dropped at n=35)
+      sub-33 (49.6%)
+      sub-36 (52.1%; already dropped at n=35)
+
+  cutoff > 50%   excluded by cutoff: 5   -> resulting n = 35
+      sub-06 (51.2%; already dropped at n=35)
+      sub-08 (50.4%; already dropped at n=35)
+      sub-12 (85.8%; already dropped at n=35, no denoised data)
+      sub-26 (56.2%; already dropped at n=35)
+      sub-36 (52.1%; already dropped at n=35)
+
+==============================================================================
+SUMMARY TABLE
+==============================================================================
+    cutoff  excluded  resulting n  lost vs 40  lost vs n=35
+      >20%        22           18          22            17
+      >25%        20           20          20            15
+      >30%        19           21          19            14
+      >35%        14           26          14             9
+      >40%        10           30          10             5
+      >50%         5           35           5             0
+
+  For reference, the 5 subjects currently dropped at n=35: ['sub-06', 'sub-08', 'sub-12', 'sub-26', 'sub-36']
+  Of those, unavailable regardless of cutoff (no denoised data): ['sub-12']
+
+  Saved: exclusion_threshold_table.csv
+  Saved: exclusion_per_subject.csv
+
+  NO THRESHOLD APPLIED. Choose one on motion grounds, not on which
+  cutoff produces the preferred result.

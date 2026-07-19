@@ -13,7 +13,8 @@ const TR = 1.8; const FS = 1.0 / TR; const N_LAGS = 100; const DUMMY = 6
 const ACW_TYPES = [:auc]; const SKIP_ZERO_LAG = false   # ACW-50 removed (defective metric)
 
 const REPO     = normpath(joinpath(@__DIR__, "..", "..", ".."))
-const PIPELINES = ["detrend", "glm", "maximal"]
+# Override with env PIPELINES="maximal_nocensor" (same convention as 01_compute_acw.jl).
+const PIPELINES = haskey(ENV, "PIPELINES") ? String.(split(ENV["PIPELINES"], ",")) : ["detrend", "maximal"]
 const LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
 const SESSIONS  = ["ses-01", "ses-02"]
 const TS_BASE   = joinpath(REPO, "02_timeseries_extraction", "results", "qinparcels")

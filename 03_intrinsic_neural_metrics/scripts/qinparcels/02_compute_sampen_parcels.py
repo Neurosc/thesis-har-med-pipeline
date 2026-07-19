@@ -9,6 +9,7 @@ Out: 03_intrinsic_neural_metrics/results/sampen_parcels/{pipeline}/{layer}/{sub}
      (roi_id, sampen). Subjects derived from files (n=35).
 Run from repo root: python 03_intrinsic_neural_metrics/scripts/qinparcels/02_compute_sampen_parcels.py
 """
+import os
 import re
 from pathlib import Path
 import numpy as np
@@ -18,7 +19,8 @@ import EntropyHub as EH
 
 REPO = Path(__file__).resolve().parents[3]
 M, TAU, R, LOGBASE, DUMMY = 1, 1, 0.3, 2, 6
-PIPELINES = ["detrend", "glm", "maximal"]
+# Override with env PIPELINES="maximal_nocensor" (same convention as the sphere scripts).
+PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
 LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
 SESSIONS  = ["ses-01", "ses-02"]
 TS_BASE   = REPO / "02_timeseries_extraction" / "results" / "qinparcels"

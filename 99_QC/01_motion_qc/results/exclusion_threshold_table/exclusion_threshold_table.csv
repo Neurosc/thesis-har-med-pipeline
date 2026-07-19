@@ -1,0 +1,7 @@
+cutoff_pct,n_excluded_by_cutoff,excluded_by_cutoff,n_also_unavailable,resulting_n,n_lost_vs_40,n_lost_vs_current35
+20,22,sub-01;sub-05;sub-06;sub-07;sub-08;sub-10;sub-11;sub-12;sub-13;sub-15;sub-16;sub-17;sub-21;sub-22;sub-24;sub-25;sub-26;sub-29;sub-30;sub-33;sub-34;sub-36,0,18,22,17
+25,20,sub-05;sub-06;sub-07;sub-08;sub-10;sub-11;sub-12;sub-15;sub-16;sub-17;sub-21;sub-22;sub-24;sub-25;sub-26;sub-29;sub-30;sub-33;sub-34;sub-36,0,20,20,15
+30,19,sub-05;sub-06;sub-07;sub-08;sub-10;sub-11;sub-12;sub-15;sub-16;sub-17;sub-21;sub-22;sub-24;sub-26;sub-29;sub-30;sub-33;sub-34;sub-36,0,21,19,14
+35,14,sub-06;sub-07;sub-08;sub-10;sub-11;sub-12;sub-15;sub-17;sub-21;sub-26;sub-29;sub-30;sub-33;sub-36,0,26,14,9
+40,10,sub-06;sub-08;sub-10;sub-11;sub-12;sub-15;sub-21;sub-26;sub-33;sub-36,0,30,10,5
+50,5,sub-06;sub-08;sub-12;sub-26;sub-36,0,35,5,0

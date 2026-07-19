@@ -2,7 +2,7 @@
 """
 Compute Sample Entropy (SampEn) per ROI for the three-pipeline DMT-MED design.
 
-Loops the three denoising pipelines (detrend/glm/maximal) × six Qin-sphere layers,
+Loops the two denoising pipelines (detrend/maximal) × six Qin-sphere layers,
 reading the qinspheres timeseries and writing one SampEn CSV per (pipeline, layer,
 subject, session) plus a per-pipeline long table. Sample = 39 (all minus sub-12),
 matching the extraction; the 35-subject inclusion filter is applied later at stats.
@@ -27,6 +27,7 @@ Run (local or server):
   python 03_intrinsic_neural_metrics/scripts/02_compute_sampen.py
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -55,7 +56,9 @@ LOGBASE = 2    # log base 2 (Northoff-lab convention)
 # ── Dataset constants ──────────────────────────────────────────────────────────
 DUMMY_VOLUMES = 6  # volumes dropped at the start (matches the ACW pipeline)
 
-PIPELINES = ["detrend", "glm", "maximal"]
+# Override with env PIPELINES="maximal_nocensor" to compute a control pipeline in
+# isolation (same convention as 01_compute_acw.jl and the extractors).
+PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
 SUBJECTS  = get_pipeline_subjects()       # 39 (all minus sub-12)
 SESSIONS  = ["ses-01", "ses-02"]
 LAYERS    = ["intero", "extero", "mental", "visual", "motor", "auditory"]
@@ -216,7 +219,7 @@ def process_pipeline(pipeline, drug_groups, first_run_done):
 
 def main():
     print("=" * 70)
-    print("02_compute_sampen.py — Sample Entropy, three pipelines × six layers")
+    print("02_compute_sampen.py — Sample Entropy, two pipelines × six layers")
     print(f"  SampEn params: m={M}, tau={TAU}, r={R} (absolute), log base={LOGBASE}")
     print(f"  Dummy volumes discarded: {DUMMY_VOLUMES}")
     print(f"  Pipelines: {PIPELINES}  Subjects: {len(SUBJECTS)}  "
