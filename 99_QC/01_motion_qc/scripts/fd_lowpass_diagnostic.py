@@ -79,7 +79,7 @@ FILTER_ORDER    = 4        # Butterworth order, applied zero-phase via filtfilt
 CUTOFFS_HZ      = {"lp008": 0.08, "lp010": 0.10, "lp020": 0.20}
 PRIMARY         = "lp010"
 FD_THRESHOLDS   = {"gt03": 0.3, "gt02": 0.2}   # 0.3 mm = the pipeline threshold
-N_EXAMPLES      = 6        # example traces (2 per motion tertile)
+N_EXAMPLES      = 6        # example traces (half collapsed, half retained)
 # ──────────────────────────────────────────────────────────────────────────────
 
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -153,7 +153,9 @@ print(f"participants.tsv: {len(ARM)} subjects "
 if not FMRIPREP_ROOT.is_dir():
     raise FileNotFoundError(f"fMRIPrep derivatives not found: {FMRIPREP_ROOT}")
 
-subject_dirs = sorted(FMRIPREP_ROOT.glob("sub-*"))
+# is_dir() matters: fMRIPrep also writes a sub-XX.html report per subject at the
+# derivatives root, and a bare glob would count those as subjects.
+subject_dirs = sorted(d for d in FMRIPREP_ROOT.glob("sub-*") if d.is_dir())
 if not subject_dirs:
     raise RuntimeError(f"No sub-* directories found under {FMRIPREP_ROOT}")
 
@@ -320,25 +322,36 @@ for cond in conditions:
     print(f"  {label_of[cond]:<20} median {pct.median():>6.1f}   mean {pct.mean():>6.1f}")
 
 # ── Step 5: figure 1 — example traces spanning low to high motion ─────────────
-# Selection rule (deterministic, no randomness): split runs into tertiles of
-# unfiltered %censored, then take the 2 runs per tertile with the LARGEST
-# reduction in %censored under the primary cutoff — i.e. runs that actually
-# differ, which is the point of the visual check.
+# Selection rule (deterministic, no randomness). Runs are shown from BOTH
+# behaviours, because picking only the biggest changes would flatter the filter
+# and hide the runs where motion survives it:
+#   "collapsed" — the largest reduction in %censored, one per motion tertile so
+#                 the panel still spans low -> high motion.
+#   "retained"  — the runs with the most %censored still REMAINING after
+#                 filtering, i.e. where the filter did not erase the motion.
+# Both groups are needed to judge whether the filter is removing rhythmic
+# oscillation (respiration) or flattening isolated real-motion spikes.
 sel = run_df.copy()
 sel["delta_pct"] = sel["pct_gt03_unfilt"] - sel[f"pct_gt03_{PRIMARY}"]
 sel["tertile"] = pd.qcut(sel["pct_gt03_unfilt"].rank(method="first"), 3,
                          labels=["low", "mid", "high"])
-per_tertile = max(1, N_EXAMPLES // 3)
-examples = (sel.sort_values("delta_pct", ascending=False)
-               .groupby("tertile", observed=True)
-               .head(per_tertile)
-               .sort_values("pct_gt03_unfilt")
-               .reset_index(drop=True))
+
+collapsed = (sel.sort_values("delta_pct", ascending=False)
+                .groupby("tertile", observed=True)
+                .head(1)
+                .assign(group="collapsed"))
+retained = (sel.drop(index=collapsed.index)
+               .sort_values(f"pct_gt03_{PRIMARY}", ascending=False)
+               .head(max(0, N_EXAMPLES - len(collapsed)))
+               .assign(group="retained"))
+examples = (pd.concat([collapsed, retained])
+              .sort_values(["group", "pct_gt03_unfilt"])
+              .reset_index(drop=True))
 
 print(f"\n── Example runs for the trace figure "
-      f"({per_tertile} per motion tertile, largest change first) ──")
+      f"({len(collapsed)} collapsed + {len(retained)} retained) ──")
 for r in examples.itertuples(index=False):
-    print(f"  {r.subject} {r.session}  [{r.tertile:>4} motion]  "
+    print(f"  {r.subject} {r.session}  [{r.tertile:>4} motion, {r.group:>9}]  "
           f"%cens {r.pct_gt03_unfilt:.1f} -> {getattr(r, f'pct_gt03_{PRIMARY}'):.1f}  "
           f"(-{r.delta_pct:.1f} pts)")
 
@@ -359,10 +372,11 @@ for ax, r in zip(axes, examples.itertuples(index=False)):
                label="0.3 mm threshold")
     ax.set_xlim(0, len(frames) - 1)
     ax.set_ylim(0, max(0.45, float(r.max_fd_unfilt) * 1.08))
-    title = f"{r.subject} {r.session}  [{r.tertile} motion]"
+    title = f"{r.subject} {r.session}  [{r.tertile} motion — {r.group}]"
     if r.excluded:
         title += "  [EXCL]"
-    ax.set_title(title, fontsize=9)
+    ax.set_title(title, fontsize=9,
+                 color="#b03030" if r.group == "retained" else "black")
     ax.annotate(
         f"%cens 0.3mm: {r.pct_gt03_unfilt:.1f} -> {getattr(r, f'pct_gt03_{PRIMARY}'):.1f}\n"
         f"max FD: {r.max_fd_unfilt:.2f} -> {getattr(r, f'max_fd_{PRIMARY}'):.2f} mm",
@@ -379,7 +393,9 @@ fig.suptitle(
     f"FD before and after low-pass filtering the motion parameters "
     f"(Butterworth order {FILTER_ORDER}, zero-phase, {CUTOFFS_HZ[PRIMARY]} Hz)\n"
     f"Rhythmic oscillation removed = respiration (good); tall isolated spikes "
-    f"flattened = real motion (bad)",
+    f"flattened = real motion (bad)\n"
+    f"Top rows: 'collapsed' runs (largest drop, one per motion tertile).  "
+    f"Bottom rows in red: 'retained' runs (most censoring surviving the filter).",
     fontsize=11,
 )
 fig.supxlabel("Frame index", fontsize=9)
