@@ -1,0 +1,722 @@
+Loading nonself layer definitions...
+  Visual: 55 parcels after self-exclusion
+  Motor: 36 parcels after self-exclusion
+  Auditory: 14 parcels after self-exclusion
+
+Loading Glasser atlas for centroid computation...
+  Atlas shape: (182, 218, 182)
+  Computing centroids for 105 parcels...
+
+Extraction: 1 pipelines × 39 subjects × 2 sessions = 78 runs
+Pipelines: ['maximal_nocensor']
+Layers: ['Interoception', 'Exteroception', 'Cognition'] (self) + ['Visual', 'Motor', 'Auditory'] (nonself)
+
+
+============================================================
+PIPELINE: maximal_nocensor
+============================================================
+[maximal_nocensor][001/39] sub-01 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-01_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-01_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-01_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-01_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-01_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-01_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][001/39] sub-01 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-01_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-01_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-01_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-01_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-01_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-01_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][002/39] sub-02 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-02_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-02_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-02_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-02_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-02_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-02_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][002/39] sub-02 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-02_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-02_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-02_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-02_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-02_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-02_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][003/39] sub-03 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-03_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-03_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-03_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-03_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-03_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-03_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][003/39] sub-03 ses-02 loading BOLD...
+  ERROR: Expected 1410023040 bytes, got 258504224 bytes from 
+ - could the file be damaged?
+[maximal_nocensor][004/39] sub-04 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-04_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-04_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-04_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-04_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-04_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-04_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][004/39] sub-04 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-04_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-04_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-04_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-04_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-04_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-04_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][005/39] sub-05 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-05_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-05_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-05_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-05_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-05_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-05_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][005/39] sub-05 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-05_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-05_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-05_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-05_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-05_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-05_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][006/39] sub-06 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-06_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-06_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-06_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-06_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-06_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-06_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][006/39] sub-06 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-06_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-06_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-06_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-06_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-06_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-06_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][007/39] sub-07 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-07_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-07_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-07_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-07_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-07_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-07_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][007/39] sub-07 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-07_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-07_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-07_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-07_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-07_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-07_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][008/39] sub-08 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-08_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-08_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-08_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-08_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-08_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-08_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][008/39] sub-08 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-08_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-08_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-08_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-08_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-08_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-08_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][009/39] sub-09 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-09_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-09_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-09_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-09_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-09_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-09_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][009/39] sub-09 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-09_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-09_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-09_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-09_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-09_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-09_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][010/39] sub-10 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-10_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-10_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-10_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-10_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-10_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-10_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][010/39] sub-10 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-10_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-10_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-10_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-10_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-10_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-10_ses-02_auditory_timeseries.csv
+  Done in 7s
+[maximal_nocensor][011/39] sub-11 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-11_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-11_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-11_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-11_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-11_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-11_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][011/39] sub-11 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-11_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-11_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-11_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-11_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-11_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-11_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][012/39] sub-13 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-13_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-13_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-13_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-13_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-13_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-13_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][012/39] sub-13 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-13_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-13_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-13_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-13_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-13_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-13_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][013/39] sub-14 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-14_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-14_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-14_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-14_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-14_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-14_ses-01_auditory_timeseries.csv
+  Done in 6s
+[maximal_nocensor][013/39] sub-14 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-14_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-14_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-14_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-14_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-14_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-14_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][014/39] sub-15 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-15_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-15_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-15_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-15_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-15_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-15_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][014/39] sub-15 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-15_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-15_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-15_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-15_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-15_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-15_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][015/39] sub-16 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-16_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-16_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-16_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-16_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-16_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-16_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][015/39] sub-16 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-16_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-16_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-16_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-16_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-16_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-16_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][016/39] sub-17 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-17_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-17_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-17_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-17_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-17_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-17_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][016/39] sub-17 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-17_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-17_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-17_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-17_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-17_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-17_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][017/39] sub-18 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-18_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-18_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-18_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-18_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-18_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-18_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][017/39] sub-18 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-18_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-18_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-18_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-18_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-18_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-18_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][018/39] sub-19 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-19_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-19_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-19_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-19_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-19_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-19_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][018/39] sub-19 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-19_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-19_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-19_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-19_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-19_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-19_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][019/39] sub-20 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-20_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-20_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-20_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-20_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-20_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-20_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][019/39] sub-20 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-20_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-20_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-20_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-20_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-20_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-20_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][020/39] sub-21 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-21_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-21_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-21_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-21_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-21_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-21_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][020/39] sub-21 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-21_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-21_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-21_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-21_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-21_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-21_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][021/39] sub-22 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-22_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-22_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-22_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-22_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-22_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-22_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][021/39] sub-22 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-22_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-22_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-22_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-22_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-22_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-22_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][022/39] sub-23 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-23_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-23_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-23_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-23_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-23_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-23_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][022/39] sub-23 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-23_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-23_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-23_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-23_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-23_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-23_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][023/39] sub-24 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-24_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-24_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-24_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-24_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-24_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-24_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][023/39] sub-24 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-24_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-24_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-24_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-24_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-24_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-24_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][024/39] sub-25 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-25_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-25_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-25_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-25_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-25_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-25_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][024/39] sub-25 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-25_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-25_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-25_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-25_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-25_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-25_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][025/39] sub-26 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-26_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-26_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-26_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-26_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-26_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-26_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][025/39] sub-26 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-26_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-26_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-26_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-26_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-26_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-26_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][026/39] sub-27 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-27_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-27_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-27_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-27_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-27_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-27_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][026/39] sub-27 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-27_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-27_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-27_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-27_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-27_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-27_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][027/39] sub-28 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-28_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-28_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-28_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-28_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-28_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-28_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][027/39] sub-28 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-28_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-28_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-28_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-28_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-28_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-28_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][028/39] sub-29 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-29_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-29_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-29_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-29_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-29_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-29_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][028/39] sub-29 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-29_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-29_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-29_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-29_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-29_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-29_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][029/39] sub-30 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-30_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-30_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-30_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-30_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-30_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-30_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][029/39] sub-30 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-30_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-30_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-30_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-30_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-30_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-30_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][030/39] sub-31 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-31_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-31_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-31_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-31_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-31_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-31_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][030/39] sub-31 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-31_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-31_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-31_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-31_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-31_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-31_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][031/39] sub-32 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-32_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-32_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-32_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-32_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-32_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-32_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][031/39] sub-32 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-32_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-32_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-32_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-32_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-32_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-32_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][032/39] sub-33 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-33_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-33_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-33_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-33_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-33_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-33_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][032/39] sub-33 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-33_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-33_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-33_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-33_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-33_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-33_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][033/39] sub-34 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-34_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-34_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-34_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-34_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-34_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-34_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][033/39] sub-34 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-34_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-34_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-34_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-34_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-34_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-34_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][034/39] sub-35 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-35_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-35_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-35_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-35_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-35_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-35_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][034/39] sub-35 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-35_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-35_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-35_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-35_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-35_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-35_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][035/39] sub-36 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-36_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-36_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-36_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-36_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-36_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-36_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][035/39] sub-36 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-36_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-36_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-36_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-36_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-36_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-36_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][036/39] sub-37 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-37_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-37_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-37_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-37_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-37_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-37_ses-01_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][036/39] sub-37 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-37_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-37_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-37_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-37_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-37_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-37_ses-02_auditory_timeseries.csv
+  Done in 5s
+[maximal_nocensor][037/39] sub-38 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-38_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-38_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-38_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-38_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-38_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-38_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][037/39] sub-38 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-38_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-38_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-38_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-38_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-38_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-38_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][038/39] sub-39 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-39_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-39_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-39_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-39_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-39_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-39_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][038/39] sub-39 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-39_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-39_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-39_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-39_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-39_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-39_ses-02_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][039/39] sub-40 ses-01 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-40_ses-01_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-40_ses-01_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-40_ses-01_mental_timeseries.csv
+  Visual: 55 parcels → sub-40_ses-01_visual_timeseries.csv
+  Motor: 36 parcels → sub-40_ses-01_motor_timeseries.csv
+  Auditory: 14 parcels → sub-40_ses-01_auditory_timeseries.csv
+  Done in 4s
+[maximal_nocensor][039/39] sub-40 ses-02 loading BOLD...
+  shape=(113, 134, 97, 240)  vox=(1.718999981880188, 1.718999981880188, 2.0)
+  Interoception: 11 ROIs → sub-40_ses-02_intero_timeseries.csv
+  Exteroception: 14 ROIs → sub-40_ses-02_extero_timeseries.csv
+  Cognition: 12 ROIs → sub-40_ses-02_mental_timeseries.csv
+  Visual: 55 parcels → sub-40_ses-02_visual_timeseries.csv
+  Motor: 36 parcels → sub-40_ses-02_motor_timeseries.csv
+  Auditory: 14 parcels → sub-40_ses-02_auditory_timeseries.csv
+  Done in 4s
+
+─── Extraction summary ───
+Total runs:  78
+Completed:   77
+Skipped:     0
+Failed:      1
+
+Failed runs:
+  maximal_nocensor sub-03_ses-02

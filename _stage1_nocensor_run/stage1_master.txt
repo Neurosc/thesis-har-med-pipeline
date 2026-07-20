@@ -1,0 +1,12 @@
+[2026-07-19 19:00:26] ================= STAGE 1 CHAIN: maximal_nocensor =================
+[2026-07-19 19:00:26] repo: /BICNAS2/group-northoff/jkokino/codes/har_med_codes
+[2026-07-19 19:00:27] env OK (CONDA_DEFAULT_ENV=fmri)
+[2026-07-19 19:00:28] preset maximal_nocensor present
+[2026-07-19 19:00:28] START  01_preflight
+[2026-07-19 19:00:31] DONE   01_preflight
+[2026-07-19 19:00:31] START  02_denoise
+[2026-07-19 20:10:57] DONE   02_denoise
+[2026-07-19 20:10:57] START  03_extract_spheres
+[2026-07-19 20:16:48] DONE   03_extract_spheres
+[2026-07-19 20:16:48] START  04_extract_glasser360
+[2026-07-19 20:18:49] !!! FAILED at stage: 04_extract_glasser360

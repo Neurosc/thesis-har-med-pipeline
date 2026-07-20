@@ -1,0 +1,68 @@
+==============================================================================
+STAGE 1 PREFLIGHT — maximal_nocensor.  READ-ONLY, extracts nothing.
+==============================================================================
+repo      : /BICNAS2/group-northoff/jkokino/codes/har_med_codes
+fmriprep  : /BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep
+denoised  : /BICNAS2/group-northoff/jkokino/codes/har_med_codes/01_denoising/results
+
+==============================================================================
+1. CONFIG DIFF — PIPELINE_PRESETS['maximal'] vs ['maximal_nocensor']
+==============================================================================
+  key                          maximal      maximal_nocensor   same?
+  desc                         maximal      maximal_nocensor   NO
+  detrend_order                      1                     1   yes
+  do_censor                       True                 False   NO
+  do_ls                           True                  True   yes
+  do_nuisance                     True                  True   yes
+
+  Keys that differ: ['desc', 'do_censor']
+  OK: only do_censor differs (plus 'desc', the filename tag). The comparison isolates censoring+interpolation.
+
+==============================================================================
+2. fMRIPrep INPUT AVAILABILITY — all 40 subjects x 2 sessions
+==============================================================================
+  Runs with all three inputs present : 80 / 80
+  Nothing missing — every one of the 80 runs has BOLD + mask + confounds.
+
+  Subjects with BOTH sessions complete: 40
+
+  sub-12 specifically (excluded from the n=39 denoising sample as a
+  'broken/missing run', a different reason from the >50% censoring rule):
+      ses-01  bold=True  mask=True  confounds=True
+      ses-02  bold=True  mask=True  confounds=True
+
+==============================================================================
+3. EXISTING OUTPUTS
+==============================================================================
+
+  Denoised NIfTIs in 01_denoising/results/:
+      detrend                78 NIfTI(s)
+      glm                    78 NIfTI(s)
+      maximal                78 NIfTI(s)
+      maximal_nocensor        6 NIfTI(s)
+
+  maximal_nocensor denoised runs present: 6
+
+  Extracted timeseries (per atlas, per pipeline):
+      qinspheres   detrend                468 CSV(s)
+      qinspheres   glm                    468 CSV(s)
+      qinspheres   maximal                468 CSV(s)
+      glasser360   detrend                 70 CSV(s)
+      glasser360   glm                     70 CSV(s)
+      glasser360   maximal                 70 CSV(s)
+      qinparcels   detrend                420 CSV(s)
+      qinparcels   glm                    420 CSV(s)
+      qinparcels   maximal                420 CSV(s)
+
+==============================================================================
+4. WHAT STAGE 1 STILL NEEDS
+==============================================================================
+  1. DENOISE: maximal_nocensor has 6 of 80 runs -> 01_denoise_all.py --pipeline maximal_nocensor
+  2. EXTRACT qinspheres for maximal_nocensor
+  3. EXTRACT glasser360 for maximal_nocensor (prerequisite for qinparcels)
+  4. BUILD qinparcels for maximal_nocensor (subsets glasser360)
+
+  Input inventory saved: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/02_timeseries_extraction/results/_preflight_maximal_nocensor/preflight_inventory.csv
+  Report saved         : /BICNAS2/group-northoff/jkokino/codes/har_med_codes/02_timeseries_extraction/results/_preflight_maximal_nocensor/preflight_report.txt
+
+  READ-ONLY: nothing was denoised, extracted or modified.
