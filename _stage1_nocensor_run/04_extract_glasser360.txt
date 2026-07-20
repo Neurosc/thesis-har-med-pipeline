@@ -1,0 +1,36 @@
+Pipelines: ['maximal_nocensor']
+Subjects (get_pipeline_subjects, all minus sub-12, n=39): n=39 (19 verum + 20 placebo)
+  sub-01, sub-02, sub-03, sub-04, sub-05, sub-06, sub-07, sub-08, sub-09, sub-10, sub-11, sub-13, sub-14, sub-15, sub-16, sub-17, sub-18, sub-19, sub-20, sub-21, sub-22, sub-23, sub-24, sub-25, sub-26, sub-27, sub-28, sub-29, sub-30, sub-31, sub-32, sub-33, sub-34, sub-35, sub-36, sub-37, sub-38, sub-39, sub-40
+Atlas: glasser360MNI shape=(182, 218, 182), 360 cortical labels (1..360)
+
+============================================================
+PIPELINE: maximal_nocensor
+============================================================
+[maximal_nocensor] sub-01 ses-01 -> 360 parcels x 240 TR  (20s)
+[maximal_nocensor] sub-01 ses-02 -> 360 parcels x 240 TR  (19s)
+[maximal_nocensor] sub-02 ses-01 -> 360 parcels x 240 TR  (19s)
+[maximal_nocensor] sub-02 ses-02 -> 360 parcels x 240 TR  (19s)
+[maximal_nocensor] sub-03 ses-01 -> 360 parcels x 240 TR  (18s)
+Traceback (most recent call last):
+  File "02_timeseries_extraction/scripts/glasser_g1/01_extract_glasser_cortex.py", line 226, in <module>
+    main()
+  File "02_timeseries_extraction/scripts/glasser_g1/01_extract_glasser_cortex.py", line 179, in main
+    atlas_use = nimg.resample_to_img(atlas_img, bold_img, interpolation="nearest")
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nilearn/image/resampling.py", line 748, in resample_to_img
+    target = _utils.check_niimg(target_img)
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nilearn/_utils/niimg_conversions.py", line 315, in check_niimg
+    niimg = load_niimg(niimg, dtype=dtype)
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nilearn/_utils/niimg.py", line 135, in load_niimg
+    dtype = _get_target_dtype(_get_data(niimg).dtype, dtype)
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nilearn/_utils/niimg.py", line 25, in _get_data
+    data = np.asanyarray(img._dataobj)
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nibabel/arrayproxy.py", line 457, in __array__
+    arr = self._get_scaled(dtype=dtype, slicer=())
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nibabel/arrayproxy.py", line 424, in _get_scaled
+    scaled = apply_read_scaling(self._get_unscaled(slicer=slicer), scl_slope, scl_inter)
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nibabel/arrayproxy.py", line 394, in _get_unscaled
+    return array_from_file(
+  File "/home/jkokino/miniconda3/envs/fmri/lib/python3.8/site-packages/nibabel/volumeutils.py", line 472, in array_from_file
+    raise OSError(
+OSError: Expected 1410023040 bytes, got 258504224 bytes from 
+ - could the file be damaged?

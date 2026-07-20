@@ -1,0 +1,89 @@
+Batch denoising — pipeline 'maximal_nocensor'
+Sample: 39 subjects × 2 sessions = 78 runs
+Steps: {'desc': 'maximal_nocensor', 'detrend_order': 1, 'do_nuisance': True, 'do_censor': False, 'do_ls': True}
+Parameters: TR=1.8s  FD>0.3mm  BP=0.01–0.1Hz  LS_ofac=8
+Output dir: /BICNAS2/group-northoff/jkokino/codes/har_med_codes/01_denoising/results/maximal_nocensor
+Log:        /BICNAS2/group-northoff/jkokino/codes/har_med_codes/01_denoising/results/maximal_nocensor/_batch_log.tsv
+
+[01/78] sub-01 ses-01 ... SKIPPED (output exists)
+[02/78] sub-01 ses-02 ... SKIPPED (output exists)
+[03/78] sub-02 ses-01 ... SKIPPED (output exists)
+[04/78] sub-02 ses-02 ... SKIPPED (output exists)
+[05/78] sub-03 ses-01 ... SKIPPED (output exists)
+[06/78] sub-03 ses-02 ... SKIPPED (output exists)
+[07/78] sub-04 ses-01 ... DONE in 54s  censored=29/240 (12.1%)  post_std=23.50
+[08/78] sub-04 ses-02 ... DONE in 54s  censored=32/240 (13.3%)  post_std=27.70
+[09/78] sub-05 ses-01 ... DONE in 56s  censored=74/240 (30.8%)  post_std=27.83
+[10/78] sub-05 ses-02 ... DONE in 57s  censored=75/240 (31.2%)  post_std=27.55
+[11/78] sub-06 ses-01 ... DONE in 60s  censored=123/240 (51.2%)  post_std=25.36
+[12/78] sub-06 ses-02 ... DONE in 60s  censored=91/240 (37.9%)  post_std=26.14
+[13/78] sub-07 ses-01 ... DONE in 61s  censored=36/240 (15.0%)  post_std=23.75
+[14/78] sub-07 ses-02 ... DONE in 63s  censored=88/240 (36.7%)  post_std=28.62
+[15/78] sub-08 ses-01 ... DONE in 59s  censored=36/240 (15.0%)  post_std=26.78
+[16/78] sub-08 ses-02 ... DONE in 58s  censored=121/240 (50.4%)  post_std=41.42
+[17/78] sub-09 ses-01 ... DONE in 60s  censored=24/240 (10.0%)  post_std=28.69
+[18/78] sub-09 ses-02 ... DONE in 62s  censored=19/240 (7.9%)  post_std=24.21
+[19/78] sub-10 ses-01 ... DONE in 61s  censored=94/240 (39.2%)  post_std=26.12
+[20/78] sub-10 ses-02 ... DONE in 62s  censored=115/240 (47.9%)  post_std=26.96
+[21/78] sub-11 ses-01 ... DONE in 61s  censored=118/240 (49.2%)  post_std=33.92
+[22/78] sub-11 ses-02 ... DONE in 59s  censored=78/240 (32.5%)  post_std=30.83
+[23/78] sub-13 ses-01 ... DONE in 59s  censored=37/240 (15.4%)  post_std=24.51
+[24/78] sub-13 ses-02 ... DONE in 56s  censored=51/240 (21.2%)  post_std=22.29
+[25/78] sub-14 ses-01 ... DONE in 62s  censored=6/240 (2.5%)  post_std=27.15
+[26/78] sub-14 ses-02 ... DONE in 62s  censored=3/240 (1.2%)  post_std=32.66
+[27/78] sub-15 ses-01 ... DONE in 59s  censored=99/240 (41.2%)  post_std=28.48
+[28/78] sub-15 ses-02 ... DONE in 58s  censored=105/240 (43.8%)  post_std=30.56
+[29/78] sub-16 ses-01 ... DONE in 60s  censored=79/240 (32.9%)  post_std=24.31
+[30/78] sub-16 ses-02 ... DONE in 57s  censored=79/240 (32.9%)  post_std=27.17
+[31/78] sub-17 ses-01 ... DONE in 58s  censored=94/240 (39.2%)  post_std=23.99
+[32/78] sub-17 ses-02 ... DONE in 59s  censored=84/240 (35.0%)  post_std=26.56
+[33/78] sub-18 ses-01 ... DONE in 55s  censored=0/240 (0.0%)  post_std=22.59
+[34/78] sub-18 ses-02 ... DONE in 63s  censored=2/240 (0.8%)  post_std=28.37
+[35/78] sub-19 ses-01 ... DONE in 57s  censored=13/240 (5.4%)  post_std=20.02
+[36/78] sub-19 ses-02 ... DONE in 56s  censored=45/240 (18.8%)  post_std=21.14
+[37/78] sub-20 ses-01 ... DONE in 60s  censored=29/240 (12.1%)  post_std=33.39
+[38/78] sub-20 ses-02 ... DONE in 59s  censored=45/240 (18.8%)  post_std=30.02
+[39/78] sub-21 ses-01 ... DONE in 58s  censored=116/240 (48.3%)  post_std=26.22
+[40/78] sub-21 ses-02 ... DONE in 59s  censored=83/240 (34.6%)  post_std=26.30
+[41/78] sub-22 ses-01 ... DONE in 61s  censored=46/240 (19.2%)  post_std=23.54
+[42/78] sub-22 ses-02 ... DONE in 62s  censored=77/240 (32.1%)  post_std=30.91
+[43/78] sub-23 ses-01 ... DONE in 60s  censored=47/240 (19.6%)  post_std=21.39
+[44/78] sub-23 ses-02 ... DONE in 59s  censored=40/240 (16.7%)  post_std=28.90
+[45/78] sub-24 ses-01 ... DONE in 56s  censored=78/240 (32.5%)  post_std=28.26
+[46/78] sub-24 ses-02 ... DONE in 58s  censored=76/240 (31.7%)  post_std=25.64
+[47/78] sub-25 ses-01 ... DONE in 56s  censored=64/240 (26.7%)  post_std=28.69
+[48/78] sub-25 ses-02 ... DONE in 55s  censored=9/240 (3.8%)  post_std=25.83
+[49/78] sub-26 ses-01 ... DONE in 57s  censored=135/240 (56.2%)  post_std=28.63
+[50/78] sub-26 ses-02 ... DONE in 59s  censored=72/240 (30.0%)  post_std=26.46
+[51/78] sub-27 ses-01 ... DONE in 58s  censored=45/240 (18.8%)  post_std=28.62
+[52/78] sub-27 ses-02 ... DONE in 58s  censored=13/240 (5.4%)  post_std=30.19
+[53/78] sub-28 ses-01 ... DONE in 62s  censored=22/240 (9.2%)  post_std=27.60
+[54/78] sub-28 ses-02 ... DONE in 62s  censored=10/240 (4.2%)  post_std=25.96
+[55/78] sub-29 ses-01 ... DONE in 61s  censored=78/240 (32.5%)  post_std=28.98
+[56/78] sub-29 ses-02 ... DONE in 60s  censored=86/240 (35.8%)  post_std=27.06
+[57/78] sub-30 ses-01 ... DONE in 59s  censored=96/240 (40.0%)  post_std=26.90
+[58/78] sub-30 ses-02 ... DONE in 59s  censored=51/240 (21.2%)  post_std=28.12
+[59/78] sub-31 ses-01 ... DONE in 57s  censored=36/240 (15.0%)  post_std=23.42
+[60/78] sub-31 ses-02 ... DONE in 57s  censored=14/240 (5.8%)  post_std=25.16
+[61/78] sub-32 ses-01 ... DONE in 58s  censored=12/240 (5.0%)  post_std=28.28
+[62/78] sub-32 ses-02 ... DONE in 58s  censored=32/240 (13.3%)  post_std=25.06
+[63/78] sub-33 ses-01 ... DONE in 58s  censored=101/240 (42.1%)  post_std=28.87
+[64/78] sub-33 ses-02 ... DONE in 57s  censored=119/240 (49.6%)  post_std=26.76
+[65/78] sub-34 ses-01 ... DONE in 58s  censored=84/240 (35.0%)  post_std=26.98
+[66/78] sub-34 ses-02 ... DONE in 58s  censored=34/240 (14.2%)  post_std=28.16
+[67/78] sub-35 ses-01 ... DONE in 58s  censored=35/240 (14.6%)  post_std=21.59
+[68/78] sub-35 ses-02 ... DONE in 58s  censored=16/240 (6.7%)  post_std=22.36
+[69/78] sub-36 ses-01 ... DONE in 58s  censored=63/240 (26.2%)  post_std=25.56
+[70/78] sub-36 ses-02 ... DONE in 59s  censored=125/240 (52.1%)  post_std=26.93
+[71/78] sub-37 ses-01 ... DONE in 61s  censored=18/240 (7.5%)  post_std=24.84
+[72/78] sub-37 ses-02 ... DONE in 59s  censored=43/240 (17.9%)  post_std=29.20
+[73/78] sub-38 ses-01 ... DONE in 58s  censored=37/240 (15.4%)  post_std=25.59
+[74/78] sub-38 ses-02 ... DONE in 58s  censored=23/240 (9.6%)  post_std=25.59
+[75/78] sub-39 ses-01 ... DONE in 58s  censored=24/240 (10.0%)  post_std=25.77
+[76/78] sub-39 ses-02 ... DONE in 58s  censored=11/240 (4.6%)  post_std=25.45
+[77/78] sub-40 ses-01 ... DONE in 56s  censored=7/240 (2.9%)  post_std=27.37
+[78/78] sub-40 ses-02 ... DONE in 55s  censored=8/240 (3.3%)  post_std=22.07
+
+───────────────────────────────────────────────────────
+Pipeline 'maximal_nocensor' complete: 72 completed, 6 skipped, 0 failed  /  Total elapsed: 1h 10m
+───────────────────────────────────────────────────────
