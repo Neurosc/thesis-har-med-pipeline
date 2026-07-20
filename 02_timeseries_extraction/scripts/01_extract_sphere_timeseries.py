@@ -23,17 +23,19 @@ Outputs : 02_timeseries_extraction/results/qinspheres/{pipeline}/{layer}/
               sub-XX_ses-YY_{layer}_timeseries.csv   (rows=timepoints, cols=ROI_Number)
           02_timeseries_extraction/results/qinspheres/_sphere_extraction_log.tsv
 
-Idempotent: skips a run whose 6 layer CSVs already exist.
+Idempotent: skips a run whose 6 layer CSVs already exist. The input BOLD is
+checked for completeness first, so an interrupted denoise run is reported as
+such rather than surfacing as a cryptic byte-count error.
 
-Run on server:
+Run on server, one pipeline at a time:
   conda activate fmri
-  python 02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py
+  python 02_timeseries_extraction/scripts/01_extract_sphere_timeseries.py --pipeline maximal
 """
 
-import os
 import sys
 import csv
 import time
+import argparse
 import datetime
 import numpy as np
 import nibabel as nib
@@ -44,6 +46,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from utils.subject_filter import get_pipeline_subjects
+from utils.nifti_check import is_complete
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -56,10 +59,6 @@ CABNP_KEY    = ATLAS_DIR / "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGS
 
 OUT_ROOT = REPO_ROOT / "02_timeseries_extraction" / "results" / "qinspheres"
 LOG_PATH = OUT_ROOT / "_sphere_extraction_log.tsv"
-
-# The two denoising pipelines to extract from (folder + desc- tag use the same name).
-# Override with env PIPELINES="maximal_nocensor" to extract a control pipeline in isolation.
-PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
 
 LAYER_DIR = {
     "Interoception": "intero",
@@ -259,6 +258,10 @@ def process_run(pipeline, sub, ses, prefix, nonself_layers, all_centroids):
     try:
         if not bold.exists():
             raise FileNotFoundError(f"BOLD not found: {bold}")
+        if not is_complete(bold):
+            raise OSError(f"BOLD is incomplete (interrupted write): {bold}\n"
+                          f"       Re-denoise it: python 01_denoising/scripts/"
+                          f"01_denoise_all.py --pipeline {pipeline}")
 
         print(f"{prefix} loading BOLD...")
         bold_img    = nib.load(str(bold))
@@ -343,8 +346,15 @@ def process_run(pipeline, sub, ses, prefix, nonself_layers, all_centroids):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--pipeline", required=True,
+                    help="Denoising pipeline to extract from "
+                         "(detrend | maximal | maximal_nocensor). One at a time.")
+    pipelines = [ap.parse_args().pipeline]
+
     # Create per-pipeline × per-layer output dirs
-    for pipeline in PIPELINES:
+    for pipeline in pipelines:
         for dirname in LAYER_DIR.values():
             (OUT_ROOT / pipeline / dirname).mkdir(parents=True, exist_ok=True)
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -363,17 +373,16 @@ def main():
     all_centroids = compute_centroids(glasser_data, glasser_affine, all_nonself_ids)
     del glasser_data
 
-    n_per_pipeline = len(SUBJECTS) * len(SESSIONS)
-    n_runs = len(PIPELINES) * n_per_pipeline
-    print(f"\nExtraction: {len(PIPELINES)} pipelines × {len(SUBJECTS)} subjects × "
+    n_runs = len(pipelines) * len(SUBJECTS) * len(SESSIONS)
+    print(f"\nExtraction: {len(SUBJECTS)} subjects × "
           f"{len(SESSIONS)} sessions = {n_runs} runs")
-    print(f"Pipelines: {PIPELINES}")
+    print(f"Pipeline: {pipelines[0]}")
     print(f"Layers: {SELF_LAYERS} (self) + {list(NONSELF_NETWORKS)} (nonself)\n")
 
     n_completed = n_skipped = n_failed = 0
     failed_runs = []
 
-    for pipeline in PIPELINES:
+    for pipeline in pipelines:
         print(f"\n{'='*60}\nPIPELINE: {pipeline}\n{'='*60}")
         for run_idx, sub in enumerate(SUBJECTS, start=1):
             for ses in SESSIONS:

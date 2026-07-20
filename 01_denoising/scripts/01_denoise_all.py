@@ -18,7 +18,9 @@ Outputs (one self-identifying folder per pipeline)
       sub-XX_ses-YY_task-rest_desc-<pipeline>_bold.nii.gz
       _batch_log.tsv   (appended after each run)
 
-Existing outputs are skipped.
+Existing outputs are skipped — but only if complete. A file that is present yet
+short (an interrupted earlier run) is deleted and re-denoised, so re-running this
+script is always safe and always converges on a full set.
 """
 
 import sys
@@ -36,6 +38,7 @@ from denoise_pipelines import (
     TR, FD_THRESH, BP_LOW, BP_HIGH, LS_OVERSAMPLE_FAC,
 )
 from utils.subject_filter import get_pipeline_subjects
+from utils.nifti_check import is_complete
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -100,10 +103,15 @@ def main():
         out_path = build_output_path(subject, session, out_dir, desc)
         prefix   = f"[{run_idx:02d}/{n_total}] {subject} {session}"
 
-        if out_path.exists():
-            print(f"{prefix} ... SKIPPED (output exists)")
+        if is_complete(out_path):
+            print(f"{prefix} ... SKIPPED (output complete)")
             n_skipped += 1
             continue
+
+        if out_path.exists():
+            # Present but short — a leftover from an interrupted run. Redo it.
+            print(f"{prefix} ... INCOMPLETE output, re-denoising")
+            out_path.unlink()
 
         t0 = time.time()
         try:
