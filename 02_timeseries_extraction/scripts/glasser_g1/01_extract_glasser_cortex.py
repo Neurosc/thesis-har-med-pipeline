@@ -34,13 +34,16 @@ Outputs:
   02_timeseries_extraction/results/glasser360/manifest.tsv
       (pipeline, subject, session, arm, n_TR, pct_censored_fd03)
 
-Run on server (DO NOT silently resample):
+Incomplete BOLDs (valid gzip, short image — an interrupted denoise run) are
+reported and skipped, not allowed to surface as a raw byte-count error.
+
+Run on server, one pipeline at a time (DO NOT silently resample):
   conda activate fmri
-  python 02_timeseries_extraction/scripts/glasser_g1/01_extract_glasser_cortex.py [--allow-resample]
+  python 02_timeseries_extraction/scripts/glasser_g1/01_extract_glasser_cortex.py \
+      --pipeline maximal --allow-resample
 """
 
 import argparse
-import os
 import sys
 import time
 from pathlib import Path
@@ -56,6 +59,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from utils.subject_filter import (                        # noqa: E402
     get_included_subjects, get_pipeline_subjects,
 )
+from utils.nifti_check import is_complete                 # noqa: E402
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DENOISING_DIR = REPO_ROOT / "01_denoising" / "results"
@@ -67,20 +71,10 @@ FD_COV        = REPO_ROOT / "99_QC" / "01_motion_qc" / "results" / "fd_covariate
 OUT_ROOT      = REPO_ROOT / "02_timeseries_extraction" / "results" / "glasser360"
 MANIFEST      = OUT_ROOT / "manifest.tsv"
 
-# Defaults reproduce the original behaviour exactly. Both are overridable by env
-# var so the maximal_nocensor sensitivity analysis can be extracted in isolation
-# without editing this file — the same convention 01_extract_sphere_timeseries.py
-# already uses for PIPELINES.
-#   PIPELINES=maximal_nocensor   SUBJECT_SET=pipeline   (n=39, all minus sub-12)
-PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
-
 _SUBJECT_SETS = {
     "included": (get_included_subjects, "get_included_subjects, FD>0.3, n=35"),
     "pipeline": (get_pipeline_subjects, "get_pipeline_subjects, all minus sub-12, n=39"),
 }
-SUBJECT_SET = os.environ.get("SUBJECT_SET", "included")
-if SUBJECT_SET not in _SUBJECT_SETS:
-    sys.exit(f"FATAL: SUBJECT_SET='{SUBJECT_SET}' is not one of {sorted(_SUBJECT_SETS)}.")
 
 SESSIONS  = ["ses-01", "ses-02"]
 N_CORTICAL = 360
@@ -98,17 +92,23 @@ def cortical_labels_from_key():
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--pipeline", required=True,
+                    help="Denoising pipeline to extract from "
+                         "(detrend | maximal | maximal_nocensor). One at a time.")
+    ap.add_argument("--subject-set", default="included", choices=sorted(_SUBJECT_SETS),
+                    help="included = n=35 (FD>0.3); pipeline = n=39 (all minus sub-12)")
     ap.add_argument("--allow-resample", action="store_true",
                     help="permit nearest-neighbor resampling of the atlas to the BOLD grid")
     args = ap.parse_args()
 
-    subject_fn, subject_desc = _SUBJECT_SETS[SUBJECT_SET]
+    pipelines = [args.pipeline]
+    subject_fn, subject_desc = _SUBJECT_SETS[args.subject_set]
     subjects = subject_fn()
     part = pd.read_csv(PARTICIPANTS, sep="\t")
     arm = dict(zip(part["participant_id"], part["condition"]))
     n_verum   = sum(arm.get(s) == "verum"   for s in subjects)
     n_placebo = sum(arm.get(s) == "placebo" for s in subjects)
-    print(f"Pipelines: {PIPELINES}")
+    print(f"Pipeline: {pipelines[0]}")
     print(f"Subjects ({subject_desc}): n={len(subjects)} "
           f"({n_verum} verum + {n_placebo} placebo)")
     print("  " + ", ".join(subjects))
@@ -139,7 +139,7 @@ def main():
     rows = []
     n_done = n_skip = n_miss = 0
 
-    for pipeline in PIPELINES:
+    for pipeline in pipelines:
         (OUT_ROOT / pipeline).mkdir(parents=True, exist_ok=True)
         print(f"\n{'='*60}\nPIPELINE: {pipeline}\n{'='*60}")
         for sub in subjects:
@@ -150,6 +150,16 @@ def main():
 
                 if not bold.exists():
                     print(f"{tag} ... MISSING BOLD ({bold.name})")
+                    n_miss += 1
+                    continue
+
+                if not is_complete(bold):
+                    # Valid gzip, short image — an interrupted denoise run. Say so
+                    # here rather than letting it surface as a raw byte count from
+                    # deep inside nilearn, which is how this script died before.
+                    print(f"{tag} ... INCOMPLETE BOLD (interrupted write): {bold.name}")
+                    print(f"       Re-denoise it: python 01_denoising/scripts/"
+                          f"01_denoise_all.py --pipeline {pipeline}")
                     n_miss += 1
                     continue
 
@@ -202,7 +212,7 @@ def main():
                                  arm=arm.get(sub, "unknown"), n_TR=n_tr,
                                  pct_censored_fd03=pct_cens.get((sub, ses), "")))
 
-    # Merge, do not clobber. This run only walked PIPELINES, so writing `rows`
+    # Merge, do not clobber. This run only walked `pipelines`, so writing `rows`
     # straight out would delete the manifest entries of every OTHER pipeline
     # whenever one pipeline is extracted in isolation (e.g. maximal_nocensor).
     # Keep foreign rows, replace only the pipelines this run touched.
@@ -210,11 +220,11 @@ def main():
     if MANIFEST.exists():
         old = pd.read_csv(MANIFEST, sep="\t")
         if "pipeline" in old.columns:
-            kept = old[~old["pipeline"].isin(PIPELINES)]
+            kept = old[~old["pipeline"].isin(pipelines)]
             n_kept = len(kept)
             new_manifest = pd.concat([kept, new_manifest], ignore_index=True)
             print(f"manifest: kept {n_kept} row(s) from other pipeline(s), "
-                  f"replaced {len(rows)} row(s) for {PIPELINES}")
+                  f"replaced {len(rows)} row(s) for {pipelines}")
     new_manifest = new_manifest.sort_values(
         ["pipeline", "subject", "session"]).reset_index(drop=True)
     new_manifest.to_csv(MANIFEST, sep="\t", index=False)

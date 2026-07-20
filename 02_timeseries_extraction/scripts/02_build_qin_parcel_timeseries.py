@@ -15,9 +15,10 @@ Out: 02_timeseries_extraction/results/qinparcels/{pipeline}/{layer}/{sub}_{ses}_
      (rows=Timepoint incl. dummies, cols=parcel INDEX) — same format as the sphere CSVs, so the
      ACW (01_compute_acw.jl) and SampEn (02_compute_sampen.py) scripts read it unchanged.
 
-Run from repo root: python 02_timeseries_extraction/scripts/02_build_qin_parcel_timeseries.py
+Run from repo root, one pipeline at a time:
+  python 02_timeseries_extraction/scripts/02_build_qin_parcel_timeseries.py --pipeline maximal
 """
-import os
+import argparse
 import re
 from pathlib import Path
 import pandas as pd
@@ -28,11 +29,14 @@ SELFMETA = REPO / "02_timeseries_extraction" / "atlases" / "glasser_self_metadat
 KEY      = REPO / "02_timeseries_extraction" / "atlases" / \
            "CortexSubcortex_ColeAnticevic_NetPartition_wSubcorGSR_parcels_LR_LabelKey.txt"
 OUT      = REPO / "02_timeseries_extraction" / "results" / "qinparcels"
-# Default reproduces the original behaviour. Override to build a pipeline in
-# isolation, e.g. PIPELINES=maximal_nocensor (same convention as the sphere and
-# glasser360 extractors). Whatever runs exist in glasser360/{pipeline}/ are
-# subset, so the sample follows that directory rather than being set here.
-PIPELINES = os.environ.get("PIPELINES", "detrend,maximal").split(",")
+# Whatever runs exist in glasser360/{pipeline}/ are subset, so the sample follows
+# that directory rather than being set here.
+_ap = argparse.ArgumentParser(description=__doc__,
+                              formatter_class=argparse.RawDescriptionHelpFormatter)
+_ap.add_argument("--pipeline", required=True,
+                 help="Pipeline to build (detrend | maximal | maximal_nocensor). "
+                      "One at a time.")
+PIPELINES = [_ap.parse_args().pipeline]
 
 # ── self layers from Keskin parcel mapping (a parcel may belong to 2 layers) ──
 sm = pd.read_csv(SELFMETA, sep="\t")
