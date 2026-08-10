@@ -220,6 +220,13 @@ degeneration — but that is a `detrend` problem, and the analysed pipeline drop
 find a reason that holds under the analysed pipeline, or report the six-region correction as a
 sensitivity analysis.
 
+**Possible resolution, from the supervisor meeting (§11.4).** The region family named there — the
+self regions, visual, and auditory as a control — does not include motor. If that specification was
+genuinely a priori, it justifies the five-region family on design grounds and the degeneration
+argument is not needed at all. Check honestly whether motor was off the list *before* the results
+were seen; if it was not, keep the six-region correction as a sensitivity analysis rather than
+back-fitting the justification.
+
 ### 6.4 The censoring bias runs *against* the finding
 
 The strongest thing to say about censoring is not that it is harmless, but that its bias points the
@@ -363,3 +370,104 @@ is a 7-word verbatim run against Northoff's corpus.
 - **2026-08-10, filed.** Remarks on censoring, the denoising limitation, and reporting conventions went
   into §6.2 (why follow Goldberg at all), §6.4 (bias direction, short-data caveat, arm matching),
   §6.5 (denoising as an open limitation) and §9 (the two reporting conventions).
+- **2026-08-10, filed.** The first supervisor meeting on these results → §11 (how Northoff reads them)
+  and §12 (future directions), plus the a-priori region-family point in §6.3.
+
+---
+
+## 11. Northoff's reading of these results (first supervisor meeting)
+
+How the supervisor interprets the findings — the frames to write the Discussion in. The *numbers*
+quoted in that meeting predate the current n=35 mixed-model analysis, so the interpretation is what
+carries over, not the significance levels; where the two diverge it is flagged below.
+
+### 11.1 How he reads the ACW result
+
+- **A two-step reading:** first, visual input processing changes; second, integration into the
+  **exteroceptive** self increases — so the **body–environment relationship** is what changes.
+- This is the **pyramid inverting toward extero- and interoception** (Cooper et al., 2022 / TRoM) —
+  his own framing, and he called the results "very convincing" and "making perfect sense".
+- Region by region as he read it: ACW prolongation in **visual, interoceptive, exteroceptive**;
+  minimal in **mental and auditory**. **Cognition** showed a larger mean difference but did not
+  survive FDR. **Auditory unchanged** — a sensory-specificity control, i.e. a null with a job.
+- **Visual is the most robust**, holding across every pipeline variant.
+
+### 11.2 The arm comparison, as he reads it
+
+- **Shared** between meditation and DMT-harmine: visual cortex and interoceptive self processing.
+- **Differing:** exteroceptive processing — the DMT-harmine arm attenuates the ACW increase seen in
+  the meditators.
+- **Phenomenological reading:** both arms relate similarly to the **body** (interoception), but
+  differently to the **environment** (exteroception).
+- The drug effect here is a **drug × meditation interaction**, not the drug alone.
+- **Why the arm contrast is weak by design** — his rationale, and the one to use in the limitations:
+  DMT has a **short half-life**, so the day-4 scan captures only trait/residual effects, never acute
+  drug effects. Any group difference is therefore a DMT × meditation interaction, **further diluted
+  because both arms shared the day-1 meditation.** This is the argument for reporting the drug
+  contrast as secondary/exploratory *by design* rather than as a test that failed.
+- **Calibrate against the current numbers:** as the analysis now stands the drug DiD is null and
+  exteroception is a trend that does not survive FDR. His rationale for *why* the contrast is weak
+  stands; his "clear attenuation" should be written down to the trend it is.
+
+### 11.3 The brain as a "global topographic thing"
+
+- He expects a **global** effect, and frames the brain that way. The whole-cortex analysis bore this
+  out (session +0.141 s, p = 0.008; placebo +0.214 s, p = 0.004) — his prediction, confirmed.
+- **The ratio rationale:** every region carries both its own local intrinsic activity and a global
+  component; a **global-to-local ratio** captures how much of the global is represented locally. His
+  analogy: global climate change manifests differently region by region. (Not yet built — §12.)
+
+### 11.4 The reporting structure he recommended
+
+- **Primary:** whole-group ACW before vs. after meditation, with **a-priori region selection** — the
+  self regions, visual, and auditory as control — justified by the meditation induction technique.
+- **Secondary/exploratory:** the drug contrast, given the low subject count.
+- **The thesis already does this.** Worth stating plainly: the time-effect-primary framing is
+  supervisor-sanctioned, not a retreat from a drug effect that failed to appear.
+- The a-priori region list omits motor — see §6.3, where that may resolve an open point.
+
+### 11.5 On method
+
+- He **praised the denoising work** as methodologically sensitive and well executed, and accepted
+  **pipeline sensitivity as a valid and important observation**. Useful for §6.5: the limitation is
+  acknowledged at supervisor level, not a private worry.
+- **Parcels preferred over spheres** — more anatomically grounded, less arbitrary in size.
+- **Interpolated as the main result, non-interpolated as supplementary.** In the meeting's shorthand,
+  "Parcel Maximal" vs "Parcel GLM", where "GLM" is what the pipeline now calls `maximal_nocensor`.
+  That is the current design.
+- He offered the **counterpoint that less data manipulation is also defensible** — he is not
+  committed to interpolation, so §6.4 should argue the choice rather than assume it.
+- Pending at the time: a second opinion from **Philip** in the lab on parcels vs. spheres.
+
+### 11.6 Connectivity and entropy, as discussed
+
+- **Post-meditation: less top-down modulation from the mental self to visual cortex** — consistent
+  with meditation phenomenology, and the finding that carries his interpretation of the mental self
+  stepping back.
+- **Its status now:** same direction under both ROI definitions — spheres −0.189 (q = 0.011),
+  parcels −0.146 (q = 0.32). FDR-significant in spheres, trend-level in parcels. A concordant trend,
+  not a failure to replicate; report it under the §9 convention as depending on the analysis.
+- **Within-region visual FC** rises and survives FDR in all four cells (spheres/parcels ×
+  censored/uncensored) — the most robust connectivity result, and the one the meeting did not dwell on.
+- **Sample entropy → supplementary**, as a specificity check on the ACW findings. This is where the
+  AUC-vs-SampEn dissociation earns its place.
+
+---
+
+## 12. Future directions
+
+Carried from the meeting; these are the "what next" for the closing section.
+
+1. **Global-to-local ratios** — global→exteroceptive and global→interoceptive (§11.3). The global ACW
+   half is **built and positive**; the ratios are **not built**. His route: all subjects first, then
+   split by arm.
+2. **Transfer entropy, with Sohail (Japan)** — directionality of information flow between visual
+   cortex and the self regions (cognition→visual vs. visual→cognition), including the temporal
+   duration and degree of transfer. This gives §3's undirected-FC limit a named, concrete follow-up
+   rather than a generic one.
+3. **Visual imagery in the meditation protocol** — retrieve the protocol description and find evidence
+   of a visual-imagery component to justify the visual finding narratively. He noted it may not be
+   explicit and may need reading between the lines. **Still open, and the most consequential of the
+   three:** visual is the most robust result in the thesis and currently has no narrative anchor.
+4. *(Admin, not thesis text)* Send the unresponsive author's paper and email to the supervisor, who
+   will follow up directly.
