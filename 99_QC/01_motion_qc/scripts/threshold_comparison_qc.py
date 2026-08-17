@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from utils.motion_qc import load_confounds, compute_custom_fd
+from utils.thesis_style import SET2, NEUTRAL, shade, tint
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 FMRIPREP_ROOT  = Path("/BICNAS2/group-northoff/jkokino/data/dmt_med/derivatives/fmriprep")
@@ -169,7 +170,9 @@ n_subjects = len(subjects_sorted)
 fig_bar, ax_bar = plt.subplots(figsize=(16, 5))
 x = np.arange(n_subjects)
 width = 0.35
-ses_colors = {"ses-01": "#4878CF", "ses-02": "#D65F5F"}
+# Session -> lightness, the thesis rule: ses-02 (post) is the full hue, ses-01 (pre) the
+# same hue tinted toward white. No region is encoded here, so the hue is free.
+ses_colors = {"ses-01": tint(SET2["blue"]), "ses-02": SET2["blue"]}
 
 for offset, ses_key, ses_label in [(-width / 2, "ses-01", "ses-01"), (width / 2, "ses-02", "ses-02")]:
     heights = []
@@ -177,7 +180,7 @@ for offset, ses_key, ses_label in [(-width / 2, "ses-01", "ses-01"), (width / 2,
         subset = run_df[(run_df["subject"] == sub) & (run_df["session"] == ses_key)]
         heights.append(float(subset["mean_fd"].iloc[0]) if len(subset) == 1 else 0.0)
     ax_bar.bar(x + offset, heights, width, label=ses_label,
-               color=ses_colors[ses_key], alpha=0.85, edgecolor="white")
+               color=ses_colors[ses_key], edgecolor=shade(ses_colors[ses_key]), linewidth=0.4)
 
 for thresh, ls, lw in [(0.3, "--", 1.2), (0.5, "-.", 1.0)]:
     ax_bar.axhline(thresh, color="black", linestyle=ls, linewidth=lw, label=f"{thresh} mm")
@@ -196,22 +199,26 @@ print(f"Subject FD bar chart saved: {bar_path}")
 
 # ── Step 6b: Threshold comparison figure ─────────────────────────────────────
 fig_cmp, (ax_hist, ax_worst) = plt.subplots(1, 2, figsize=(14, 5))
-fig_cmp.suptitle("Threshold comparison: FD > 0.3 mm vs FD > 0.5 mm", fontsize=13)
+# No on-image titles: the description lives in the LaTeX caption (thesis convention).
 
-thresh_colors = {0.3: "#4878CF", 0.5: "#D65F5F"}
+# Chosen vs rejected: 0.3 mm is the adopted threshold and takes the Set2 blue; 0.5 mm is
+# the alternative it is being compared against and recedes into the neutral grey.
+thresh_colors = {0.3: SET2["blue"], 0.5: NEUTRAL["muted"]}
 
 # Left: overlaid histograms of % censored
 for thresh in FD_THRESHOLDS:
     key = str(thresh).replace(".", "")
     col = f"pct_frames_above_{key}"
-    ax_hist.hist(run_df[col], bins=20, alpha=0.55,
-                 color=thresh_colors[thresh], edgecolor="white",
-                 label=f"FD > {thresh} mm")
+    ax_hist.hist(run_df[col], bins=20, alpha=0.65,
+                 color=thresh_colors[thresh], edgecolor=shade(thresh_colors[thresh]),
+                 linewidth=0.4, label=f"FD > {thresh} mm")
+# Black, not grey: the 0.5 mm series is now the grey one, so grey guide lines would read
+# as part of it. Matches the boundary lines in the right panel.
 for boundary, ls in [(10, "--"), (25, "-."), (50, ":")]:
-    ax_hist.axvline(boundary, color="gray", linestyle=ls, linewidth=0.9, label=f"{boundary}%")
+    ax_hist.axvline(boundary, color=NEUTRAL["ink"], linestyle=ls, linewidth=0.9,
+                    label=f"{boundary}%")
 ax_hist.set_xlabel("% frames censored")
 ax_hist.set_ylabel("Count (runs)")
-ax_hist.set_title("Distribution of % censored frames")
 ax_hist.legend(fontsize=8)
 
 # Right: grouped bar of worst-session % censored per subject
@@ -224,15 +231,16 @@ for offset, thresh in [(-width / 2, 0.3), (width / 2, 0.5)]:
         row = subj_df[subj_df["subject"] == sub]
         heights.append(float(row[f"worst_session_pct_above_{key}"].iloc[0]) if len(row) else 0.0)
     ax_worst.bar(x + offset, heights, width, label=f"FD > {thresh} mm",
-                 color=thresh_colors[thresh], alpha=0.85, edgecolor="white")
+                 color=thresh_colors[thresh], edgecolor=shade(thresh_colors[thresh]),
+                 linewidth=0.4)
 
 for boundary, ls in [(25, "--"), (50, "-.")]:
-    ax_worst.axhline(boundary, color="black", linestyle=ls, linewidth=0.9, label=f"{boundary}%")
+    ax_worst.axhline(boundary, color=NEUTRAL["ink"], linestyle=ls, linewidth=0.9,
+                     label=f"{boundary}%")
 ax_worst.set_xticks(x)
 ax_worst.set_xticklabels([s.replace("sub-", "") for s in subjects_sorted],
                           rotation=45, ha="right", fontsize=7)
 ax_worst.set_ylabel("Worst-session % censored")
-ax_worst.set_title("Worst-session % censored per subject")
 ax_worst.legend(fontsize=8, ncol=2, loc="upper right")
 
 plt.tight_layout()
@@ -243,7 +251,7 @@ print(f"Threshold comparison figure saved: {cmp_path}")
 
 # ── Step 7: Console summary ───────────────────────────────────────────────────
 print(f"\n── Final summary ──")
-print(f"  FD method: custom Goldberg/Lynch (bandstop 0.2–0.5 Hz, {BACKWARD_DIFF_N}-TR backward diff)")
+print(f"  FD method: Power 2012 ({BACKWARD_DIFF_N}-TR backward diff, no respiratory filter)")
 print(f"  Runs processed: {len(run_rows)}  |  Failed: {len(failed)}")
 if failed:
     print(f"  Failed: {', '.join(failed)}")
