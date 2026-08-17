@@ -201,9 +201,11 @@ print(f"Subject FD bar chart saved: {bar_path}")
 fig_cmp, (ax_hist, ax_worst) = plt.subplots(1, 2, figsize=(14, 5))
 # No on-image titles: the description lives in the LaTeX caption (thesis convention).
 
-# Chosen vs rejected: 0.3 mm is the adopted threshold and takes the Set2 blue; 0.5 mm is
+# Chosen vs rejected: 0.3 mm is the adopted threshold and takes the Set2 pink; 0.5 mm is
 # the alternative it is being compared against and recedes into the neutral grey.
-thresh_colors = {0.3: SET2["blue"], 0.5: NEUTRAL["muted"]}
+# Pink is the interoception hue in the results figures, but this is a motion-QC figure with
+# no region encoding, so the reuse cannot be misread (the palette's own rule).
+thresh_colors = {0.3: SET2["pink"], 0.5: NEUTRAL["muted"]}
 
 # Left: overlaid histograms of % censored
 for thresh in FD_THRESHOLDS:
