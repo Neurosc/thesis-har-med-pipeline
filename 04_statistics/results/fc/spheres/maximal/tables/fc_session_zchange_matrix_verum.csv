@@ -1,0 +1,6 @@
+"","Visual","Interoception","Exteroception","Cognition","Auditory"
+"Visual",NA,0.0209,0.0226,-0.1394,-0.0107
+"Interoception",0.0209,NA,0.0209,0.0496,0.0095
+"Exteroception",0.0226,0.0209,NA,0.0145,0.025
+"Cognition",-0.1394,0.0496,0.0145,NA,0.0141
+"Auditory",-0.0107,0.0095,0.025,0.0141,NA

@@ -1,0 +1,11 @@
+"pair","region_a","region_b","beta","ci_low","ci_high","p","q","survives","KR_df","singular"
+"Visual-Cognition","Visual","Cognition",-0.1394,-0.3029,0.0242,0.0896,0.8957,"no",15.3904,TRUE
+"Interoception-Cognition","Interoception","Cognition",0.0496,-0.1133,0.2125,0.5263,0.9005,"no",14.9075,FALSE
+"Exteroception-Auditory","Exteroception","Auditory",0.025,-0.0919,0.1419,0.6546,0.9005,"no",14.665,FALSE
+"Visual-Exteroception","Visual","Exteroception",0.0226,-0.1312,0.1764,0.7588,0.9005,"no",15.2164,FALSE
+"Interoception-Exteroception","Interoception","Exteroception",0.0209,-0.1322,0.174,0.7755,0.9005,"no",15.2209,FALSE
+"Visual-Interoception","Visual","Interoception",0.0209,-0.153,0.1947,0.802,0.9005,"no",15.3895,FALSE
+"Cognition-Auditory","Cognition","Auditory",0.0141,-0.1292,0.1574,0.837,0.9005,"no",14.9642,FALSE
+"Exteroception-Cognition","Exteroception","Cognition",0.0145,-0.1739,0.2029,0.8721,0.9005,"no",15.2448,FALSE
+"Visual-Auditory","Visual","Auditory",-0.0107,-0.1546,0.1331,0.8758,0.9005,"no",15.1361,FALSE
+"Interoception-Auditory","Interoception","Auditory",0.0095,-0.1497,0.1687,0.9005,0.9005,"no",14.8942,FALSE

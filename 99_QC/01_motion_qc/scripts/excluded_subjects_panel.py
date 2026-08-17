@@ -3,6 +3,9 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.rcParams["font.family"] = "sans-serif"
+# Emit real <text> in SVG instead of <use>-referenced glyph outlines:
+# Affinity mis-renders matplotlib's default path-glyph SVGs.
+matplotlib.rcParams["svg.fonttype"] = "none"
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D

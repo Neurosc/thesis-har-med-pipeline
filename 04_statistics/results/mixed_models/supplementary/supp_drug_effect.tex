@@ -1,0 +1,18 @@
+% AUC drug effect (DiD, session $\times$ arm) --- robustness across pipeline and ROI ($d_z$, \checkmark\ = survives FDR)
+\begin{table}[htbp]\centering
+\caption{AUC drug effect (DiD, session $\times$ arm) --- robustness across pipeline and ROI ($d_z$, \checkmark\ = survives FDR)}
+\label{tab:supp_drug_auc}
+\small\setlength{\tabcolsep}{6pt}
+\begin{tabular}{lcc}
+\toprule
+Region & Sphere $\cdot$ max$^{*}$ & Parcel $\cdot$ max \\
+\midrule
+Exteroception & -0.75 & -0.26 \\
+Visual & -0.57 & -0.34 \\
+Cognition & 0.53 & -0.15 \\
+Auditory & -0.17 & 0.10 \\
+Interoception & 0.21 & -0.02 \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}\footnotesize $^{*}$Primary configuration. Each cell is Cohen's $d_z$ (within-subject standardized effect; for the drug effect, the between-arm standardized difference in change); \checkmark\ = survives BH-FDR across the 5 regions ($q<0.05$). Rows ordered by mean $|d_z|$. $n=35$; motor excluded.\end{flushleft}
+\end{table}

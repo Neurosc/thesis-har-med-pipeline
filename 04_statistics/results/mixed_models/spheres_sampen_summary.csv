@@ -1,0 +1,19 @@
+"pipeline","analysis","region","term","estimate","dz","ci_low","ci_high","p","q","KR_df","n","singular"
+"maximal","did","auditory","session:arm (DiD)",0.0697,0.341,-0.1123,0.2517,0.4409,0.9182,31.5,35,FALSE
+"maximal","did","cognition","session:arm (DiD)",0.0096,0.168,-0.1793,0.1985,0.9182,0.9182,31.7,35,FALSE
+"maximal","did","extero","session:arm (DiD)",0.0876,0.444,-0.0964,0.2717,0.3392,0.9182,31.7,35,FALSE
+"maximal","did","intero","session:arm (DiD)",0.0178,0.166,-0.1943,0.2299,0.8653,0.9182,31.7,35,FALSE
+"maximal","did","visual","session:arm (DiD)",0.0305,0.208,-0.1582,0.2192,0.744,0.9182,31.7,35,FALSE
+"maximal","overall","auditory","arm (verum-placebo)",0.0805,NA,-0.0792,0.2403,0.3121,0.4059,NA,NA,FALSE
+"maximal","overall","auditory","session (post-pre)",0.0583,NA,-0.0349,0.1515,0.2116,0.529,NA,NA,FALSE
+"maximal","overall","cognition","arm (verum-placebo)",0.0939,NA,-0.0407,0.2285,0.1646,0.4059,NA,NA,FALSE
+"maximal","overall","cognition","session (post-pre)",0.0116,NA,-0.0848,0.108,0.8088,0.8088,NA,NA,FALSE
+"maximal","overall","extero","arm (verum-placebo)",-0.0051,NA,-0.138,0.1278,0.9379,0.9379,NA,NA,FALSE
+"maximal","overall","extero","session (post-pre)",0.0451,NA,-0.0489,0.139,0.3363,0.5605,NA,NA,FALSE
+"maximal","overall","intero","arm (verum-placebo)",0.0974,NA,-0.0539,0.2487,0.1989,0.4059,NA,NA,FALSE
+"maximal","overall","intero","session (post-pre)",0.0138,NA,-0.0945,0.1221,0.797,0.8088,NA,NA,FALSE
+"maximal","overall","visual","arm (verum-placebo)",-0.0638,NA,-0.1937,0.0662,0.3247,0.4059,NA,NA,FALSE
+"maximal","overall","visual","session (post-pre)",0.1113,NA,0.015,0.2075,0.0248,0.124,NA,NA,FALSE
+"maximal","global","ALL","arm_verum_minus_placebo",0.0383,NA,NA,NA,0.5185,NA,NA,NA,FALSE
+"maximal","global","ALL","DiD_session:arm",0.055,NA,NA,NA,0.1853,NA,NA,NA,FALSE
+"maximal","global","ALL","session_post_minus_pre",0.0477,NA,NA,NA,0.0258,NA,NA,NA,FALSE

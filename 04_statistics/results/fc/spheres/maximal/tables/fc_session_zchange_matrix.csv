@@ -1,0 +1,6 @@
+,Visual,Interoception,Exteroception,Cognition,Auditory
+Visual,,0.0399,0.0419,-0.1887,-0.0142
+Interoception,0.0399,,-0.0189,-0.031,-0.0483
+Exteroception,0.0419,-0.0189,,-0.0734,-0.024
+Cognition,-0.1887,-0.031,-0.0734,,-0.0684
+Auditory,-0.0142,-0.0483,-0.024,-0.0684,

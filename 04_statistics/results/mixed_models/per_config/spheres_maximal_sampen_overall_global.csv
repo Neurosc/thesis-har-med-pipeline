@@ -1,0 +1,4 @@
+"term","est","p","singular"
+"session_post_minus_pre",0.0477,0.0258,FALSE
+"arm_verum_minus_placebo",0.0383,0.5185,FALSE
+"DiD_session:arm",0.055,0.1853,FALSE

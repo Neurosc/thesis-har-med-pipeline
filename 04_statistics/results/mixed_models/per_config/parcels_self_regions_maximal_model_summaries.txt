@@ -1,0 +1,283 @@
+======================================================================
+REGION: intero | AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)
+======================================================================
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: REGION_MODEL
+   Data: dat %>% filter(region == region_name)
+
+REML criterion at convergence: 40
+
+Scaled residuals: 
+     Min       1Q   Median       3Q      Max 
+-1.52135 -0.74785  0.03275  0.63299  2.33772 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.01244  0.1115  
+ Residual             0.05672  0.2382  
+Number of obs: 70, groups:  subject, 35
+
+Fixed effects:
+                       Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)           3.419e+00  4.106e-01  6.206e+01   8.325 1.07e-11 ***
+sessionpost           2.075e-01  8.049e-02  3.089e+01   2.578   0.0149 *  
+armverum             -4.996e-03  8.986e-02  6.032e+01  -0.056   0.9558    
+pcf                   1.025e-03  1.161e-02  6.224e+01   0.088   0.9299    
+pcf_sq               -2.899e-05  1.923e-04  6.248e+01  -0.151   0.8807    
+mean_fd              -2.982e+00  3.043e+00  6.279e+01  -0.980   0.3309    
+sessionpost:armverum -3.038e-02  1.146e-01  3.044e+01  -0.265   0.7927    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) sssnps armvrm pcf    pcf_sq men_fd
+sessionpost  0.064                                   
+armverum    -0.182  0.426                            
+pcf          0.529  0.059 -0.050                     
+pcf_sq      -0.266 -0.019 -0.003 -0.924              
+mean_fd     -0.971 -0.151  0.086 -0.677  0.414       
+sssnpst:rmv  0.051 -0.690 -0.639  0.050 -0.037 -0.001
+fit warnings:
+Some predictor variables are on very different scales: consider rescaling. 
+You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
+
+======================================================================
+REGION: extero | AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)
+======================================================================
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: REGION_MODEL
+   Data: dat %>% filter(region == region_name)
+
+REML criterion at convergence: 41.2
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-1.4635 -0.6235 -0.1153  0.4383  2.1694 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.03678  0.1918  
+ Residual             0.04182  0.2045  
+Number of obs: 70, groups:  subject, 35
+
+Fixed effects:
+                       Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)           2.714e+00  4.122e-01  6.085e+01   6.585  1.2e-08 ***
+sessionpost           2.324e-01  6.949e-02  3.187e+01   3.345  0.00212 ** 
+armverum              3.239e-03  9.581e-02  5.157e+01   0.034  0.97316    
+pcf                  -8.926e-03  1.124e-02  5.405e+01  -0.794  0.43077    
+pcf_sq                1.974e-05  1.867e-04  5.432e+01   0.106  0.91618    
+mean_fd               2.233e+00  3.022e+00  5.898e+01   0.739  0.46278    
+sessionpost:armverum -9.641e-02  9.873e-02  3.160e+01  -0.977  0.33621    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) sssnps armvrm pcf    pcf_sq men_fd
+sessionpost  0.105                                   
+armverum    -0.183  0.339                            
+pcf          0.497  0.063 -0.051                     
+pcf_sq      -0.220 -0.015 -0.007 -0.911              
+mean_fd     -0.969 -0.177  0.083 -0.651  0.367       
+sssnpst:rmv  0.035 -0.687 -0.518  0.062 -0.042  0.000
+fit warnings:
+Some predictor variables are on very different scales: consider rescaling. 
+You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
+
+======================================================================
+REGION: cognition | AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)
+======================================================================
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: REGION_MODEL
+   Data: dat %>% filter(region == region_name)
+
+REML criterion at convergence: 60.8
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-1.3987 -0.7404 -0.2496  0.7365  1.9141 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.009179 0.09581 
+ Residual             0.085795 0.29291 
+Number of obs: 70, groups:  subject, 35
+
+Fixed effects:
+                       Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)           3.552e+00  4.812e-01  6.046e+01   7.383 5.34e-10 ***
+sessionpost           5.548e-02  9.886e-02  3.102e+01   0.561    0.579    
+armverum              9.126e-02  1.053e-01  6.199e+01   0.867    0.389    
+pcf                  -4.629e-03  1.373e-02  6.297e+01  -0.337    0.737    
+pcf_sq                5.755e-06  2.273e-04  6.300e+01   0.025    0.980    
+mean_fd              -2.501e+00  3.575e+00  6.171e+01  -0.700    0.487    
+sessionpost:armverum -1.046e-01  1.408e-01  3.054e+01  -0.743    0.463    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) sssnps armvrm pcf    pcf_sq men_fd
+sessionpost  0.051                                   
+armverum    -0.182  0.448                            
+pcf          0.537  0.058 -0.049                     
+pcf_sq      -0.279 -0.020 -0.001 -0.927              
+mean_fd     -0.971 -0.144  0.085 -0.683  0.426       
+sssnpst:rmv  0.056 -0.690 -0.670  0.047 -0.036 -0.002
+fit warnings:
+Some predictor variables are on very different scales: consider rescaling. 
+You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
+
+======================================================================
+REGION: visual | AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)
+======================================================================
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: REGION_MODEL
+   Data: dat %>% filter(region == region_name)
+
+REML criterion at convergence: 85
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-1.9470 -0.6573  0.0513  0.5291  2.1991 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.07517  0.2742  
+ Residual             0.08298  0.2881  
+Number of obs: 70, groups:  subject, 35
+
+Fixed effects:
+                       Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)           2.551e+00  5.829e-01  6.071e+01   4.377 4.82e-05 ***
+sessionpost           3.533e-01  9.790e-02  3.224e+01   3.608  0.00103 ** 
+armverum             -3.361e-02  1.359e-01  5.153e+01  -0.247  0.80567    
+pcf                  -1.204e-02  1.588e-02  5.394e+01  -0.758  0.45179    
+pcf_sq                2.987e-05  2.637e-04  5.420e+01   0.113  0.91022    
+mean_fd               4.889e+00  4.272e+00  5.883e+01   1.144  0.25706    
+sessionpost:armverum -1.529e-01  1.391e-01  3.198e+01  -1.099  0.27982    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) sssnps armvrm pcf    pcf_sq men_fd
+sessionpost  0.106                                   
+armverum    -0.183  0.336                            
+pcf          0.496  0.063 -0.051                     
+pcf_sq      -0.218 -0.015 -0.007 -0.910              
+mean_fd     -0.969 -0.178  0.083 -0.651  0.366       
+sssnpst:rmv  0.034 -0.687 -0.515  0.063 -0.042  0.000
+fit warnings:
+Some predictor variables are on very different scales: consider rescaling. 
+You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
+
+======================================================================
+REGION: auditory | AUC ~ session*arm + pcf + pcf_sq + mean_fd + (1|subject)
+======================================================================
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: REGION_MODEL
+   Data: dat %>% filter(region == region_name)
+
+REML criterion at convergence: 67
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-1.6209 -0.5341 -0.1724  0.4642  2.0034 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.04860  0.2205  
+ Residual             0.06675  0.2584  
+Number of obs: 70, groups:  subject, 35
+
+Fixed effects:
+                       Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)           3.047e+00  5.082e-01  6.193e+01   5.996 1.13e-07 ***
+sessionpost           2.719e-02  8.771e-02  3.272e+01   0.310    0.758    
+armverum              3.097e-02  1.161e-01  5.365e+01   0.267    0.791    
+pcf                  -1.229e-03  1.395e-02  5.616e+01  -0.088    0.930    
+pcf_sq               -4.216e-05  2.315e-04  5.649e+01  -0.182    0.856    
+mean_fd              -2.736e-01  3.733e+00  6.055e+01  -0.073    0.942    
+sessionpost:armverum  2.145e-02  1.247e-01  3.240e+01   0.172    0.864    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) sssnps armvrm pcf    pcf_sq men_fd
+sessionpost  0.099                                   
+armverum    -0.183  0.354                            
+pcf          0.503  0.062 -0.051                     
+pcf_sq      -0.228 -0.016 -0.006 -0.913              
+mean_fd     -0.969 -0.173  0.084 -0.656  0.375       
+sssnpst:rmv  0.037 -0.688 -0.539  0.060 -0.041  0.000
+fit warnings:
+Some predictor variables are on very different scales: consider rescaling. 
+You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
+
+======================================================================
+POOLED GLOBAL (5 regions) | AUC ~ session*arm + region + covars + (1|subject)
+======================================================================
+Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: formula
+   Data: data
+
+REML criterion at convergence: 175.1
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.3788 -0.6459 -0.1197  0.7044  3.3259 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.03429  0.1852  
+ Residual             0.07029  0.2651  
+Number of obs: 350, groups:  subject, 35
+
+Fixed effects:
+                       Estimate Std. Error         df t value Pr(>|t|)    
+(Intercept)           3.050e+00  2.727e-01  2.517e+02  11.184  < 2e-16 ***
+sessionpost           1.794e-01  4.052e-02  3.144e+02   4.427 1.32e-05 ***
+armverum              2.222e-02  7.500e-02  4.354e+01   0.296    0.768    
+regionextero          1.337e-03  4.481e-02  3.063e+02   0.030    0.976    
+regioncognition       7.277e-02  4.481e-02  3.063e+02   1.624    0.105    
+regionvisual          2.574e-01  4.481e-02  3.063e+02   5.744 2.23e-08 ***
+regionauditory       -2.916e-02  4.481e-02  3.063e+02  -0.651    0.516    
+pcf                  -1.114e-02  7.129e-03  3.119e+02  -1.562    0.119    
+pcf_sq                8.754e-05  1.183e-04  3.148e+02   0.740    0.460    
+mean_fd               3.382e-01  1.960e+00  2.809e+02   0.173    0.863    
+sessionpost:armverum -8.285e-02  5.754e-02  3.148e+02  -1.440    0.151    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) sssnps armvrm rgnxtr rgncgn rgnvsl rgndtr pcf    pcf_sq
+sessionpost  0.139                                                        
+armverum    -0.191  0.248                                                 
+regionexter -0.082  0.000  0.000                                          
+regioncgntn -0.082  0.000  0.000  0.500                                   
+regionvisul -0.082  0.000  0.000  0.500  0.500                            
+regionadtry -0.082  0.000  0.000  0.500  0.500  0.500                     
+pcf          0.459  0.062 -0.048  0.000  0.000  0.000  0.000              
+pcf_sq      -0.173 -0.008 -0.010  0.000  0.000  0.000  0.000 -0.894       
+mean_fd     -0.957 -0.200  0.071  0.000  0.000  0.000  0.000 -0.626  0.320
+sssnpst:rmv  0.020 -0.685 -0.388  0.000  0.000  0.000  0.000  0.078 -0.045
+            men_fd
+sessionpost       
+armverum          
+regionexter       
+regioncgntn       
+regionvisul       
+regionadtry       
+pcf               
+pcf_sq            
+mean_fd           
+sssnpst:rmv  0.002
+fit warnings:
+Some predictor variables are on very different scales: consider rescaling. 
+You may also use (g)lmerControl(autoscale = TRUE) to improve numerical stability.
+
